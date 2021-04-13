@@ -2,8 +2,8 @@
 
 pragma solidity 0.6.12;
 
-import "../uniswapv2/UniswapV2Factory.sol";
+import "../traderjoe/JoeFactory.sol";
 
-contract JoeSwapFactoryMock is UniswapV2Factory {
-    constructor(address _feeToSetter) public UniswapV2Factory(_feeToSetter) {}
+contract JoeSwapFactoryMock is JoeFactory {
+    constructor(address _feeToSetter) public JoeFactory(_feeToSetter) {}
 }

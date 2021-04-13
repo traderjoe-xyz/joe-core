@@ -5,9 +5,9 @@ pragma solidity 0.6.12;
 import "./libraries/SafeMath.sol";
 import "./libraries/SafeERC20.sol";
 
-import "./uniswapv2/interfaces/IUniswapV2ERC20.sol";
-import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
-import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
+import "./traderjoe/interfaces/IJoeERC20.sol";
+import "./traderjoe/interfaces/IJoePair.sol";
+import "./traderjoe/interfaces/IJoeFactory.sol";
 
 import "./Ownable.sol";
 
@@ -20,7 +20,7 @@ contract JoeMaker is Ownable {
     using SafeERC20 for IERC20;
 
     // V1 - V5: OK
-    IUniswapV2Factory public immutable factory;
+    IJoeFactory public immutable factory;
     //0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac
     // V1 - V5: OK
     address public immutable bar;
@@ -29,7 +29,7 @@ contract JoeMaker is Ownable {
     address private immutable joe;
     //0x6B3595068778DD592e39A122f4f5a5cF09C90fE2
     // V1 - V5: OK
-    address private immutable weth;
+    address private immutable wavax;
     //0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
     // V1 - V5: OK
@@ -51,12 +51,12 @@ contract JoeMaker is Ownable {
         address _factory,
         address _bar,
         address _joe,
-        address _weth
+        address _wavax
     ) public {
-        factory = IUniswapV2Factory(_factory);
+        factory = IJoeFactory(_factory);
         bar = _bar;
         joe = _joe;
-        weth = _weth;
+        wavax = _wavax;
     }
 
     // F1 - F10: OK
@@ -64,7 +64,7 @@ contract JoeMaker is Ownable {
     function bridgeFor(address token) public view returns (address bridge) {
         bridge = _bridges[token];
         if (bridge == address(0)) {
-            bridge = weth;
+            bridge = wavax;
         }
     }
 
@@ -73,7 +73,7 @@ contract JoeMaker is Ownable {
     function setBridge(address token, address bridge) external onlyOwner {
         // Checks
         require(
-            token != joe && token != weth && token != bridge,
+            token != joe && token != wavax && token != bridge,
             "JoeMaker: Invalid bridge"
         );
 
@@ -120,7 +120,7 @@ contract JoeMaker is Ownable {
     function _convert(address token0, address token1) internal {
         // Interactions
         // S1 - S4: OK
-        IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(token0, token1));
+        IJoePair pair = IJoePair(factory.getPair(token0, token1));
         require(address(pair) != address(0), "JoeMaker: Invalid pair");
         // balanceOf: S1 - S4: OK
         // transfer: X1 - X5: OK
@@ -158,32 +158,32 @@ contract JoeMaker is Ownable {
             if (token0 == joe) {
                 IERC20(joe).safeTransfer(bar, amount);
                 joeOut = amount;
-            } else if (token0 == weth) {
-                joeOut = _toJOE(weth, amount);
+            } else if (token0 == wavax) {
+                joeOut = _toJOE(wavax, amount);
             } else {
                 address bridge = bridgeFor(token0);
                 amount = _swap(token0, bridge, amount, address(this));
                 joeOut = _convertStep(bridge, bridge, amount, 0);
             }
         } else if (token0 == joe) {
-            // eg. JOE - ETH
+            // eg. JOE - AVAX
             IERC20(joe).safeTransfer(bar, amount0);
             joeOut = _toJOE(token1, amount1).add(amount0);
         } else if (token1 == joe) {
             // eg. USDT - JOE
             IERC20(joe).safeTransfer(bar, amount1);
             joeOut = _toJOE(token0, amount0).add(amount1);
-        } else if (token0 == weth) {
-            // eg. ETH - USDC
+        } else if (token0 == wavax) {
+            // eg. AVAX - USDC
             joeOut = _toJOE(
-                weth,
-                _swap(token1, weth, amount1, address(this)).add(amount0)
+                wavax,
+                _swap(token1, wavax, amount1, address(this)).add(amount0)
             );
-        } else if (token1 == weth) {
-            // eg. USDT - ETH
+        } else if (token1 == wavax) {
+            // eg. USDT - AVAX
             joeOut = _toJOE(
-                weth,
-                _swap(token0, weth, amount0, address(this)).add(amount1)
+                wavax,
+                _swap(token0, wavax, amount0, address(this)).add(amount1)
             );
         } else {
             // eg. MIC - USDT
@@ -227,8 +227,8 @@ contract JoeMaker is Ownable {
     ) internal returns (uint256 amountOut) {
         // Checks
         // X1 - X5: OK
-        IUniswapV2Pair pair =
-            IUniswapV2Pair(factory.getPair(fromToken, toToken));
+        IJoePair pair =
+            IJoePair(factory.getPair(fromToken, toToken));
         require(address(pair) != address(0), "JoeMaker: Cannot convert");
 
         // Interactions
