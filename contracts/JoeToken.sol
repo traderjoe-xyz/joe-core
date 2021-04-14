@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 // JoeToken with Governance.
-contract JoeToken is ERC20("JoeToken", "Joe"), Ownable {
+contract JoeToken is ERC20("JoeToken", "JOE"), Ownable {
     /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterJoe).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);

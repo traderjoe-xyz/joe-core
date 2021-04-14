@@ -1,6 +1,6 @@
-# SushiSwap
+# Joe DeFi
 
-https://sushi.com/
+This repository contains all the contracts for Farmer Joe and Trader Joe.
 
 ## Deployed Contracts
 

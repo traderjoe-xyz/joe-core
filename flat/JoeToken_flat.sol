@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-
 // File: @openzeppelin/contracts/utils/Context.sol
 
 // SPDX-License-Identifier: MIT
@@ -29,6 +27,7 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -108,6 +107,7 @@ interface IERC20 {
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -324,6 +324,7 @@ library SafeMath {
 
 // File: @openzeppelin/contracts/token/ERC20/ERC20.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -631,6 +632,7 @@ contract ERC20 is Context, IERC20 {
 
 // File: @openzeppelin/contracts/access/Ownable.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -700,6 +702,7 @@ abstract contract Ownable is Context {
 
 // File: contracts/JoeToken.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
 
@@ -707,7 +710,7 @@ pragma solidity 0.6.12;
 
 
 // JoeToken with Governance.
-contract JoeToken is ERC20("JoeToken", "Joe"), Ownable {
+contract JoeToken is ERC20("JoeToken", "JOE"), Ownable {
     /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterJoe).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);

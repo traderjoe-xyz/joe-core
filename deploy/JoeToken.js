@@ -11,4 +11,4 @@
 }
 
 module.exports.tags = ["JoeToken"]
-// module.exports.dependencies = ["JoeFactory", "JoeRouter02"]
+module.exports.dependencies = ["JoeFactory", "JoeRouter02"]

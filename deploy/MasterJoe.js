@@ -12,18 +12,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     deterministicDeployment: false
   })
 
-  if (await joe.owner() !== address) {
-    // Transfer Joe Ownership to Joe
-    console.log("Transfer Joe Ownership to Joe")
-    await (await joe.transferOwnership(address)).wait()
-  }
+  // if (await joe.owner() !== address) {
+  //   // Transfer Joe Ownership to Joe
+  //   console.log("Transfer Joe Ownership to Joe")
+  //   await (await joe.transferOwnership(address)).wait()
+  // }
 
-  const masterJoe = await ethers.getContract("MasterJoe")
-  if (await masterJoe.owner() !== dev) {
-    // Transfer ownership of MasterJoe to dev
-    console.log("Transfer ownership of MasterJoe to dev")
-    await (await masterJoe.transferOwnership(dev)).wait()
-  }
+  // const masterJoe = await ethers.getContract("MasterJoe")
+  // if (await masterJoe.owner() !== dev) {
+  //   // Transfer ownership of MasterJoe to dev
+  //   console.log("Transfer ownership of MasterJoe to dev")
+  //   await (await masterJoe.transferOwnership(dev)).wait()
+  // }
 }
 
 module.exports.tags = ["MasterJoe"]
