@@ -67,7 +67,7 @@ contract MasterJoeV2 is BoringOwnable, BoringBatchable {
 
     uint256 private constant MASTERCHEF_JOE_PER_BLOCK = 1e20;
     uint256 private constant ACC_JOE_PRECISION = 1e12;
-    bytes4 private constant SIG_ON_JOE_REWARD = 0xbb6cc2ef; // onJoeReward(uint256,address,uint256)
+    bytes4 private constant SIG_ON_JOE_REWARD = 0xb4b00700; // onJoeReward(uint256,address,uint256)
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
