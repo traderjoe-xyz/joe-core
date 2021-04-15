@@ -1,6 +1,6 @@
 {
-  "name": "@sushiswap/core",
-  "version": "1.4.2",
+  "name": "@joe-defi/core",
+  "version": "0.0.0",
   "license": "MIT",
   "types": "./types/index.ts",
   "description": "Core contracts for the SushiSwap protocol",
@@ -15,15 +15,15 @@
   "author": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sushiswap/sushiswap.git"
+    "url": "git+https://github.com/joe-defi/joe-core.git"
   },
   "bugs": {
-    "url": "https://github.com/sushiswap/sushiswap/issues"
+    "url": "https://github.com/joe-defi/joe-core/issues"
   },
-  "homepage": "https://github.com/sushiswap/sushiswap#readme",
+  "homepage": "https://github.com/joe-defi/joe-core#readme",
   "keywords": [
-    "sushiswap",
-    "ethereum"
+    "joe-defi",
+    "avalanche"
   ],
   "scripts": {
     "build": "hardhat compile",
@@ -48,6 +48,8 @@
     "moonbase:export": "hardhat --network moonbase export --export exports/moonbase.json",
     "arbitrum:deploy": "hardhat --network arbitrum deploy",
     "arbitrum:export": "hardhat --network arbitrum export --export exports/arbitrum.json",
+    "fuji:deploy": "hardhat --network fuji deploy",
+    "fuji:export": "hardhat --network fuji export --export exports/fuji.json",
     "export": "hardhat export --export-all exports/deployments.json",
     "test": "hardhat test --verbose",
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",
