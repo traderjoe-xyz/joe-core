@@ -1,4 +1,4 @@
-const { WAVAX } = require("@joe-defi/sdk")
+const { WAVAX } = require("@pangolindex/sdk")
 
 module.exports = async function ({ ethers: { getNamedSigner }, getNamedAccounts, deployments }) {
   const { deploy } = deployments
