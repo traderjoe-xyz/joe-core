@@ -1,31 +1,35 @@
-const { WAVAX } = require("@pangolindex/sdk")
+const { WAVAX } = require("@pangolindex/sdk");
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
-  const { deploy } = deployments
+  const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts();
 
-  const chainId = await getChainId()
+  const chainId = await getChainId();
 
   let wavaxAddress;
 
-  if (chainId === '31337') {
-    wavaxAddress = (await deployments.get("WAVAX9Mock")).address
+  if (chainId === "31337") {
+    wavaxAddress = (await deployments.get("WAVAX9Mock")).address;
   } else if (chainId in WAVAX) {
-    wavaxAddress = WAVAX[chainId].address
+    wavaxAddress = WAVAX[chainId].address;
+  } else if (chainId === "3") {
+    wavaxAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"; // ropsten
+  } else if (chainId === "4") {
+    wavaxAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"; // rinkeby
   } else {
-    throw Error("No WAVAX!")
+    throw Error("No WAVAX!");
   }
 
-  const factoryAddress = (await deployments.get("JoeFactory")).address
+  const factoryAddress = (await deployments.get("JoeFactory")).address;
 
   await deploy("JoeRouter02", {
     from: deployer,
     args: [factoryAddress, wavaxAddress],
     log: true,
-    deterministicDeployment: false
-  })
-}
+    deterministicDeployment: false,
+  });
+};
 
-module.exports.tags = ["JoeRouter02", "AMM"]
-module.exports.dependencies = ["JoeFactory", "Mocks"]
+module.exports.tags = ["JoeRouter02", "AMM"];
+module.exports.dependencies = ["JoeFactory", "Mocks"];
