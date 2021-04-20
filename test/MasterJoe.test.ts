@@ -1,8 +1,8 @@
-import { ethers } from "hardhat";
-import { expect } from "chai";
+import { ethers } from "hardhat"
+import { expect } from "chai"
 import { advanceBlockTo } from "./utilities"
 
-describe("MasterJoe", function () {
+describe("MasterChef", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
@@ -11,7 +11,7 @@ describe("MasterJoe", function () {
     this.dev = this.signers[3]
     this.minter = this.signers[4]
 
-    this.MasterJoe = await ethers.getContractFactory("MasterJoe")
+    this.MasterChef = await ethers.getContractFactory("MasterChef")
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
   })
@@ -22,7 +22,7 @@ describe("MasterJoe", function () {
   })
 
   it("should set correct state variables", async function () {
-    this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
+    this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
     await this.chef.deployed()
 
     await this.joe.transferOwnership(this.chef.address)
@@ -37,7 +37,7 @@ describe("MasterJoe", function () {
   })
 
   it("should allow dev and only dev to update dev", async function () {
-    this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
+    this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
     await this.chef.deployed()
 
     expect(await this.chef.devaddr()).to.equal(this.dev.address)
@@ -74,7 +74,7 @@ describe("MasterJoe", function () {
 
     it("should allow emergency withdraw", async function () {
       // 100 per block farming rate starting at block 100 with bonus until block 1000
-      this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "100", "100", "1000")
+      this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "100", "100", "1000")
       await this.chef.deployed()
 
       await this.chef.add("100", this.lp.address, true)
@@ -92,7 +92,7 @@ describe("MasterJoe", function () {
 
     it("should give out JOEs only after farming time", async function () {
       // 100 per block farming rate starting at block 100 with bonus until block 1000
-      this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "100", "100", "1000")
+      this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "100", "100", "1000")
       await this.chef.deployed()
 
       await this.joe.transferOwnership(this.chef.address)
@@ -128,7 +128,7 @@ describe("MasterJoe", function () {
 
     it("should not distribute JOEs if no one deposit", async function () {
       // 100 per block farming rate starting at block 200 with bonus until block 1000
-      this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "100", "200", "1000")
+      this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "100", "200", "1000")
       await this.chef.deployed()
       await this.joe.transferOwnership(this.chef.address)
       await this.chef.add("100", this.lp.address, true)
@@ -153,7 +153,7 @@ describe("MasterJoe", function () {
 
     it("should distribute JOEs properly for each staker", async function () {
       // 100 per block farming rate starting at block 300 with bonus until block 1000
-      this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "100", "300", "1000")
+      this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "100", "300", "1000")
       await this.chef.deployed()
       await this.joe.transferOwnership(this.chef.address)
       await this.chef.add("100", this.lp.address, true)
@@ -177,7 +177,7 @@ describe("MasterJoe", function () {
       await this.chef.connect(this.carol).deposit(0, "30", { from: this.carol.address })
       // Alice deposits 10 more LPs at block 320. At this point:
       //   Alice should have: 4*1000 + 4*1/3*1000 + 2*1/6*1000 = 5666
-      //   MasterJoe should have the remaining: 10000 - 5666 = 4334
+      //   MasterChef should have the remaining: 10000 - 5666 = 4334
       await advanceBlockTo("319")
       await this.chef.connect(this.alice).deposit(0, "10", { from: this.alice.address })
       expect(await this.joe.totalSupply()).to.equal("11000")
@@ -221,7 +221,7 @@ describe("MasterJoe", function () {
 
     it("should give proper JOEs allocation to each pool", async function () {
       // 100 per block farming rate starting at block 400 with bonus until block 1000
-      this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "100", "400", "1000")
+      this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "100", "400", "1000")
       await this.joe.transferOwnership(this.chef.address)
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", { from: this.alice.address })
       await this.lp2.connect(this.bob).approve(this.chef.address, "1000", { from: this.bob.address })
@@ -248,7 +248,7 @@ describe("MasterJoe", function () {
 
     it("should stop giving bonus JOEs after the bonus period ends", async function () {
       // 100 per block farming rate starting at block 500 with bonus until block 600
-      this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "100", "500", "600")
+      this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "100", "500", "600")
       await this.joe.transferOwnership(this.chef.address)
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", { from: this.alice.address })
       await this.chef.add("1", this.lp.address, true)

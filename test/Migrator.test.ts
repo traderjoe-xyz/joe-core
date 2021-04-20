@@ -1,5 +1,5 @@
-import { ethers } from "hardhat";
-import { expect } from "chai";
+import { ethers } from "hardhat"
+import { expect } from "chai"
 
 describe("Migrator", function () {
   before(async function () {
@@ -13,7 +13,7 @@ describe("Migrator", function () {
     this.JoePair = await ethers.getContractFactory("JoePair")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
     this.JoeToken = await ethers.getContractFactory("JoeToken")
-    this.MasterJoe = await ethers.getContractFactory("MasterJoe")
+    this.MasterChef = await ethers.getContractFactory("MasterChef")
     this.Migrator = await ethers.getContractFactory("Migrator")
   })
 
@@ -41,7 +41,7 @@ describe("Migrator", function () {
 
     this.lp2 = await this.JoePair.attach((await pair2.wait()).events[0].args.pair)
 
-    this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "1000", "0", "100000")
+    this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "1000", "0", "100000")
     await this.chef.deployed()
 
     this.migrator = await this.Migrator.deploy(this.chef.address, this.factory1.address, this.factory2.address, "0")

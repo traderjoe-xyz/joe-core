@@ -1,9 +1,9 @@
 import { expect, assert } from "chai";
 import { advanceBlockTo, advanceBlock, prepare, deploy, getBigNumber, ADDRESS_ZERO } from "./utilities"
 
-describe("MasterJoeV2", function () {
+describe("MasterChefV2", function () {
   before(async function () {
-    await prepare(this, ['MasterJoe', 'JoeToken', 'ERC20Mock', 'MasterJoeV2', 'RewarderMock', 'RewarderBrokenMock'])
+    await prepare(this, ['MasterChef', 'JoeToken', 'ERC20Mock', 'MasterChefV2', 'RewarderMock', 'RewarderBrokenMock'])
     await deploy(this, [
       ["brokenRewarder", this.RewarderBrokenMock]
     ])
@@ -17,7 +17,7 @@ describe("MasterJoeV2", function () {
     await deploy(this,
       [["lp", this.ERC20Mock, ["LP Token", "LPT", getBigNumber(10)]],
       ["dummy", this.ERC20Mock, ["Dummy", "DummyT", getBigNumber(10)]],
-      ['chef', this.MasterJoe, [this.joe.address, this.bob.address, getBigNumber(100), "0", "0"]]
+      ['chef', this.MasterChef, [this.joe.address, this.bob.address, getBigNumber(100), "0", "0"]]
     ])
 
     await this.joe.transferOwnership(this.chef.address)
@@ -27,7 +27,7 @@ describe("MasterJoeV2", function () {
     await this.chef.deposit(0, getBigNumber(10))
 
     await deploy(this, [
-        ['chef2', this.MasterJoeV2, [this.chef.address, this.joe.address, 1]],
+        ['chef2', this.MasterChefV2, [this.chef.address, this.joe.address, 1]],
         ["rlp", this.ERC20Mock, ["LP", "rLPT", getBigNumber(10)]],
         ["r", this.ERC20Mock, ["Reward", "RewardT", getBigNumber(100000)]],
     ])
@@ -190,7 +190,7 @@ describe("MasterJoeV2", function () {
         expect(await this.chef2.lpToken(0)).to.be.equal(this.rlp.address)
         let log = await this.chef2.deposit(0, getBigNumber(1), this.alice.address)
         await advanceBlockTo(20)
-        await this.chef2.harvestFromMasterJoe()
+        await this.chef2.harvestFromMasterChef()
         let log2 = await this.chef2.withdraw(0, getBigNumber(1), this.alice.address)
         let expectedJoe = getBigNumber(100).mul(log2.blockNumber - log.blockNumber).div(2)
         expect((await this.chef2.userInfo(0, this.alice.address)).rewardDebt).to.be.equal("-"+expectedJoe)
@@ -209,7 +209,7 @@ describe("MasterJoeV2", function () {
       expect(await this.chef2.lpToken(0)).to.be.equal(this.rlp.address)
       let log = await this.chef2.deposit(0, getBigNumber(1), this.alice.address)
       await advanceBlock()
-      await this.chef2.harvestFromMasterJoe()
+      await this.chef2.harvestFromMasterChef()
       let log2 = await this.chef2.withdraw(0, getBigNumber(1), this.alice.address)
       let expectedJoe = getBigNumber(100).mul(log2.blockNumber - log.blockNumber).div(2)
       expect((await this.chef2.userInfo(0, this.alice.address)).rewardDebt).to.be.equal("-"+expectedJoe)

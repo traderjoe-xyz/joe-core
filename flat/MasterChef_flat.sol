@@ -1272,7 +1272,7 @@ pragma solidity 0.6.12;
 
 // JoeToken with Governance.
 contract JoeToken is ERC20("JoeToken", "Joe"), Ownable {
-    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterJoe).
+    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
         _moveDelegates(address(0), _delegates[_to], _amount);
@@ -1509,7 +1509,7 @@ contract JoeToken is ERC20("JoeToken", "Joe"), Ownable {
     }
 }
 
-// File: contracts/MasterJoe.sol
+// File: contracts/MasterChef.sol
 
 
 pragma solidity 0.6.12;
@@ -1533,14 +1533,14 @@ interface IMigratorJoe {
     function migrate(IERC20 token) external returns (IERC20);
 }
 
-// MasterJoe is the master of Joe. He can make Joe and he is a fair guy.
+// MasterChef is the master of Joe. He can make Joe and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once JOE is sufficiently
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract MasterJoe is Ownable {
+contract MasterChef is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     // Info of each user.
@@ -1741,7 +1741,7 @@ contract MasterJoe is Ownable {
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to MasterJoe for JOE allocation.
+    // Deposit LP tokens to MasterChef for JOE allocation.
     function deposit(uint256 _pid, uint256 _amount) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -1763,7 +1763,7 @@ contract MasterJoe is Ownable {
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // Withdraw LP tokens from MasterJoe.
+    // Withdraw LP tokens from MasterChef.
     function withdraw(uint256 _pid, uint256 _amount) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];

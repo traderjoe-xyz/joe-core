@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect } from "chai"
 import { prepare, deploy, getBigNumber, createSLP } from "./utilities"
 
 describe("JoeMaker", function () {

@@ -1,5 +1,5 @@
-import { ethers } from "hardhat";
-import { expect } from "chai";
+import { ethers } from "hardhat"
+import { expect } from "chai"
 import { encodeParameters, latest, duration, increase } from "./utilities"
 
 describe("Timelock", function () {
@@ -14,7 +14,7 @@ describe("Timelock", function () {
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.Timelock = await ethers.getContractFactory("Timelock")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
-    this.MasterJoe = await ethers.getContractFactory("MasterJoe")
+    this.MasterChef = await ethers.getContractFactory("MasterChef")
   })
 
   beforeEach(async function () {
@@ -59,10 +59,10 @@ describe("Timelock", function () {
     expect(await this.joe.owner()).to.equal(this.carol.address)
   })
 
-  it("should also work with MasterJoe", async function () {
+  it("should also work with MasterChef", async function () {
     this.lp1 = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000")
     this.lp2 = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000")
-    this.chef = await this.MasterJoe.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
+    this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
     await this.joe.transferOwnership(this.chef.address)
     await this.chef.add("100", this.lp1.address, true)
     await this.chef.transferOwnership(this.timelock.address)
