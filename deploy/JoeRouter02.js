@@ -1,4 +1,4 @@
-const { WAVAX } = require("@pangolindex/sdk");
+const { WAVAX } = require("@joe-defi/sdk");
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
   const { deploy } = deployments;
@@ -13,10 +13,6 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     wavaxAddress = (await deployments.get("WAVAX9Mock")).address;
   } else if (chainId in WAVAX) {
     wavaxAddress = WAVAX[chainId].address;
-  } else if (chainId === "3") {
-    wavaxAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"; // ropsten
-  } else if (chainId === "4") {
-    wavaxAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"; // rinkeby
   } else {
     throw Error("No WAVAX!");
   }
