@@ -1,7 +1,7 @@
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev } = await getNamedAccounts();
+  const { deployer, dev, treasury } = await getNamedAccounts();
 
   const joe = await ethers.getContract("JoeToken");
 
@@ -10,9 +10,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     args: [
       joe.address,
       dev,
-      "1000000000000000000000",
-      "0",
-      "1000000000000000000000",
+      treasury,
+      "75000000000000000000",
+      "1619065864",
     ],
     log: true,
     deterministicDeployment: false,
