@@ -1,6 +1,6 @@
 {
   "name": "@joe-defi/core",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "license": "MIT",
   "types": "./types/index.ts",
   "description": "Core contracts for the SushiSwap protocol",
