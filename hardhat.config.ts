@@ -54,6 +54,9 @@ const config: HardhatUserConfig = {
       // dev address mainnet
       // 1: "",
     },
+    treasury: {
+      default: 2,
+    }
   },
   networks: {
     mainnet: {
