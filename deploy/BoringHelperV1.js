@@ -48,3 +48,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 };
 
 module.exports.tags = ["BoringHelperV1"];
+module.exports.dependencies = ["MasterChef", "JoeMaker", "JoeToken", "JoeFactory", "JoeBar"];
