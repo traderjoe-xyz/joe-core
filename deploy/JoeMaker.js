@@ -7,7 +7,7 @@ module.exports = async function ({
 }) {
   const { deploy } = deployments;
 
-  const { deployer, dev } = await getNamedAccounts();
+  const { deployer } = await getNamedAccounts();
 
   const chainId = await getChainId();
 
@@ -31,12 +31,6 @@ module.exports = async function ({
     log: true,
     deterministicDeployment: false,
   });
-
-  const maker = await ethers.getContract("JoeMaker");
-  if ((await maker.owner()) !== dev) {
-    console.log("Setting maker owner");
-    await (await maker.transferOwnership(dev, true, false)).wait();
-  }
 };
 
 module.exports.tags = ["JoeMaker"];
