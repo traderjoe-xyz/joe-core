@@ -1,10 +1,6 @@
 const { WAVAX } = require("@joe-defi/sdk");
 
-module.exports = async function ({
-  ethers: { getNamedSigner },
-  getNamedAccounts,
-  deployments,
-}) {
+module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
