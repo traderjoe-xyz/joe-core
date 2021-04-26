@@ -56,7 +56,7 @@ const config: HardhatUserConfig = {
     },
     treasury: {
       default: 2,
-    }
+    },
   },
   networks: {
     mainnet: {

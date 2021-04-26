@@ -1,5 +1,5 @@
-import { ethers } from "hardhat";
-import { expect } from "chai";
+import { ethers, network } from "hardhat"
+import { expect } from "chai"
 
 describe("JoeBar", function () {
   before(async function () {
@@ -57,5 +57,12 @@ describe("JoeBar", function () {
     expect(await this.joe.balanceOf(this.bar.address)).to.equal("52")
     expect(await this.joe.balanceOf(this.alice.address)).to.equal("70")
     expect(await this.joe.balanceOf(this.bob.address)).to.equal("98")
+  })
+
+  after(async function () {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    })
   })
 })

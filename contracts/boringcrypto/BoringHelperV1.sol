@@ -38,8 +38,6 @@ interface IERC20 {
 interface IMasterChef {
     function BONUS_MULTIPLIER() external view returns (uint256);
 
-    function bonusEndBlock() external view returns (uint256);
-
     function devaddr() external view returns (address);
 
     function migrator() external view returns (address);
@@ -48,7 +46,7 @@ interface IMasterChef {
 
     function startBlock() external view returns (uint256);
 
-    function sushi() external view returns (address);
+    function joe() external view returns (address);
 
     function joePerBlock() external view returns (uint256);
 

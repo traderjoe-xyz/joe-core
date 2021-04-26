@@ -1,5 +1,5 @@
-import { ethers } from "hardhat";
-import { expect } from "chai";
+import { ethers, network } from "hardhat"
+import { expect } from "chai"
 
 describe("JoeToken", function () {
   before(async function () {
@@ -63,5 +63,12 @@ describe("JoeToken", function () {
     await expect(this.joe.connect(this.bob).transfer(this.carol.address, "1", { from: this.bob.address })).to.be.revertedWith(
       "ERC20: transfer amount exceeds balance"
     )
+  })
+
+  after(async function () {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    })
   })
 })

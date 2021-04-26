@@ -1,3 +1,4 @@
+import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { prepare, deploy, getBigNumber, createSLP } from "./utilities"
 
@@ -151,6 +152,13 @@ describe("JoeMaker", function () {
       expect(await this.joe.balanceOf(this.joeMaker.address)).to.equal(0)
       expect(await this.daiEth.balanceOf(this.joeMaker.address)).to.equal(0)
       expect(await this.joe.balanceOf(this.bar.address)).to.equal("3186583558687783097")
+    })
+  })
+
+  after(async function () {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [],
     })
   })
 })

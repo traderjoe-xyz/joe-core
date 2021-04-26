@@ -1,4 +1,4 @@
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { encodeParameters, latest, duration, increase } from "./utilities"
 
@@ -9,12 +9,13 @@ describe("Timelock", function () {
     this.bob = this.signers[1]
     this.carol = this.signers[2]
     this.dev = this.signers[3]
-    this.minter = this.signers[4]
+    this.treasury = this.signers[4]
+    this.minter = this.signers[5]
 
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.Timelock = await ethers.getContractFactory("Timelock")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
-    this.MasterChef = await ethers.getContractFactory("MasterChef")
+    this.MasterChef = await ethers.getContractFactory("MasterChefJoe")
   })
 
   beforeEach(async function () {
@@ -59,53 +60,42 @@ describe("Timelock", function () {
     expect(await this.joe.owner()).to.equal(this.carol.address)
   })
 
-  it("should also work with MasterChef", async function () {
+  it("should also work with MasterChefJoe", async function () {
     this.lp1 = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000")
     this.lp2 = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000")
-    this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, "1000", "0", "1000")
+    this.chef = await this.MasterChef.deploy(this.joe.address, this.dev.address, this.treasury.address, "100", "0", "200", "200")
     await this.joe.transferOwnership(this.chef.address)
-    await this.chef.add("100", this.lp1.address, true)
+    await this.chef.add("100", this.lp1.address)
     await this.chef.transferOwnership(this.timelock.address)
     const eta = (await latest()).add(duration.days(4))
     await this.timelock
       .connect(this.bob)
-      .queueTransaction(
-        this.chef.address,
-        "0",
-        "set(uint256,uint256,bool)",
-        encodeParameters(["uint256", "uint256", "bool"], ["0", "200", false]),
-        eta
-      )
+      .queueTransaction(this.chef.address, "0", "set(uint256,uint256)", encodeParameters(["uint256", "uint256"], ["0", "200"]), eta)
     await this.timelock
       .connect(this.bob)
-      .queueTransaction(
-        this.chef.address,
-        "0",
-        "add(uint256,address,bool)",
-        encodeParameters(["uint256", "address", "bool"], ["100", this.lp2.address, false]),
-        eta
-      )
+      .queueTransaction(this.chef.address, "0", "add(uint256,address)", encodeParameters(["uint256", "address"], ["100", this.lp2.address]), eta)
     await increase(duration.days(4))
     await this.timelock
       .connect(this.bob)
-      .executeTransaction(
-        this.chef.address,
-        "0",
-        "set(uint256,uint256,bool)",
-        encodeParameters(["uint256", "uint256", "bool"], ["0", "200", false]),
-        eta
-      )
+      .executeTransaction(this.chef.address, "0", "set(uint256,uint256)", encodeParameters(["uint256", "uint256"], ["0", "200"]), eta)
     await this.timelock
       .connect(this.bob)
       .executeTransaction(
         this.chef.address,
         "0",
-        "add(uint256,address,bool)",
-        encodeParameters(["uint256", "address", "bool"], ["100", this.lp2.address, false]),
+        "add(uint256,address)",
+        encodeParameters(["uint256", "address"], ["100", this.lp2.address]),
         eta
       )
     expect((await this.chef.poolInfo("0")).allocPoint).to.equal("200")
     expect(await this.chef.totalAllocPoint()).to.equal("300")
     expect(await this.chef.poolLength()).to.equal("2")
+  })
+
+  after(async function () {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    })
   })
 })

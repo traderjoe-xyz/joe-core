@@ -9,28 +9,18 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./JoeToken.sol";
 
-interface IMigratorJoe {
-    // Perform LP token migration from legacy Joe to JoeSwap.
-    // Take the current LP token address and return the new LP token address.
-    // Migrator should have full access to the caller's LP token.
-    // Return the new LP token address.
-    //
-    // XXX Migrator must have allowance access to Joe LP tokens.
-    // JoeSwap must mint EXACTLY the same amount of JoeSwap LP tokens or
-    // else something bad will happen. Traditional Joe does not
-    // do that so be careful!
-    function migrate(IERC20 token) external returns (IERC20);
-}
-
-// MasterChef is the master of Joe. He can make Joe and he is a fair guy.
+// MasterChefJoe is a boss. He says "go f your blocks lego boy, I'm gonna use timestamp instead".
+// And to top it off, it takes no risks. Because the biggest risk is operator error.
+// So we make it virtually impossible for the operator of this contract to cause a bug with people's harvests.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once JOE is sufficiently
 // distributed and the community can show to govern itself.
 //
-// Have fun reading it. Hopefully it's bug-free. God bless.
 // With thanks to the Lydia Finance team.
-contract MasterChef is Ownable {
+//
+// Godspeed and may the 10x be with you.
+contract MasterChefJoe is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -69,9 +59,15 @@ contract MasterChef is Ownable {
     uint256 public joePerSec;
     // Bonus muliplier for early joe makers.
     uint256 public BONUS_MULTIPLIER = 1;
+    // Percentage of pool rewards that goto the devs.
+    uint256 public devPercent; // 20%
+    // Percentage of pool rewards that goes to the treasury.
+    uint256 public treasuryPercent; // 20%
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
+    // Mapping to check which LP tokens have been added as pools.
+    mapping(IERC20 => bool) public isPool;
     // Info of each user that stakes LP tokens.
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
@@ -92,13 +88,20 @@ contract MasterChef is Ownable {
         address _devaddr,
         address _treasuryaddr,
         uint256 _joePerSec,
-        uint256 _startTimestamp
+        uint256 _startTimestamp,
+        uint256 _devPercent,
+        uint256 _treasuryPercent
     ) public {
+        require(0 <= _devPercent && _devPercent <= 1000, 'constructor: invalid dev percent value');
+        require(0 <= _treasuryPercent && _treasuryPercent <= 1000, 'constructor: invalid treasury percent value');
+        require(_devPercent + _treasuryPercent <= 1000, 'constructor: total percent over max');
         joe = _joe;
         devaddr = _devaddr;
         treasuryaddr = _treasuryaddr;
         joePerSec = _joePerSec;
         startTimestamp = _startTimestamp;
+        devPercent = _devPercent;
+        treasuryPercent = _treasuryPercent;
     }
 
     function updateMultiplier(uint256 multiplierNumber) public onlyOwner {
@@ -111,10 +114,9 @@ contract MasterChef is Ownable {
 
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate) public onlyOwner {
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+    function add(uint256 _allocPoint, IERC20 _lpToken) public onlyOwner {
+        require(!isPool[_lpToken], 'add: LP already added');
+        massUpdatePools();
         uint256 lastRewardTimestamp = block.timestamp > startTimestamp ? block.timestamp : startTimestamp;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(PoolInfo({
@@ -123,14 +125,13 @@ contract MasterChef is Ownable {
             lastRewardTimestamp: lastRewardTimestamp,
             accJoePerShare: 0
         }));
+        isPool[_lpToken] = true;
         emit Add(address(_lpToken), _allocPoint);
     }
 
     // Update the given pool's JOE allocation point. Can only be called by the owner.
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+    function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
+        massUpdatePools();
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint;
         emit Set(_pid, _allocPoint);
@@ -149,7 +150,7 @@ contract MasterChef is Ownable {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardTimestamp, block.timestamp);
-            uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint);
+            uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint).mul(1000 - devPercent - treasuryPercent).div(1000);
             accJoePerShare = accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
         }
         return user.amount.mul(accJoePerShare).div(1e12).sub(user.rewardDebt);
@@ -177,10 +178,11 @@ contract MasterChef is Ownable {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardTimestamp, block.timestamp);
         uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint);
-        joe.mint(devaddr, joeReward.mul(20).div(100));
-        joe.mint(treasuryaddr, joeReward.mul(20).div(100));
-        joe.mint(address(this), joeReward.mul(60).div(100));
-        pool.accJoePerShare = pool.accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
+        uint256 lpPercent = 1000 - devPercent - treasuryPercent;
+        joe.mint(devaddr, joeReward.mul(devPercent).div(1000));
+        joe.mint(treasuryaddr, joeReward.mul(treasuryPercent).div(1000));
+        joe.mint(address(this), joeReward.mul(lpPercent).div(1000));
+        pool.accJoePerShare = pool.accJoePerShare.add(joeReward.mul(1e12).div(lpSupply).mul(lpPercent).div(1000));
         pool.lastRewardTimestamp = block.timestamp;
     }
 
@@ -239,6 +241,18 @@ contract MasterChef is Ownable {
         require(msg.sender == devaddr, "dev: wut?");
         devaddr = _devaddr;
         emit SetDevAddress(msg.sender, _devaddr);
+    }
+
+    function setDevPercent(uint256 _newDevPercent) public onlyOwner {
+      require(0 <= _newDevPercent && _newDevPercent <= 1000, 'setDevPercent: invalid percent value');
+      require(treasuryPercent + _newDevPercent <= 1000, 'setDevPercent: total percent over max');
+      devPercent = _newDevPercent;
+    }
+
+    function setTreasuryPercent(uint256 _newTreasuryPercent) public onlyOwner {
+      require(0 <= _newTreasuryPercent && _newTreasuryPercent <= 1000, 'setTreasuryPercent: invalid percent value');
+      require(devPercent + _newTreasuryPercent <= 1000, 'setTreasuryPercent: total percent over max');
+      treasuryPercent = _newTreasuryPercent;
     }
 
     // Pancake has to add hidden dummy pools inorder to alter the emission,
