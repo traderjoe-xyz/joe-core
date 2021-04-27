@@ -20,11 +20,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     deterministicDeployment: false,
   });
 
-  if ((await joe.owner()) !== address) {
-    // Transfer Joe Ownership to Joe
-    console.log("Transfer Joe Ownership to Joe");
-    await (await joe.transferOwnership(address)).wait();
-  }
+  // if ((await joe.owner()) !== address) {
+  //   // Transfer Joe Ownership to Joe
+  //   console.log("Transfer Joe Ownership to Joe");
+  //   await (await joe.transferOwnership(address)).wait();
+  // }
 };
 
 module.exports.tags = ["MasterChefJoe"];
