@@ -451,7 +451,7 @@ describe("MasterChefJoe", function () {
       await this.chef.updateEmissionRate("40") // t+111
       // At t+115, Alice should have: 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+24)
       increase(duration.seconds(4)) // t+115
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6156, 6180)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6156, 6216)
     })
   })
 
