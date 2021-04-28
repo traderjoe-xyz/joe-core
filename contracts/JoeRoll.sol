@@ -95,7 +95,7 @@ contract JoeRoll {
                 hex'ff',
                 oldRouter.factory(),
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+                hex'41e6225fa31c58579641c27f787341ba4a147ce63f7492b93f19d8303647d140' // init code hash
             ))));
     }
 
