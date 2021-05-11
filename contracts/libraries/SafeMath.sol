@@ -5,6 +5,12 @@ library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, "SafeMath: Add Overflow");}
     function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, "SafeMath: Underflow");}
     function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, "SafeMath: Mul Overflow");}
+    function div(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        require(b>0, "SafeMath: Div by Zero");
+        c = a / b; 
+    }
+
+
     function to128(uint256 a) internal pure returns (uint128 c) {
         require(a <= uint128(-1), "SafeMath: uint128 Overflow");
         c = uint128(a);
