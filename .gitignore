@@ -12,5 +12,5 @@ coverage.json
 truffle.js
 MurlocToken*.*
 FishToken*.*
-
+deployments/localhost/
 
