@@ -1,9 +1,9 @@
 {
-  "name": "@joe-defi/core",
+  "name": "@traderjoe-xyz/core",
   "version": "0.2.2",
   "license": "MIT",
   "types": "./types/index.ts",
-  "description": "Core contracts for the SushiSwap protocol",
+  "description": "Core contracts for the Trader Joe protocol",
   "files": [
     "abi",
     "artifacts",
@@ -15,14 +15,14 @@
   "author": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/joe-defi/joe-core.git"
+    "url": "git+https://github.com/traderjoe-xyz/joe-core.git"
   },
   "bugs": {
-    "url": "https://github.com/joe-defi/joe-core/issues"
+    "url": "https://github.com/traderjoe-xyz/joe-core/issues"
   },
-  "homepage": "https://github.com/joe-defi/joe-core#readme",
+  "homepage": "https://github.com/traderjoe-xyz/joe-core#readme",
   "keywords": [
-    "joe-defi",
+    "traderjoe-xyz",
     "avalanche"
   ],
   "scripts": {
