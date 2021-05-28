@@ -9,13 +9,13 @@ import "./traderjoe/interfaces/IJoeERC20.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
 
-import "./Ownable.sol";
+import "./boringcrypto/BoringOwnable.sol";
 
 // JoeMaker is MasterJoe's left hand and kinda a wizard. He can cook up Joe from pretty much anything!
 // This contract handles "serving up" rewards for xJoe holders by trading tokens collected from fees for Joe.
 
 // T1 - T4: OK
-contract JoeMaker is Ownable {
+contract JoeMaker is BoringOwnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
