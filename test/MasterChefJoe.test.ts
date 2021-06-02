@@ -1,6 +1,6 @@
 import { ethers, network } from "hardhat"
 import { expect } from "chai"
-import { latest, duration, increase } from "./utilities"
+import { advanceTimeAndBlock, latest, duration, increase } from "./utilities"
 
 describe("MasterChefJoe", function () {
   before(async function () {
@@ -21,13 +21,31 @@ describe("MasterChefJoe", function () {
     this.lpPercent = 1000 - this.devPercent - this.treasuryPercent
     this.joePerSec = 100
     this.secOffset = 1
-    this.tokenOffset = 3
+    this.tokenOffset = 1
     this.reward = (sec: number, percent: number) => (sec * this.joePerSec * percent) / 1000
   })
 
   beforeEach(async function () {
     this.joe = await this.JoeToken.deploy()
     await this.joe.deployed()
+  })
+
+  it("should revert contract creation if dev and treasury percents don't meet criteria", async function () {
+    const startTime = (await latest()).add(60)
+    // dev percent failure
+    await expect(
+      this.MasterChef.deploy(this.joe.address, this.dev.address, this.treasury.address, "100", startTime, "1100", this.treasuryPercent)
+    ).to.be.revertedWith("constructor: invalid dev percent value")
+
+    // Invalid treasury percent failure
+    await expect(
+      this.MasterChef.deploy(this.joe.address, this.dev.address, this.treasury.address, "100", startTime, this.devPercent, "1100")
+    ).to.be.revertedWith("constructor: invalid treasury percent value")
+
+    // Sum of dev and treasury precent too high
+    await expect(
+      this.MasterChef.deploy(this.joe.address, this.dev.address, this.treasury.address, "100", startTime, "500", "501")
+    ).to.be.revertedWith("constructor: total percent over max")
   })
 
   it("should set correct state variables", async function () {
@@ -37,7 +55,7 @@ describe("MasterChefJoe", function () {
       this.joe.address,
       this.dev.address,
       this.treasury.address,
-      "100",
+      this.joePerSec,
       startTime,
       this.devPercent,
       this.treasuryPercent
@@ -67,7 +85,7 @@ describe("MasterChefJoe", function () {
       this.joe.address,
       this.dev.address,
       this.treasury.address,
-      "100",
+      this.joePerSec,
       startTime,
       this.devPercent,
       this.treasuryPercent
@@ -93,7 +111,7 @@ describe("MasterChefJoe", function () {
       this.joe.address,
       this.dev.address,
       this.treasury.address,
-      "100",
+      this.joePerSec,
       startTime,
       this.devPercent,
       this.treasuryPercent
@@ -114,7 +132,7 @@ describe("MasterChefJoe", function () {
       this.joe.address,
       this.dev.address,
       this.treasury.address,
-      "100",
+      this.joePerSec,
       startTime,
       this.devPercent,
       this.treasuryPercent
@@ -154,15 +172,35 @@ describe("MasterChefJoe", function () {
         this.joe.address,
         this.dev.address,
         this.treasury.address,
-        "100",
+        this.joePerSec,
         startTime,
         this.devPercent,
         this.treasuryPercent
       )
       await this.chef.deployed()
+      expect(await this.chef.poolLength()).to.equal("0")
 
       await this.chef.add("100", this.lp.address)
+      expect(await this.chef.poolLength()).to.equal("1")
       await expect(this.chef.add("100", this.lp.address)).to.be.revertedWith("add: LP already added")
+    })
+
+    it("should allow a given pool's allocation weight to be updated", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MasterChef.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent
+      )
+      await this.chef.deployed()
+      await this.chef.add("100", this.lp.address)
+      expect((await this.chef.poolInfo(0)).allocPoint).to.equal("100")
+      await this.chef.set("0", "150")
+      expect((await this.chef.poolInfo(0)).allocPoint).to.equal("150")
     })
 
     it("should allow emergency withdraw", async function () {
@@ -212,26 +250,27 @@ describe("MasterChefJoe", function () {
 
       await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-54
       await this.chef.connect(this.bob).deposit(0, "100") // t-53
-      await ethers.provider.send("evm_increaseTime", [40])
-      await ethers.provider.send("evm_mine", []) // t-13
+      await advanceTimeAndBlock(40) // t-13
 
       await this.chef.connect(this.bob).deposit(0, "0") // t-12
       expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
-      await ethers.provider.send("evm_increaseTime", [10])
-      await ethers.provider.send("evm_mine", []) // t-2
+      await advanceTimeAndBlock(10) // t-2
 
       await this.chef.connect(this.bob).deposit(0, "0") // t-1
       expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
-      await ethers.provider.send("evm_increaseTime", [10])
-      await ethers.provider.send("evm_mine", []) // t+9
+      await advanceTimeAndBlock(10) // t+9
 
       await this.chef.connect(this.bob).deposit(0, "0") // t+10
-      // expect(await this.joe.balanceOf(this.bob.address)).to.be.within(600, 660)
+      // Bob should have: 10*60 = 600 (+60)
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(600, 660)
 
-      await ethers.provider.send("evm_increaseTime", [4])
-      await ethers.provider.send("evm_mine", []) // t+14
+      await advanceTimeAndBlock(4) // t+14
       await this.chef.connect(this.bob).deposit(0, "0") // t+15
 
+      // At this point:
+      //   Bob should have: 600 + 5*60 = 900 (+60)
+      //   Dev should have: 15*20 = 300 (+20)
+      //   Tresury should have: 15*20 = 300 (+20)
       expect(await this.joe.balanceOf(this.bob.address)).to.be.within(900, 960)
       expect(await this.joe.balanceOf(this.dev.address)).to.be.within(300, 320)
       expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(300, 320)
@@ -257,22 +296,20 @@ describe("MasterChefJoe", function () {
 
       await this.chef.add("100", this.lp.address) // t-55
       await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-54
-      await ethers.provider.send("evm_increaseTime", [100])
-      await ethers.provider.send("evm_mine", []) // t+54
+      await advanceTimeAndBlock(100) // t+54
 
       expect(await this.joe.totalSupply()).to.equal("0")
-      await ethers.provider.send("evm_increaseTime", [5])
-      await ethers.provider.send("evm_mine", []) // t+59
+      await advanceTimeAndBlock(5) // t+59
       expect(await this.joe.totalSupply()).to.equal("0")
-      await ethers.provider.send("evm_increaseTime", [5])
-      await ethers.provider.send("evm_mine", []) // t+64
+      await advanceTimeAndBlock(5) // t+64
       await this.chef.connect(this.bob).deposit(0, "10") // t+65
       expect(await this.joe.totalSupply()).to.equal("0")
       expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
       expect(await this.joe.balanceOf(this.dev.address)).to.equal("0")
       expect(await this.lp.balanceOf(this.bob.address)).to.equal("990")
-      await ethers.provider.send("evm_increaseTime", [10])
-      await ethers.provider.send("evm_mine", []) // t+75
+      await advanceTimeAndBlock(10) // t+75
+      // Revert if Bob withdraws more than he deposited
+      await expect(this.chef.connect(this.bob).withdraw(0, "11")).to.be.revertedWith("withdraw: not good")
       await this.chef.connect(this.bob).withdraw(0, "10") // t+76
 
       // Use an offset of 1 second due to runtime
@@ -311,24 +348,20 @@ describe("MasterChefJoe", function () {
       }) // t-52
 
       // Alice deposits 10 LPs at t+10
-      await ethers.provider.send("evm_increaseTime", [61])
-      await ethers.provider.send("evm_mine", []) // t+9
+      await advanceTimeAndBlock(61) // t+9
       await this.chef.connect(this.alice).deposit(0, "10", { from: this.alice.address }) // t+10
       // Bob deposits 20 LPs at t+14
-      await ethers.provider.send("evm_increaseTime", [3])
-      await ethers.provider.send("evm_mine", []) // t+13
+      await advanceTimeAndBlock(3) // t+13
       await this.chef.connect(this.bob).deposit(0, "20") // t+14
       // Carol deposits 30 LPs at block t+18
-      await ethers.provider.send("evm_increaseTime", [3])
-      await ethers.provider.send("evm_mine", []) // t+17
+      await advanceTimeAndBlock(3) // t+17
       await this.chef.connect(this.carol).deposit(0, "30", { from: this.carol.address }) // t+18
       // Alice deposits 10 more LPs at t+25. At this point:
       //   Alice should have: 4*60 + 4*1/3*60 + 2*1/6*60 = 340 (+60)
       //   Dev should have: 10*100*0.2 = 200 (+20)
       //   Treasury should have: 10*100*0.2 = 200 (+20)
       //   MasterChef shoudl have: 1000 - 340 - 200 - 200 = 260 (+100)
-      await ethers.provider.send("evm_increaseTime", [1])
-      await ethers.provider.send("evm_mine", []) // t+19
+      await advanceTimeAndBlock(1) // t+19
       await this.chef.connect(this.alice).deposit(0, "10", { from: this.alice.address }) // t+20
       expect(await this.joe.totalSupply()).to.be.within(1000, 1100)
       // Becaues LP rewards are divided among participants and rounded down, we account
@@ -344,8 +377,7 @@ describe("MasterChefJoe", function () {
       //   Dev should have: 20*100*0.2= 400 (+20)
       //   Treasury should have: 20*100*0.2 = 400 (+20)
       //   MasterChef should have: 260 + 1000 - 371 - 200 - 200 = 489 (+100)
-      await ethers.provider.send("evm_increaseTime", [9])
-      await ethers.provider.send("evm_mine", []) // t+29
+      await advanceTimeAndBlock(9) // t+29
       await this.chef.connect(this.bob).withdraw(0, "5", { from: this.bob.address }) // t+30
       expect(await this.joe.totalSupply()).to.be.within(2000, 2100)
       expect(await this.joe.balanceOf(this.alice.address)).to.be.within(340 - this.tokenOffset, 400)
@@ -354,17 +386,14 @@ describe("MasterChefJoe", function () {
       expect(await this.joe.balanceOf(this.dev.address)).to.be.within(400 - this.tokenOffset, 420)
       expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(400 - this.tokenOffset, 420)
       expect(await this.joe.balanceOf(this.chef.address)).to.be.within(489, 589 + this.tokenOffset)
-      // Alice withdraws 20 LPs at block 340.
-      // Bob withdraws 15 LPs at block 350.
-      // Carol withdraws 30 LPs at block 360.
-      await ethers.provider.send("evm_increaseTime", [9])
-      await ethers.provider.send("evm_mine", []) // t+39
+      // Alice withdraws 20 LPs at t+40
+      // Bob withdraws 15 LPs at t+50
+      // Carol withdraws 30 LPs at t+60
+      await advanceTimeAndBlock(9) // t+39
       await this.chef.connect(this.alice).withdraw(0, "20", { from: this.alice.address }) // t+40
-      await ethers.provider.send("evm_increaseTime", [9])
-      await ethers.provider.send("evm_mine", []) // t+49
+      await advanceTimeAndBlock(9) // t+49
       await this.chef.connect(this.bob).withdraw(0, "15", { from: this.bob.address }) // t+50
-      await ethers.provider.send("evm_increaseTime", [9])
-      await ethers.provider.send("evm_mine", []) // t+59
+      await advanceTimeAndBlock(9) // t+59
       await this.chef.connect(this.carol).withdraw(0, "30", { from: this.carol.address }) // t+60
       expect(await this.joe.totalSupply()).to.be.within(5000, 5100)
       // Alice should have: 340 + 10*2/7*60 + 10*2/6.5*60 = 696 (+60)
@@ -405,15 +434,13 @@ describe("MasterChefJoe", function () {
 
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", { from: this.alice.address }) // t-55
       await this.lp2.connect(this.bob).approve(this.chef.address, "1000", { from: this.bob.address }) // t-54
-      // Add first LP to the pool with allocation 1
+      // Add first LP to the pool with allocation 10
       await this.chef.add("10", this.lp.address) // t-53
       // Alice deposits 10 LPs at t+10
-      await ethers.provider.send("evm_increaseTime", [62])
-      await ethers.provider.send("evm_mine", []) // t+9
+      await advanceTimeAndBlock(62) // t+9
       await this.chef.connect(this.alice).deposit(0, "10", { from: this.alice.address }) // t+10
       // Add LP2 to the pool with allocation 2 at t+20
-      await ethers.provider.send("evm_increaseTime", [9])
-      await ethers.provider.send("evm_mine", []) // t19
+      await advanceTimeAndBlock(9) // t+19
       await this.chef.add("20", this.lp2.address) // t+20
       // Alice's pending reward should be: 9*60 + 1*1/3*60 = 560 (+60) (the 10th second is split among the two pools)
       expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(560 - this.tokenOffset, 620)
@@ -422,8 +449,7 @@ describe("MasterChefJoe", function () {
       await this.chef.connect(this.bob).deposit(1, "5", { from: this.bob.address }) // t+25
       // Alice's pending reward should be: 560 + 5*1/3*60 = 660 (+60)
       expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(660 - this.tokenOffset, 720)
-      await ethers.provider.send("evm_increaseTime", [5])
-      await ethers.provider.send("evm_mine", [])
+      await advanceTimeAndBlock(5) // t+30
       // Alice's pending reward should be: 660 + 5*1/3*60 = 760 (+60)
       // Bob's pending reward should be: 5*2/3*60 = 200 (+60)
       expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(760 - this.tokenOffset, 820)
@@ -461,18 +487,15 @@ describe("MasterChefJoe", function () {
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", { from: this.alice.address }) // t-55
       await this.chef.add("10", this.lp.address) // t-54
       // Alice deposits 10 LPs at t+10
-      await ethers.provider.send("evm_increaseTime", [100])
-      await ethers.provider.send("evm_mine", []) // t+9
+      await advanceTimeAndBlock(100) // t+9
       await this.chef.connect(this.alice).deposit(0, "10", { from: this.alice.address }) // t+10
       // At t+110, Alice should have: 100*100*0.6 = 6000 (+60))
-      await ethers.provider.send("evm_increaseTime", [100])
-      await ethers.provider.send("evm_mine", []) // t+110
+      await advanceTimeAndBlock(100) // t+110
       expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6000, 6060)
       // Lower emission rate to 40 JOE per sec
       await this.chef.updateEmissionRate("40") // t+111
       // At t+115, Alice should have: 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+24)
-      await ethers.provider.send("evm_increaseTime", [4])
-      await ethers.provider.send("evm_mine", []) // t+115
+      await advanceTimeAndBlock(4) // t+115
       expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6156, 6216)
     })
   })
