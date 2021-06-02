@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./JoeToken.sol";
+import "hardhat/console.sol";
 
 // MasterChefJoe is a boss. He says "go f your blocks lego boy, I'm gonna use timestamp instead".
 // And to top it off, it takes no risks. Because the biggest risk is operator error.
@@ -57,8 +58,6 @@ contract MasterChefJoe is Ownable {
     address public treasuryaddr;
     // JOE tokens created per second.
     uint256 public joePerSec;
-    // Bonus muliplier for early joe makers.
-    uint256 public BONUS_MULTIPLIER = 1;
     // Percentage of pool rewards that goto the devs.
     uint256 public devPercent; // 20%
     // Percentage of pool rewards that goes to the treasury.
@@ -104,10 +103,6 @@ contract MasterChefJoe is Ownable {
         treasuryPercent = _treasuryPercent;
     }
 
-    function updateMultiplier(uint256 multiplierNumber) public onlyOwner {
-        BONUS_MULTIPLIER = multiplierNumber;
-    }
-
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
@@ -137,11 +132,6 @@ contract MasterChefJoe is Ownable {
         emit Set(_pid, _allocPoint);
     }
 
-    // Return reward multiplier over the given _from to _to timestamp.
-    function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        return _to.sub(_from).mul(BONUS_MULTIPLIER);
-    }
-
     // View function to see pending JOEs on frontend.
     function pendingJoe(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
@@ -149,7 +139,7 @@ contract MasterChefJoe is Ownable {
         uint256 accJoePerShare = pool.accJoePerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
-            uint256 multiplier = getMultiplier(pool.lastRewardTimestamp, block.timestamp);
+            uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint).mul(1000 - devPercent - treasuryPercent).div(1000);
             accJoePerShare = accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
         }
@@ -176,7 +166,7 @@ contract MasterChefJoe is Ownable {
             pool.lastRewardTimestamp = block.timestamp;
             return;
         }
-        uint256 multiplier = getMultiplier(pool.lastRewardTimestamp, block.timestamp);
+        uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
         uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint);
         uint256 lpPercent = 1000 - devPercent - treasuryPercent;
         joe.mint(devaddr, joeReward.mul(devPercent).div(1000));
@@ -191,6 +181,7 @@ contract MasterChefJoe is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
+        console.log("deposit accJoePerShare is %s, user.amount is %s", pool.accJoePerShare, user.amount);
         if (user.amount > 0) {
             uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
             safeJoeTransfer(msg.sender, pending);
@@ -198,6 +189,7 @@ contract MasterChefJoe is Ownable {
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(1e12);
+        console.log("reward debt is %s", user.rewardDebt);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -208,11 +200,13 @@ contract MasterChefJoe is Ownable {
         require(user.amount >= _amount, "withdraw: not good");
 
         updatePool(_pid);
+        console.log("withdraw accJoePerShare is %s, user.amount is %s", pool.accJoePerShare, user.amount);
         uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
         safeJoeTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(1e12);
+        console.log("reward debt is %s", user.rewardDebt);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
