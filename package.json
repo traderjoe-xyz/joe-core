@@ -51,7 +51,7 @@
     "fuji:deploy": "hardhat --network fuji deploy",
     "fuji:export": "hardhat --network fuji export --export exports/fuji.json",
     "export": "hardhat export --export-all exports/deployments.json",
-    "test": "hardhat test --verbose",
+    "test": "hardhat test",
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",
     "test:gas": "cross-env REPORT_GAS=true yarn test",
     "prettier": "prettier --write test/**/*.{ts} && prettier --write contracts/**/*.sol",

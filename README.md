@@ -1,10 +1,10 @@
-# Joe DeFi
+# Trader Joe
 
-This repository contains all the contracts for Farmer Joe and Trader Joe.
+This repository contains all the contracts for Trader Joe.
 
 ## Deployed Contracts
 
-https://dev.sushi.com/sushiswap/contracts
+
 
 ## Docs
 
@@ -12,7 +12,7 @@ https://dev.sushi.com/sushiswap/contracts
 
 [Deployment](docs/DEPLOYMENT.md)
 
-[History](docs/HISTORY.md)
+[MasterChefJoeV2](docs/MASTERCHEFJOEV2.md) - if your project is interested in being a double reward farm on Trader Joe!
 
 ## Security
 

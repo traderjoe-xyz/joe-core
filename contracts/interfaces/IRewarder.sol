@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "../libraries/SafeERC20.sol";
 interface IRewarder {
-    using BoringERC20 for IERC20;
-    function onJoeReward(uint256 pid, address user, uint256 joeAmount) external;
-    function pendingTokens(uint256 pid, address user, uint256 joeAmount) external returns (IERC20[] memory, uint256[] memory);
+    using SafeERC20 for IERC20;
+    function onJoeReward(address user, uint256 newLpAmount) external;
+    function pendingTokens(address user) external view returns (uint256 pending);
 }
