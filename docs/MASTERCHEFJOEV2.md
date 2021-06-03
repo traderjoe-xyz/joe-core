@@ -32,8 +32,7 @@ Both of these assume your project uses a Sushi-style MasterChef contract, except
 
 ## Example of How It Works with Sushi-style MasterChef
 
-![Image of Double Reward Farming]
-(MasterChefJoeV2.png)
+![Image of Double Reward Farming](MasterChefJoeV2.png)
 
 Here we assume that your project uses a Sushi-style MasterChef and the question is how to reward your tokens (pictured here as XYZ) to our farms.
 
