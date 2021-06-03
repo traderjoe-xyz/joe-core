@@ -38,10 +38,10 @@ Here we assume that your project uses a Sushi-style MasterChef and the question 
 
 Setup:
 1. You will need to create a new pool with a "dummy" or fake token. 
-2. IRewarder contract will deposit the dummy token into this pool so it now receives XYZ.
+2. IRewarder contract will deposit the dummy token into this pool so it now receives XYZ (we define an `init()` function for this).
 3. JOE-XYZ LP with the above IRewarder contract is added as pool to MasterChefJoeV2.
 4. User can now deposit JOE-XYZ LPs into the pool.
-5. Each time he/she harvests from MasterChefJoeV2, he/she receives both JOE and XYZ.
+5. Each time user harvests from MasterChefJoeV2, he/she receives both JOE and XYZ.
 
 ## Tests
 
