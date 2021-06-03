@@ -47,7 +47,7 @@ Setup:
 
 We encourage you to check out our unit tests in test/MasterChefJoe.test.ts.
 
-MasterChefJoeV2 rewards per second, but is compatible with MasterChefs that user per block or per second. In the test file you will find tests for both.
+MasterChefJoeV2 rewards per second, but is compatible with MasterChefs that reward both per block or per second. In the test file you will find tests for both.
 
 A quick note about testing with timestamp: it's less predictable than testing with blocks so instead of asserting the reward is an exact amount, we assert it falls within a certain range.
 
