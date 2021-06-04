@@ -1,4 +1,4 @@
-const { WAVAX } = require("@joe-defi/sdk");
+const { WAVAX } = require("@traderjoe-xyz/sdk");
 
 module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
   const { deploy } = deployments;
