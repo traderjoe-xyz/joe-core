@@ -309,14 +309,18 @@ describe("MasterChefJoe", function () {
       expect(await this.lp.balanceOf(this.bob.address)).to.equal("990")
       await advanceTimeAndBlock(10) // t+75
       // Revert if Bob withdraws more than he deposited
-      await expect(this.chef.connect(this.bob).withdraw(0, "11")).to.be.revertedWith("withdraw: not good")
-      await this.chef.connect(this.bob).withdraw(0, "10") // t+76
+      await expect(this.chef.connect(this.bob).withdraw(0, "11")).to.be.revertedWith("withdraw: not good") // t+76
+      await this.chef.connect(this.bob).withdraw(0, "10") // t+77
 
-      // Use an offset of 1 second due to runtime
-      expect(await this.joe.totalSupply()).to.be.within(1100, 1200)
-      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(660, 720)
-      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(220, 240)
-      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(220, 240)
+      // At this point:
+      //   - Total supply should be: 12*100 = 1200 (+100)
+      //   - Bob should have: 12*100*0.6 = 720 (+60)
+      //   - Dev should have: 12*100*0.2 = 240 (+20)
+      //   - Treasury should have: 12*100*0.2 = 240 (+20)
+      expect(await this.joe.totalSupply()).to.be.within(1200, 1300)
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(720, 780)
+      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(240, 260)
+      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(240, 260)
     })
 
     it("should distribute JOEs properly for each staker", async function () {
