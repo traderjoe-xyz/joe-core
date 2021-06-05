@@ -1681,10 +1681,10 @@ describe("MasterChefJoeV2", function () {
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116
       // At b=35, Alice should have:
-      //   - 6156 + 21*40*0.6 = 6660 (+24) JoeToken
+      //   - 6156 + 21*40*0.6 = 6660 (+60) JoeToken
       //   - 4200 + 1*40 + 20*90 = 6040 (+90) PartnerToken
       await advanceTimeAndBlock(20) // t+136
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6660, 6684)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6660, 6720)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(6040, 6130)
     })
   })
