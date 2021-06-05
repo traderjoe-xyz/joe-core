@@ -370,12 +370,12 @@ describe("MasterChefJoe", function () {
       expect(await this.joe.totalSupply()).to.be.within(1000, 1100)
       // Becaues LP rewards are divided among participants and rounded down, we account
       // for rounding errors with an offset
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(340 - this.tokenOffset, 400)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(340 - this.tokenOffset, 400 + this.tokenOffset)
       expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
       expect(await this.joe.balanceOf(this.carol.address)).to.equal("0")
-      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(200 - this.tokenOffset, 220)
-      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(200 - this.tokenOffset, 220)
-      expect(await this.joe.balanceOf(this.chef.address)).to.be.within(260, 360 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(200 - this.tokenOffset, 220 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(200 - this.tokenOffset, 220 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.chef.address)).to.be.within(260 - this.tokenOffset, 360 + this.tokenOffset)
       // Bob withdraws 5 LPs at block 330. At this point:
       //   Bob should have: 4*2/3*60 + 2*2/6*60 + 10*2/7*60 = 371 (+60)
       //   Dev should have: 20*100*0.2= 400 (+20)
@@ -384,12 +384,12 @@ describe("MasterChefJoe", function () {
       await advanceTimeAndBlock(9) // t+29
       await this.chef.connect(this.bob).withdraw(0, "5", { from: this.bob.address }) // t+30
       expect(await this.joe.totalSupply()).to.be.within(2000, 2100)
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(340 - this.tokenOffset, 400)
-      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(371 - this.tokenOffset, 431)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(340 - this.tokenOffset, 400 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(371 - this.tokenOffset, 431 + this.tokenOffset)
       expect(await this.joe.balanceOf(this.carol.address)).to.equal("0")
-      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(400 - this.tokenOffset, 420)
-      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(400 - this.tokenOffset, 420)
-      expect(await this.joe.balanceOf(this.chef.address)).to.be.within(489, 589 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(400 - this.tokenOffset, 420 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(400 - this.tokenOffset, 420 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.chef.address)).to.be.within(489 - this.tokenOffset, 589 + this.tokenOffset)
       // Alice withdraws 20 LPs at t+40
       // Bob withdraws 15 LPs at t+50
       // Carol withdraws 30 LPs at t+60
@@ -401,15 +401,15 @@ describe("MasterChefJoe", function () {
       await this.chef.connect(this.carol).withdraw(0, "30", { from: this.carol.address }) // t+60
       expect(await this.joe.totalSupply()).to.be.within(5000, 5100)
       // Alice should have: 340 + 10*2/7*60 + 10*2/6.5*60 = 696 (+60)
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(696 - this.tokenOffset, 756)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(696 - this.tokenOffset, 756 + this.tokenOffset)
       // Bob should have: 371 + 10*1.5/6.5*60 + 10*1.5/4.5*60 = 709 (+60)
-      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(709 - this.tokenOffset, 769)
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(709 - this.tokenOffset, 769 + this.tokenOffset)
       // Carol should have: 2*3/6*60 + 10*3/7*60 + 10*3/6.5*60 + 10*3/4.5*60 + 10*60 = 1594 (+60)
-      expect(await this.joe.balanceOf(this.carol.address)).to.be.within(1594 - this.tokenOffset, 1654)
+      expect(await this.joe.balanceOf(this.carol.address)).to.be.within(1594 - this.tokenOffset, 1654 + this.tokenOffset)
       // Dev should have: 50*100*0.2 = 1000 (+20)
       // Treasury should have: 50*100*0.2 = 1000 (+20)
-      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(1000 - this.tokenOffset, 1020)
-      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(1000 - this.tokenOffset, 1020)
+      expect(await this.joe.balanceOf(this.dev.address)).to.be.within(1000 - this.tokenOffset, 1020 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(1000 - this.tokenOffset, 1020 + this.tokenOffset)
       // Masterchef should have nothing
       expect(await this.joe.balanceOf(this.chef.address)).to.be.within(0, 0 + this.tokenOffset)
 
@@ -447,17 +447,17 @@ describe("MasterChefJoe", function () {
       await advanceTimeAndBlock(9) // t+19
       await this.chef.add("20", this.lp2.address) // t+20
       // Alice's pending reward should be: 10*60 = 600 (+60)
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(600 - this.tokenOffset, 660)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(600 - this.tokenOffset, 660 + this.tokenOffset)
       // Bob deposits 10 LP2s at t+25
       increase(duration.seconds(4)) // t+24
       await this.chef.connect(this.bob).deposit(1, "5", { from: this.bob.address }) // t+25
       // Alice's pending reward should be: 600 + 5*1/3*60 = 700 (+60)
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(700 - this.tokenOffset, 760)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(700 - this.tokenOffset, 760 + this.tokenOffset)
       await advanceTimeAndBlock(5) // t+30
       // Alice's pending reward should be: 700 + 5*1/3*60 = 800 (+60)
       // Bob's pending reward should be: 5*2/3*60 = 200 (+60)
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(800 - this.tokenOffset, 860)
-      expect(await this.chef.pendingJoe(1, this.bob.address)).to.be.within(200 - this.tokenOffset, 260)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(800 - this.tokenOffset, 860 + this.tokenOffset)
+      expect(await this.chef.pendingJoe(1, this.bob.address)).to.be.within(200 - this.tokenOffset, 260 + this.tokenOffset)
       // Alice and Bob should not have pending rewards in pools they're not staked in
       expect(await this.chef.pendingJoe(1, this.alice.address)).to.equal("0")
       expect(await this.chef.pendingJoe(0, this.bob.address)).to.equal("0")
@@ -465,10 +465,10 @@ describe("MasterChefJoe", function () {
       // Make sure they have receive the same amount as what was pending
       await this.chef.connect(this.alice).withdraw(0, "10", { from: this.alice.address }) // t+31
       // Alice should have: 800 + 1*1/3*60 = 820 (+60)
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(820 - this.tokenOffset, 880)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(820 - this.tokenOffset, 880 + this.tokenOffset)
       await this.chef.connect(this.bob).withdraw(1, "5", { from: this.bob.address }) // t+32
       // Bob should have: 200 + 2*2/3*60 = 280 (+60)
-      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(280 - this.tokenOffset, 340)
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(280 - this.tokenOffset, 340 + this.tokenOffset)
     })
 
     it("should give proper JOEs after updating emission rate", async function () {
