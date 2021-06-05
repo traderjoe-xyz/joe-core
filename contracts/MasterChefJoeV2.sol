@@ -88,9 +88,11 @@ contract MasterChefJoeV2 is Ownable {
     event Set(uint256 indexed pid, uint256 allocPoint, IRewarder rewarder, bool overwrite);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event UpdatePool(uint256 indexed pid, uint256 lastRewardTimestamp, uint256 lpSupply, uint256 accJoePerShare);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event SetDevAddress(address indexed oldAddress, address indexed newAddress);
     event UpdateEmissionRate(address indexed user, uint256 _joePerSec);
+
 
     constructor(
         JoeToken _joe,
@@ -200,6 +202,7 @@ contract MasterChefJoeV2 is Ownable {
         joe.mint(address(this), joeReward.mul(lpPercent).div(1000));
         pool.accJoePerShare = pool.accJoePerShare.add(joeReward.mul(1e12).div(lpSupply).mul(lpPercent).div(1000));
         pool.lastRewardTimestamp = block.timestamp;
+        emit UpdatePool(_pid, pool.lastRewardTimestamp, lpSupply, pool.accJoePerShare);
     }
 
     // Deposit LP tokens to MasterChef for JOE allocation.
