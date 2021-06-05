@@ -1,8 +1,8 @@
-// Deploy for testing of MasterChefJoeV2 only
+// Deploy for testing of MasterChefJoeV2
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev } = await getNamedAccounts();
+  const { deployer, dev, treasury } = await getNamedAccounts();
 
   const sushi = await ethers.getContract("SushiToken");
 
@@ -11,7 +11,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     args: [
       sushi.address,
       dev,
-      "1000000000000000000000",
+      "100000000000000000000",
       "0",
       "1000000000000000000000",
     ],
@@ -20,8 +20,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 
   if ((await sushi.owner()) !== address) {
-    // Transfer Sushi Ownership to Chef
-    console.log("Transfer Sushi Ownership to Chef");
+    // Transfer Sushi Ownership to MasterChef
+    console.log("Transfer Sushi Ownership to MasterChef");
     await (await sushi.transferOwnership(address)).wait();
   }
 };

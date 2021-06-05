@@ -9,23 +9,35 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const mcv2 = await ethers.getContract("MasterChefJoeV2");
   const lpTokenAddress = "0xbf21027fbf3e6fff156e9f2464881898e4672713"; // WAVAX-USDT on Rinkeby
 
-  const dummyToken = await deploy("ERC20Mock", {
+  await deploy("ERC20Mock", {
     from: deployer,
     args: ["DummyToken", "DUMMY", "1"],
     log: true,
-    deterministicDeployment: false
+    deterministicDeployment: false,
   });
+  const dummyToken = await ethers.getContract("ERC20Mock");
 
-  const rewarder = await deploy("MasterChefRewarderPerBlockMock", {
+  await deploy("MasterChefRewarderPerBlockMock", {
     from: deployer,
-    args: [sushi.address, lpTokenAddress, 0, mcv1.address, mcv2.address]
+    args: [
+      sushi.address,
+      lpTokenAddress,
+      "100000000000000000000",
+      0,
+      mcv1.address,
+      mcv2.address,
+    ],
+    gasLmit: 22000000000,
     log: true,
     deterministicDeployment: false,
   });
-  await (await mcv1.add("100", dummyToken.address, true)).wait();
-  await (await dummyToken.approve(rewarder.address, "1")).wait();
-  await (await rewarder.init(dummyToken.address)).wait();
+  const rewarder = await ethers.getContract("MasterChefRewarderPerBlockMock");
 
+  await (await mcv1.add("100", dummyToken.address, true)).wait();
+  await dummyToken.approve(rewarder.address, "1");
+  await rewarder.init(dummyToken.address, {
+    gasLimit: 245000,
+  });
 };
 
 module.exports.tags = ["MasterChefRewarderPerBlockMock"];
