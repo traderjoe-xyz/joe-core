@@ -833,7 +833,7 @@ describe("MasterChefJoeV2", function () {
       await advanceTimeAndBlock(9) // t+19, b=28
       await this.chef.add("20", this.lp2.address, ADDRESS_ZERO) // t+20, b=29
       // Alice's pending reward should be:
-      //   - 9*60 + 1*1/3*60 = 560 (+60) JoeToken (the 10th second is split among the two pools)
+      //   - 10*60 = 600 (+60) JoeToken
       //   - 2*40 = 80 PartnerToken
       expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(600 - this.tokenOffset, 660)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(80)
@@ -841,20 +841,20 @@ describe("MasterChefJoeV2", function () {
       await advanceTimeAndBlock(4) // t+24, b=30
       await this.chef.connect(this.bob).deposit(1, "10", { from: this.bob.address }) // t+25, b=31
       // Alice's pending reward should be:
-      //   - 560 + 5*1/3*60 = 660 (+60) JoeToken
+      //   - 600 + 5*1/3*60 = 700 (+60) JoeToken
       //   - 80 + 2*40 = 160 PartnerToken
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(660 - this.tokenOffset, 720)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(700 - this.tokenOffset, 760)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(160)
 
       // At this point:
       //   Alice's pending reward should be:
-      //     - 660 + 5*1/3*60 = 760 (+60) JoeToken
+      //     - 700 + 5*1/3*60 = 800 (+60) JoeToken
       //     - 160 + 1*40 = 200 PartnerToken
       // Bob's pending reward should be:
       //     - 5*2/3*60 = 200 (+60) JoeToken
       //     - 0 PartnerToken
       await advanceTimeAndBlock(5) // t+30, b=32
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(760 - this.tokenOffset, 820)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(800 - this.tokenOffset, 860)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(200)
 
       expect((await this.chef.pendingTokens(1, this.bob.address)).pendingJoe).to.be.within(200 - this.tokenOffset, 260)
@@ -867,9 +867,9 @@ describe("MasterChefJoeV2", function () {
       // Make sure they have receive the same amount as what was pending
       await this.chef.connect(this.alice).withdraw(0, "10", { from: this.alice.address }) // t+31, b=33
       // Alice should have:
-      //   - 760 + 1*1/3*60 = 780 (+60) JoeToken
+      //   - 800 + 1*1/3*60 = 820 (+60) JoeToken
       //   - 200 + 1*40 = 240 PartnerToken
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(780 - this.tokenOffset, 840)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(820 - this.tokenOffset, 880)
       expect(await this.partnerToken.balanceOf(this.alice.address)).to.equal(240)
 
       await this.chef.connect(this.bob).withdraw(1, "5", { from: this.bob.address }) // t+32, b=34
@@ -1579,7 +1579,7 @@ describe("MasterChefJoeV2", function () {
       await advanceTimeAndBlock(9) // t+19
       await this.chef.add("20", this.lp2.address, ADDRESS_ZERO) // t+20
       // Alice's pending reward should be:
-      //   - 9*60 + 1*1/3*60 = 560 (+60) JoeToken (the 10th second is split among the two pools)
+      //   - 10*60 = 600 (+60) JoeToken
       //   - 10*40 = 400 (+40)  PartnerToken
       expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(600 - this.tokenOffset, 660)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(400, 440)
@@ -1587,20 +1587,20 @@ describe("MasterChefJoeV2", function () {
       await advanceTimeAndBlock(4) // t+24
       await this.chef.connect(this.bob).deposit(1, "10", { from: this.bob.address }) // t+25
       // Alice's pending reward should be:
-      //   - 560 + 5*1/3*60 = 660 (+60) JoeToken
+      //   - 600 + 5*1/3*60 = 700 (+60) JoeToken
       //   - 400 + 5*40 = 600 (+40) PartnerToken
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(660 - this.tokenOffset, 720)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(700 - this.tokenOffset, 760)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(600, 640)
 
       // At this point:
       //   Alice's pending reward should be:
-      //     - 660 + 5*1/3*60 = 760 (+60) JoeToken
+      //     - 700 + 5*1/3*60 = 800 (+60) JoeToken
       //     - 600 + 5*40 = 800 (+40) PartnerToken
       // Bob's pending reward should be:
       //     - 5*2/3*60 = 200 (+60) JoeToken
       //     - 0 PartnerToken
       await advanceTimeAndBlock(5) // t+30
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(760 - this.tokenOffset, 820)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(800 - this.tokenOffset, 860)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(800, 840)
 
       expect((await this.chef.pendingTokens(1, this.bob.address)).pendingJoe).to.be.within(200 - this.tokenOffset, 260)
@@ -1613,9 +1613,9 @@ describe("MasterChefJoeV2", function () {
       // Make sure they have receive the same amount as what was pending
       await this.chef.connect(this.alice).withdraw(0, "10", { from: this.alice.address }) // t+31
       // Alice should have:
-      //   - 760 + 1*1/3*60 = 780 (+60) JoeToken
+      //   - 800 + 1*1/3*60 = 820 (+60) JoeToken
       //   - 800 + 1*40 = 840 (+40) PartnerToken
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(780 - this.tokenOffset, 840)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(820 - this.tokenOffset, 880)
       expect(await this.partnerToken.balanceOf(this.alice.address)).to.be.within(840, 880)
 
       await this.chef.connect(this.bob).withdraw(1, "5", { from: this.bob.address }) // t+32

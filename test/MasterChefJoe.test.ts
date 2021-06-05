@@ -446,17 +446,17 @@ describe("MasterChefJoe", function () {
       // Add LP2 to the pool with allocation 2 at t+20
       await advanceTimeAndBlock(9) // t+19
       await this.chef.add("20", this.lp2.address) // t+20
-      // Alice's pending reward should be: 9*60 + 1*1/3*60 = 560 (+60) (the 10th second is split among the two pools)
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(560 - this.tokenOffset, 620)
+      // Alice's pending reward should be: 10*60 = 600 (+60)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(600 - this.tokenOffset, 660)
       // Bob deposits 10 LP2s at t+25
       increase(duration.seconds(4)) // t+24
       await this.chef.connect(this.bob).deposit(1, "5", { from: this.bob.address }) // t+25
-      // Alice's pending reward should be: 560 + 5*1/3*60 = 660 (+60)
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(660 - this.tokenOffset, 720)
+      // Alice's pending reward should be: 600 + 5*1/3*60 = 700 (+60)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(700 - this.tokenOffset, 760)
       await advanceTimeAndBlock(5) // t+30
-      // Alice's pending reward should be: 660 + 5*1/3*60 = 760 (+60)
+      // Alice's pending reward should be: 700 + 5*1/3*60 = 800 (+60)
       // Bob's pending reward should be: 5*2/3*60 = 200 (+60)
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(760 - this.tokenOffset, 820)
+      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(800 - this.tokenOffset, 860)
       expect(await this.chef.pendingJoe(1, this.bob.address)).to.be.within(200 - this.tokenOffset, 260)
       // Alice and Bob should not have pending rewards in pools they're not staked in
       expect(await this.chef.pendingJoe(1, this.alice.address)).to.equal("0")
@@ -464,8 +464,8 @@ describe("MasterChefJoe", function () {
 
       // Make sure they have receive the same amount as what was pending
       await this.chef.connect(this.alice).withdraw(0, "10", { from: this.alice.address }) // t+31
-      // Alice should have: 760 + 1*1/3*60 = 780 (+60)
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(780 - this.tokenOffset, 840)
+      // Alice should have: 800 + 1*1/3*60 = 820 (+60)
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.within(820 - this.tokenOffset, 880)
       await this.chef.connect(this.bob).withdraw(1, "5", { from: this.bob.address }) // t+32
       // Bob should have: 200 + 2*2/3*60 = 280 (+60)
       expect(await this.joe.balanceOf(this.bob.address)).to.be.within(280 - this.tokenOffset, 340)
