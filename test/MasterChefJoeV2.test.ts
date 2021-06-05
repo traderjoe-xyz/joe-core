@@ -420,6 +420,93 @@ describe("MasterChefJoeV2", function () {
       expect(await this.partnerToken.balanceOf(this.bob.address)).to.equal("120")
     })
 
+    it("should allow rewarder to be set and removed mid farming", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent
+      )
+      await this.chef.deployed() // t-59, b=14
+
+      this.rewarder = await this.RewarderPerBlock.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerBlock,
+        this.partnerChefPid,
+        this.partnerChef.address,
+        this.chef.address
+      )
+      await this.rewarder.deployed() // t-58, b=15
+
+      await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
+      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+
+      await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
+      await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
+
+      await this.joe.transferOwnership(this.chef.address) // t-53, b=20
+      await this.chef.setDevPercent(this.devPercent) // t-52, b=21
+      await this.chef.setTreasuryPercent(this.treasuryPercent) // t-51, b=22
+
+      await this.chef.add("100", this.lp.address, ADDRESS_ZERO) // t-50, b=23
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-49, b=24
+      await this.chef.connect(this.bob).deposit(0, "100") // t-48, b=25
+      await advanceTimeAndBlock(37) // t-11, b=26
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-10, b=27
+      expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
+      // At t+10, Bob should have pending:
+      //   - 10*60 = 600 (+60) JoeToken
+      //   - 0 PartnerToken
+      await advanceTimeAndBlock(20) // t+10, b=28
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(600, 660)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(ADDRESS_ZERO)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(0)
+
+      // Pass rewarder but don't overwrite
+      await this.chef.set(0, 100, this.rewarder.address, false) // t+11 ,b=29
+
+      // At t+20, Bob should have pending:
+      //   - 600 + 10*60 = 1200 (+60) JoeToken
+      //   - 0 PartnerToken
+      await advanceTimeAndBlock(9) // t+20, b=30
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(1200, 12060)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(ADDRESS_ZERO)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(0)
+
+      // Pass rewarder and overwrite
+      await this.chef.set(0, 100, this.rewarder.address, true) // t+21, b=31
+
+      // At t+30, Bob should have pending:
+      //   - 1200 + 10*60 = 1800 (+60) JoeToken
+      //   - 0 PartnerToken - this is because rewarder hasn't registered the user yet! User needs to call deposit again
+      await advanceTimeAndBlock(4) // t+25, b=32
+      await advanceTimeAndBlock(5) // t+30, b=33
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(1800, 1860)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(this.partnerToken.address)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenSymbol).to.equal("SUSHI")
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(0)
+
+      // Call deposit to start receiving PartnerTokens
+      await this.chef.connect(this.bob).deposit(0, 0) // t+31, b=34
+
+      // At t+40, Bob should have pending:
+      //   - 9*60 = 540 (+60) JoeToken
+      //   - 2*40 = 80 PartnerToken
+      await advanceTimeAndBlock(4) // t+35, b=35
+      await advanceTimeAndBlock(5) // t+40, b=36
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(540, 600)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(this.partnerToken.address)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenSymbol).to.equal("SUSHI")
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(80)
+    })
+
     it("should give out JOEs only after farming time", async function () {
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
@@ -748,7 +835,7 @@ describe("MasterChefJoeV2", function () {
       // Alice's pending reward should be:
       //   - 9*60 + 1*1/3*60 = 560 (+60) JoeToken (the 10th second is split among the two pools)
       //   - 2*40 = 80 PartnerToken
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(600 - this.tokenOffset, 660)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(600 - this.tokenOffset, 660)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(80)
       // Bob deposits 10 LP2s at t+25
       await advanceTimeAndBlock(4) // t+24, b=30
@@ -756,7 +843,7 @@ describe("MasterChefJoeV2", function () {
       // Alice's pending reward should be:
       //   - 560 + 5*1/3*60 = 660 (+60) JoeToken
       //   - 80 + 2*40 = 160 PartnerToken
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(660 - this.tokenOffset, 720)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(660 - this.tokenOffset, 720)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(160)
 
       // At this point:
@@ -767,15 +854,15 @@ describe("MasterChefJoeV2", function () {
       //     - 5*2/3*60 = 200 (+60) JoeToken
       //     - 0 PartnerToken
       await advanceTimeAndBlock(5) // t+30, b=32
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(760 - this.tokenOffset, 820)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(760 - this.tokenOffset, 820)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(200)
 
-      expect(await this.chef.pendingJoe(1, this.bob.address)).to.be.within(200 - this.tokenOffset, 260)
+      expect((await this.chef.pendingTokens(1, this.bob.address)).pendingJoe).to.be.within(200 - this.tokenOffset, 260)
       expect(await this.rewarder.pendingTokens(this.bob.address)).to.equal(0)
 
       // Alice and Bob should not have pending rewards in pools they're not staked in
-      expect(await this.chef.pendingJoe(1, this.alice.address)).to.equal("0")
-      expect(await this.chef.pendingJoe(0, this.bob.address)).to.equal("0")
+      expect((await this.chef.pendingTokens(1, this.alice.address)).pendingJoe).to.equal("0")
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.equal("0")
 
       // Make sure they have receive the same amount as what was pending
       await this.chef.connect(this.alice).withdraw(0, "10", { from: this.alice.address }) // t+31, b=33
@@ -835,7 +922,7 @@ describe("MasterChefJoeV2", function () {
       //   - 100*100*0.6 = 6000 (+60)) JoeToken
       //   - 1*40 = 40 PartnerToken
       await advanceTimeAndBlock(100) // t+110, b=27
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6000, 6060)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6000, 6060)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(40)
       // Lower JOE emission rate to 40 JOE per sec
       await this.chef.updateEmissionRate(40) // t+111, b=28
@@ -843,7 +930,7 @@ describe("MasterChefJoeV2", function () {
       //   - 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+24) JoeToken
       //   - 40 + 2*40 = 120 PartnerToken
       await advanceTimeAndBlock(4) // t+115, b=29
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6156, 6216)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6156, 6216)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(120)
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116, b=30
@@ -855,7 +942,7 @@ describe("MasterChefJoeV2", function () {
       await advanceTimeAndBlock(4) // t+125, b=33
       await advanceTimeAndBlock(5) // t+130, b=34
       await advanceTimeAndBlock(6) // t+136, b=35
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6660, 6684)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6660, 6684)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(610)
     })
   })
@@ -1079,6 +1166,91 @@ describe("MasterChefJoeV2", function () {
       //   - 39*40 = 1560 (+40) PartnerToken
       expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
       expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(1560, 1600)
+    })
+
+    it("should allow rewarder to be set and removed mid farming", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent
+      )
+      await this.chef.deployed() // t-59
+
+      this.rewarder = await this.RewarderPerSec.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerSec,
+        this.partnerChefPid,
+        this.partnerChef.address,
+        this.chef.address
+      )
+      await this.rewarder.deployed() // t-58
+
+      await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
+      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+
+      await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
+      await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
+
+      await this.joe.transferOwnership(this.chef.address) // t-53
+      await this.chef.setDevPercent(this.devPercent) // t-52
+      await this.chef.setTreasuryPercent(this.treasuryPercent) // t-51
+
+      await this.chef.add("100", this.lp.address, ADDRESS_ZERO) // t-50
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-49
+      await this.chef.connect(this.bob).deposit(0, "100") // t-48
+      await advanceTimeAndBlock(37) // t-11
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-10
+      expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
+      // At t+10, Bob should have pending:
+      //   - 10*60 = 600 (+60) JoeToken
+      //   - 0 PartnerToken
+      await advanceTimeAndBlock(20) // t+10
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(600, 660)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(ADDRESS_ZERO)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(0)
+
+      // Pass rewarder but don't overwrite
+      await this.chef.set(0, 100, this.rewarder.address, false) // t+11
+
+      // At t+20, Bob should have pending:
+      //   - 600 + 10*60 = 1200 (+60) JoeToken
+      //   - 0 PartnerToken
+      await advanceTimeAndBlock(9) // t+20
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(1200, 12060)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(ADDRESS_ZERO)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(0)
+
+      // Pass rewarder and overwrite
+      await this.chef.set(0, 100, this.rewarder.address, true) // t+21
+
+      // At t+30, Bob should have pending:
+      //   - 1200 + 10*60 = 1800 (+60) JoeToken
+      //   - 0 PartnerToken - this is because rewarder hasn't registered the user yet! User needs to call deposit again
+      await advanceTimeAndBlock(9) // t+30
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(1800, 1860)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(this.partnerToken.address)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenSymbol).to.equal("SUSHI")
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.equal(0)
+
+      // Call deposit to start receiving PartnerTokens
+      await this.chef.connect(this.bob).deposit(0, 0) // t+31
+
+      // At t+40, Bob should have pending:
+      //   - 9*60 = 540 (+60) JoeToken
+      //   - 9*40 = 360 (+40) PartnerToken
+      await advanceTimeAndBlock(9) // t+40
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.be.within(540, 600)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenAddress).to.equal(this.partnerToken.address)
+      expect((await this.chef.pendingTokens(0, this.bob.address)).bonusTokenSymbol).to.equal("SUSHI")
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingBonusToken).to.be.within(360, 400)
     })
 
     it("should give out JOEs only after farming time", async function () {
@@ -1409,7 +1581,7 @@ describe("MasterChefJoeV2", function () {
       // Alice's pending reward should be:
       //   - 9*60 + 1*1/3*60 = 560 (+60) JoeToken (the 10th second is split among the two pools)
       //   - 10*40 = 400 (+40)  PartnerToken
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(600 - this.tokenOffset, 660)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(600 - this.tokenOffset, 660)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(400, 440)
       // Bob deposits 10 LP2s at t+25
       await advanceTimeAndBlock(4) // t+24
@@ -1417,7 +1589,7 @@ describe("MasterChefJoeV2", function () {
       // Alice's pending reward should be:
       //   - 560 + 5*1/3*60 = 660 (+60) JoeToken
       //   - 400 + 5*40 = 600 (+40) PartnerToken
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(660 - this.tokenOffset, 720)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(660 - this.tokenOffset, 720)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(600, 640)
 
       // At this point:
@@ -1428,15 +1600,15 @@ describe("MasterChefJoeV2", function () {
       //     - 5*2/3*60 = 200 (+60) JoeToken
       //     - 0 PartnerToken
       await advanceTimeAndBlock(5) // t+30
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(760 - this.tokenOffset, 820)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(760 - this.tokenOffset, 820)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(800, 840)
 
-      expect(await this.chef.pendingJoe(1, this.bob.address)).to.be.within(200 - this.tokenOffset, 260)
+      expect((await this.chef.pendingTokens(1, this.bob.address)).pendingJoe).to.be.within(200 - this.tokenOffset, 260)
       expect(await this.rewarder.pendingTokens(this.bob.address)).to.equal(0)
 
       // Alice and Bob should not have pending rewards in pools they're not staked in
-      expect(await this.chef.pendingJoe(1, this.alice.address)).to.equal("0")
-      expect(await this.chef.pendingJoe(0, this.bob.address)).to.equal("0")
+      expect((await this.chef.pendingTokens(1, this.alice.address)).pendingJoe).to.equal("0")
+      expect((await this.chef.pendingTokens(0, this.bob.address)).pendingJoe).to.equal("0")
 
       // Make sure they have receive the same amount as what was pending
       await this.chef.connect(this.alice).withdraw(0, "10", { from: this.alice.address }) // t+31
@@ -1496,7 +1668,7 @@ describe("MasterChefJoeV2", function () {
       //   - 100*100*0.6 = 6000 (+60) JoeToken
       //   - 100*40 = 4000 (+40) PartnerToken
       await advanceTimeAndBlock(100) // t+110
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6000, 6060)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6000, 6060)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(4000, 4040)
       // Lower JOE emission rate to 40 JOE per sec
       await this.chef.updateEmissionRate(40) // t+111
@@ -1504,7 +1676,7 @@ describe("MasterChefJoeV2", function () {
       //   - 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+24) JoeToken
       //   - 4000 + 5*40 = 4200 (+40) PartnerToken
       await advanceTimeAndBlock(4) // t+115
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6156, 6216)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6156, 6216)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(4200, 4240)
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116
@@ -1512,7 +1684,7 @@ describe("MasterChefJoeV2", function () {
       //   - 6156 + 21*40*0.6 = 6660 (+24) JoeToken
       //   - 4200 + 1*40 + 20*90 = 6040 (+90) PartnerToken
       await advanceTimeAndBlock(20) // t+136
-      expect(await this.chef.pendingJoe(0, this.alice.address)).to.be.within(6660, 6684)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6660, 6684)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.be.within(6040, 6130)
     })
   })

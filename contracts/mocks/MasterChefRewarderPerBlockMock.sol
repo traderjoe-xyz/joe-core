@@ -6,13 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/SafeERC20.sol";
-
-
-interface IRewarder {
-    using SafeERC20 for IERC20;
-    function onJoeReward(address user, uint256 newLpAmount) external;
-    function pendingTokens(address user) external view returns (uint256 pending);
-}
+import "../interfaces/IRewarder.sol";
 
 interface IMasterChef {
     function deposit(uint256 _pid, uint256 _amount) external;
@@ -55,7 +49,7 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
 	using SafeMath for uint256;
 	using SafeERC20 for IERC20;
 
-	IERC20 public immutable rewardToken;
+	IERC20 public immutable override rewardToken;
   IERC20 public immutable lpToken;
   uint256 public immutable MCV1_pid;
   IMasterChef public immutable MCV1;

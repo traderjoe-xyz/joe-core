@@ -3,18 +3,19 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./JoeToken.sol";
+import "./libraries/BoringERC20.sol";
 
 interface IRewarder {
     using SafeERC20 for IERC20;
     function onJoeReward(address user, uint256 newLpAmount) external;
     function pendingTokens(address user) external view returns (uint256 pending);
+    function rewardToken() external view returns (address);
 }
 
 // MasterChefJoe is a boss. He says "go f your blocks lego boy, I'm gonna use timestamp instead".
@@ -30,7 +31,7 @@ interface IRewarder {
 // Godspeed and may the 10x be with you.
 contract MasterChefJoeV2 is Ownable {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using BoringERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     // Info of each user.
@@ -150,7 +151,7 @@ contract MasterChefJoeV2 is Ownable {
     }
 
     // View function to see pending JOEs on frontend.
-    function pendingJoe(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingTokens(uint256 _pid, address _user) external view returns (uint256 pendingJoe, address bonusTokenAddress, string memory bonusTokenSymbol, uint256 pendingBonusToken) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accJoePerShare = pool.accJoePerShare;
@@ -161,7 +162,14 @@ contract MasterChefJoeV2 is Ownable {
             uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint).mul(lpPercent).div(1000);
             accJoePerShare = accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accJoePerShare).div(1e12).sub(user.rewardDebt);
+        pendingJoe = user.amount.mul(accJoePerShare).div(1e12).sub(user.rewardDebt);
+        
+        // If it's a double reward farm, we return info about the bonus token
+        if (address(pool.rewarder) != address(0)) {
+          bonusTokenAddress = address(pool.rewarder.rewardToken());
+          bonusTokenSymbol = IERC20(pool.rewarder.rewardToken()).safeSymbol();
+          pendingBonusToken = pool.rewarder.pendingTokens(_user); 
+        }
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
