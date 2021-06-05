@@ -1152,10 +1152,10 @@
     fs-extra "^9.0.1"
     js-yaml "^3.14.0"
 
-"@traderjoe-xyz/sdk@^0.1.2":
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/@traderjoe-xyz/sdk/-/sdk-0.1.5.tgz#2cf6638ed1147f3e6642a9dfb9f438c969bd2517"
-  integrity sha512-7wDX88auNo5EQ0PiVWrhmYz6K/esRZIpowo6QwL2etDmT2Cv9i34APTioD3mbpmtx6FW1fItnam+7hesWlGgtg==
+"@traderjoe-xyz/sdk@^0.1.8":
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/@traderjoe-xyz/sdk/-/sdk-0.1.8.tgz#0ddfd09c65141647fb7f926270f410aeba5c814b"
+  integrity sha512-cNB5EjDTTsriV8q5PVOe2HetoAaxJW1Koh2a6fUxi3QIntSHuBaRuLTG+HExtcq4ilO2Sv6ROsZgMuwH4oVrDA==
   dependencies:
     "@openzeppelin/cli" "^2.8.2"
     "@uniswap/v2-core" "^1.0.1"
@@ -1309,20 +1309,30 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
+"@types/node@*":
   version "15.6.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-15.6.1.tgz#32d43390d5c62c5b6ec486a9bc9c59544de39a08"
   integrity sha512-7EIraBEyRHEe7CH+Fm1XvgqU6uwZN8Q7jppJGcqjROMT29qhAuuOxYB1uEY5UMYQKEmA5D+5tBnhdaPXSsLONA==
+
+"@types/node@>=12.12.47", "@types/node@>=13.7.0":
+  version "15.12.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-15.12.0.tgz#6a459d261450a300e6865faeddb5af01c3389bb3"
+  integrity sha512-+aHJvoCsVhO2ZCuT4o5JtcPrCPyDE3+1nvbDprYes+pPkEsbjH7AGUCNtjMOXS0fqH14t+B7yLzaqSz92FPWyw==
 
 "@types/node@^10.0.3", "@types/node@^10.12.18", "@types/node@^10.3.2":
   version "10.17.60"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.17.60.tgz#35f3d6213daed95da7f0f73e75bcc6980e90597b"
   integrity sha512-F0KIgDJfy2nA3zMLmWGKxcH2ZVEtCZXHHdOQs2gSaQ27+lNeEfGxzkIw90aXswATX7AZ33tahPbzy6KAfUreVw==
 
-"@types/node@^12.12.6", "@types/node@^12.6.1":
+"@types/node@^12.12.6":
   version "12.20.13"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.13.tgz#e743bae112bd779ac9650f907197dd2caa7f0364"
   integrity sha512-1x8W5OpxPq+T85OUsHRP6BqXeosKmeXRtjoF39STcdf/UWLqUsoehstZKOi0CunhVqHG17AyZgpj20eRVooK6A==
+
+"@types/node@^12.6.1":
+  version "12.20.14"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.14.tgz#9caf7eea0df08b406829889cc015256a6d81ab10"
+  integrity sha512-iFJOS5Q470FF+r4Ol2pSley7/wCNVqf+jgjhtxLLaJcDs+To2iCxlXIkJXrGLD9w9G/oJ9ibySu7z92DCwr7Pg==
 
 "@types/node@^14.14.31":
   version "14.17.1"
@@ -3325,9 +3335,9 @@ css-select@^4.1.2:
     nth-check "^2.0.0"
 
 css-what@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/css-what/-/css-what-5.0.0.tgz#f0bf4f8bac07582722346ab243f6a35b512cfc47"
-  integrity sha512-qxyKHQvgKwzwDWC/rGbT821eJalfupxYW2qbSJSAtdSTimsr/MlaGONoNLllaUPZWf8QnbcKM/kPVYUQuEKAFA==
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/css-what/-/css-what-5.0.1.tgz#3efa820131f4669a8ac2408f9c32e7c7de9f4cad"
+  integrity sha512-FYDTSHb/7KXsWICVsxdmiExPjCfRC4qRFBdVwv7Ax9hMnvMmEjP9RfxTEZ3qPZGmADDn2vAKSo9UcN1jKVYscg==
 
 d@1, d@^1.0.1:
   version "1.0.1"
