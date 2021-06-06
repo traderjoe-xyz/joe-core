@@ -927,7 +927,7 @@ describe("MasterChefJoeV2", function () {
       // Lower JOE emission rate to 40 JOE per sec
       await this.chef.updateEmissionRate(40) // t+111, b=28
       // At t+115, Alice should have:
-      //   - 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+24) JoeToken
+      //   - 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+60) JoeToken
       //   - 40 + 2*40 = 120 PartnerToken
       await advanceTimeAndBlock(4) // t+115, b=29
       expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6156, 6216)
@@ -935,14 +935,14 @@ describe("MasterChefJoeV2", function () {
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116, b=30
       // At b=35, Alice should have:
-      //   - 6156 + 21*40*0.6 = 6660 (+24) JoeToken
+      //   - 6156 + 1*40*0.6 + 20*40*0.6 = 6660 (+24) JoeToken
       //   - 120 + 1*40 + 5*90 = 610 PartnerToken
       await advanceTimeAndBlock(2) // t+118, b=31
       await advanceTimeAndBlock(3) // t+121, b=32
       await advanceTimeAndBlock(4) // t+125, b=33
       await advanceTimeAndBlock(5) // t+130, b=34
       await advanceTimeAndBlock(6) // t+136, b=35
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6660, 6684)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6660, 6720)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(610)
     })
   })
@@ -1673,7 +1673,7 @@ describe("MasterChefJoeV2", function () {
       // Lower JOE emission rate to 40 JOE per sec
       await this.chef.updateEmissionRate(40) // t+111
       // At t+115, Alice should have:
-      //   - 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+24) JoeToken
+      //   - 6000 + 1*100*0.6 + 4*40*0.6 = 6156 (+60) JoeToken
       //   - 4000 + 5*40 = 4200 (+40) PartnerToken
       await advanceTimeAndBlock(4) // t+115
       expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(6156, 6216)
