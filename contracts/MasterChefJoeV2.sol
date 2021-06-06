@@ -85,7 +85,7 @@ contract MasterChefJoeV2 is Ownable {
     uint256 public startTimestamp;
 
     event Add(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
-    event Set(uint256 indexed pid, uint256 allocPoint, IRewarder rewarder, bool overwrite);
+    event Set(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event UpdatePool(uint256 indexed pid, uint256 lastRewardTimestamp, uint256 lpSupply, uint256 accJoePerShare);
