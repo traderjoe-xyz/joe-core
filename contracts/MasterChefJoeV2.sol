@@ -89,6 +89,7 @@ contract MasterChefJoeV2 is Ownable {
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event UpdatePool(uint256 indexed pid, uint256 lastRewardTimestamp, uint256 lpSupply, uint256 accJoePerShare);
+    event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event SetDevAddress(address indexed oldAddress, address indexed newAddress);
     event UpdateEmissionRate(address indexed user, uint256 _joePerSec);
@@ -211,8 +212,10 @@ contract MasterChefJoeV2 is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
+            // Harvest JOE
             uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
             safeJoeTransfer(msg.sender, pending);
+            emit Harvest(msg.sender, _pid, pending);
         }
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(1e12);
@@ -233,8 +236,12 @@ contract MasterChefJoeV2 is Ownable {
         require(user.amount >= _amount, "withdraw: not good");
 
         updatePool(_pid);
+
+        // Harvest JOE
         uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
         safeJoeTransfer(msg.sender, pending);
+        emit Harvest(msg.sender, _pid, pending);
+
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(1e12);
 
