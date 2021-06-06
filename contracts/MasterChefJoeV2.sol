@@ -84,7 +84,7 @@ contract MasterChefJoeV2 is Ownable {
     // The timestamp when JOE mining starts.
     uint256 public startTimestamp;
 
-    event Add(address indexed lpToken, uint256 allocPoint, IRewarder rewarder);
+    event Add(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event Set(uint256 indexed pid, uint256 allocPoint, IRewarder rewarder, bool overwrite);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -138,7 +138,7 @@ contract MasterChefJoeV2 is Ownable {
             rewarder: _rewarder
         }));
         lpTokens.add(address(_lpToken));
-        emit Add(address(_lpToken), _allocPoint, _rewarder);
+        emit Add(poolInfo.length.sub(1), _allocPoint, _lpToken, _rewarder);
     }
 
     // Update the given pool's JOE allocation point. Can only be called by the owner.
