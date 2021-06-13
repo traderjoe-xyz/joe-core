@@ -738,6 +738,7 @@ abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
 
 // File: contracts/traderjoe/interfaces/IJoePair.sol
 
+
 pragma solidity >=0.5.0;
 
 interface IJoePair {
@@ -792,6 +793,7 @@ interface IJoePair {
 }
 
 // File: contracts/traderjoe/interfaces/IJoeRouter01.sol
+
 
 pragma solidity >=0.6.2;
 
@@ -891,6 +893,7 @@ interface IJoeRouter01 {
 
 // File: contracts/traderjoe/interfaces/IJoeRouter02.sol
 
+
 pragma solidity >=0.6.2;
 
 
@@ -937,6 +940,7 @@ interface IJoeRouter02 is IJoeRouter01 {
 
 // File: contracts/traderjoe/interfaces/IWAVAX.sol
 
+
 pragma solidity >=0.5.0;
 
 interface IWAVAX {
@@ -967,12 +971,12 @@ contract Zap is OwnableUpgradeable {
 
     /* ========== CONSTANT VARIABLES ========== */
 
-    address private constant JOE = 0x32A83BF2BD519e505f4e39182F214176162F7429;
+    address private constant JOE = 0xDDF06D89C908bC38e03067d65408D632fDA4fd9d;
     address private constant USDT = 0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10;
     address private constant DAI = 0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10;
     address private constant WAVAX = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
 
-    IJoeRouter02 private constant ROUTER = IJoeRouter02(0xF8bCDda9f6545a1A1A6AcDad6f9Abd1e863423dA);
+    IJoeRouter02 private constant ROUTER = IJoeRouter02(0x4A586DAA5D5EDCD8182339C24291FB510fA4d271);
 
     /* ========== STATE VARIABLES ========== */
 

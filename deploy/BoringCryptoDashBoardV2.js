@@ -23,7 +23,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     43114: "0xefa94DE7a4656D787667C749f7E1223D71E9FD88",
   };
 
-  const chefAddress = (await deployments.get("MasterChefJoe")).address;
+  const chefAddress = (await deployments.get("MasterChefJoeV2")).address;
   const joeFactoryAddress = (await deployments.get("JoeFactory")).address;
 
   await deploy("BoringCryptoDashboardV2", {
@@ -40,4 +40,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 };
 
 module.exports.tags = ["BoringCryptoDashboardV2"];
-module.exports.dependencies = ["MasterChefJoe", "JoeFactory"];
+module.exports.dependencies = ["MasterChefJoeV2", "JoeFactory"];

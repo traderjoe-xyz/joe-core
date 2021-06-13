@@ -25,7 +25,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     43114: "0xefa94DE7a4656D787667C749f7E1223D71E9FD88",
   };
 
-  const chefAddress = (await deployments.get("MasterChefJoe")).address;
+  const chefAddress = (await deployments.get("MasterChefJoeV2")).address;
   const makerAddress = (await deployments.get("JoeMaker")).address;
   const joeAddress = (await deployments.get("JoeToken")).address;
   const joeFactoryAddress = (await deployments.get("JoeFactory")).address;
@@ -49,7 +49,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 
 module.exports.tags = ["BoringHelperV1"];
 module.exports.dependencies = [
-  "MasterChefJoe",
+  "MasterChefJoeV2",
   "JoeMaker",
   "JoeToken",
   "JoeFactory",
