@@ -15,8 +15,8 @@ describe("MasterChefJoeV2", function () {
     this.MCV1PerBlock = await ethers.getContractFactory("MasterChef")
     this.MCV1PerSec = await ethers.getContractFactory("MasterChefPerSec")
     this.MCV2 = await ethers.getContractFactory("MasterChefJoeV2")
-    this.RewarderPerBlock = await ethers.getContractFactory("MasterChefRewarderPerBlock")
-    this.RewarderPerSec = await ethers.getContractFactory("MasterChefRewarderPerSec")
+    this.MasterChefRewarderPerBlock = await ethers.getContractFactory("MasterChefRewarderPerBlock")
+    this.MasterChefRewarderPerSec = await ethers.getContractFactory("MasterChefRewarderPerSec")
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
     this.SushiToken = await ethers.getContractFactory("SushiToken")
@@ -227,7 +227,7 @@ describe("MasterChefJoeV2", function () {
 
     it("should check rewarder's arguments are contracts", async function () {
       await expect(
-        this.RewarderPerBlock.deploy(
+        this.MasterChefRewarderPerBlock.deploy(
           ADDRESS_ZERO,
           this.lp.address,
           this.partnerRewardPerBlock,
@@ -239,7 +239,7 @@ describe("MasterChefJoeV2", function () {
       ).to.be.revertedWith("constructor: reward token must be a valid contract")
 
       await expect(
-        this.RewarderPerBlock.deploy(
+        this.MasterChefRewarderPerBlock.deploy(
           this.joe.address,
           ADDRESS_ZERO,
           this.partnerRewardPerBlock,
@@ -251,7 +251,7 @@ describe("MasterChefJoeV2", function () {
       ).to.be.revertedWith("constructor: LP token must be a valid contract")
 
       await expect(
-        this.RewarderPerBlock.deploy(
+        this.MasterChefRewarderPerBlock.deploy(
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerBlock,
@@ -263,7 +263,7 @@ describe("MasterChefJoeV2", function () {
       ).to.be.revertedWith("constructor: MasterChef must be a valid contract")
 
       await expect(
-        this.RewarderPerBlock.deploy(
+        this.MasterChefRewarderPerBlock.deploy(
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerBlock,
@@ -288,7 +288,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed()
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -333,7 +333,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed()
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -392,7 +392,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59, b=14
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -441,7 +441,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59, b=14
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -529,7 +529,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59, b=14
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -604,7 +604,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59, b=14
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -674,7 +674,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59, b=14
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -814,7 +814,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -906,7 +906,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerBlock.deploy(
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
@@ -988,7 +988,7 @@ describe("MasterChefJoeV2", function () {
 
     it("should check rewarder's arguments are contracts", async function () {
       await expect(
-        this.RewarderPerSec.deploy(
+        this.MasterChefRewarderPerSec.deploy(
           ADDRESS_ZERO,
           this.lp.address,
           this.partnerRewardPerSec,
@@ -1000,7 +1000,7 @@ describe("MasterChefJoeV2", function () {
       ).to.be.revertedWith("constructor: reward token must be a valid contract")
 
       await expect(
-        this.RewarderPerSec.deploy(
+        this.MasterChefRewarderPerSec.deploy(
           this.joe.address,
           ADDRESS_ZERO,
           this.partnerRewardPerSec,
@@ -1012,7 +1012,7 @@ describe("MasterChefJoeV2", function () {
       ).to.be.revertedWith("constructor: LP token must be a valid contract")
 
       await expect(
-        this.RewarderPerSec.deploy(
+        this.MasterChefRewarderPerSec.deploy(
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerSec,
@@ -1024,7 +1024,7 @@ describe("MasterChefJoeV2", function () {
       ).to.be.revertedWith("constructor: MasterChef must be a valid contract")
 
       await expect(
-        this.RewarderPerSec.deploy(
+        this.MasterChefRewarderPerSec.deploy(
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerSec,
@@ -1049,7 +1049,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed()
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1094,7 +1094,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed()
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1153,7 +1153,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1202,7 +1202,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1288,7 +1288,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1363,7 +1363,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1433,7 +1433,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1573,7 +1573,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
@@ -1665,7 +1665,7 @@ describe("MasterChefJoeV2", function () {
       )
       await this.chef.deployed() // t-59
 
-      this.rewarder = await this.RewarderPerSec.deploy(
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
