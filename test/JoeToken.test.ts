@@ -65,6 +65,11 @@ describe("JoeToken", function () {
     )
   })
 
+  it("should not exceed max supply of 500m", async function () {
+    await expect(this.joe.mint(this.alice.address, "500000000000000000000000001")).to.be.revertedWith("JOE::mint: cannot exceed max supply")
+    await this.joe.mint(this.alice.address, "500000000000000000000000000")
+  })
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
