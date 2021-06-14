@@ -6,8 +6,17 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/SafeERC20.sol";
-import "../interfaces/IRewarder.sol";
-import "hardhat/console.sol";
+
+interface IRewarder {
+    using SafeERC20 for IERC20;
+
+    function onJoeReward(address user, uint256 newLpAmount) external;
+
+    function pendingTokens(address user)
+        external
+        view
+        returns (uint256 pending);
+}
 
 interface IMasterChef {
     struct PoolInfo {
@@ -30,7 +39,7 @@ interface IMasterChefJoeV2 {
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this poolInfo. SUSHI to distribute per block.
-        uint256 lastRewardTimestamp; // Last block number that SUSHI distribution occurs.
+        uint256 lastRewardTimestamp; // Last block.timestamp that SUSHI distribution occurs.
         uint256 accJoePerShare; // Accumulated SUSHI per share, times 1e12. See below.
     }
 
@@ -52,11 +61,11 @@ interface IMasterChefJoeV2 {
  * onJoeReward().
  *
  */
-contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
+contract MasterChefRewarderPerSec is IRewarder, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public immutable override rewardToken;
+    IERC20 public immutable rewardToken;
     IERC20 public immutable lpToken;
     uint256 public immutable MCV1_pid;
     IMasterChef public immutable MCV1;
@@ -72,10 +81,10 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
 
     /// @notice Info of each MCV2 poolInfo.
     /// `accTokenPerShare` Amount of JOE each LP token is worth.
-    /// `lastRewardBlock` The last block JOE was rewarded to the poolInfo.
+    /// `lastRewardTimestamp` The last time JOE was rewarded to the poolInfo.
     struct PoolInfo {
         uint256 accTokenPerShare;
-        uint256 lastRewardBlock;
+        uint256 lastRewardTimestamp;
         uint256 allocPoint;
     }
 
@@ -84,7 +93,7 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
     /// @notice Info of each user that stakes LP tokens.
     mapping(address => UserInfo) public userInfo;
 
-    uint256 public tokenPerBlock;
+    uint256 public tokenPerSec;
     uint256 private constant ACC_TOKEN_PRECISION = 1e12;
 
     event OnReward(address indexed user, uint256 amount);
@@ -102,7 +111,7 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
     constructor(
         IERC20 _rewardToken,
         IERC20 _lpToken,
-        uint256 _tokenPerBlock,
+        uint256 _tokenPerSec,
         uint256 _allocPoint,
         uint256 _MCV1_pid,
         IMasterChef _MCV1,
@@ -127,12 +136,12 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
-        tokenPerBlock = _tokenPerBlock;
+        tokenPerSec = _tokenPerSec;
         MCV1_pid = _MCV1_pid;
         MCV1 = _MCV1;
         MCV2 = _MCV2;
         poolInfo = PoolInfo({
-            lastRewardBlock: block.number,
+            lastRewardTimestamp: block.timestamp,
             accTokenPerShare: 0,
             allocPoint: _allocPoint
         });
@@ -153,31 +162,33 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
     function updatePool() public returns (PoolInfo memory pool) {
         pool = poolInfo;
 
-        if (block.number > pool.lastRewardBlock) {
+        if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = lpToken.balanceOf(address(MCV2));
 
             if (lpSupply > 0) {
-                uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
+                uint256 timeElapsed = block.timestamp.sub(
+                    pool.lastRewardTimestamp
+                );
+                uint256 tokenReward = timeElapsed.mul(tokenPerSec).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
                 pool.accTokenPerShare = pool.accTokenPerShare.add(
                     (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
                 );
             }
 
-            pool.lastRewardBlock = block.number;
+            pool.lastRewardTimestamp = block.timestamp;
             poolInfo = pool;
         }
     }
 
     /// @notice Sets the distribution reward rate. This will also update the poolInfo.
-    /// @param _tokenPerBlock The number of tokens to distribute per block
-    function setRewardRate(uint256 _tokenPerBlock) external onlyOwner {
+    /// @param _tokenPerSec The number of tokens to distribute per block
+    function setRewardRate(uint256 _tokenPerSec) external onlyOwner {
         updatePool();
 
-        uint256 oldRate = tokenPerBlock;
-        tokenPerBlock = _tokenPerBlock;
+        uint256 oldRate = tokenPerSec;
+        tokenPerSec = _tokenPerSec;
 
-        emit RewardRateUpdated(oldRate, _tokenPerBlock);
+        emit RewardRateUpdated(oldRate, _tokenPerSec);
     }
 
     /// @notice Sets the allocation point. THis will also update the poolInfo.
@@ -245,9 +256,9 @@ contract MasterChefRewarderPerBlockMock is IRewarder, Ownable {
         uint256 accTokenPerShare = pool.accTokenPerShare;
         uint256 lpSupply = lpToken.balanceOf(address(MCV2));
 
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
+        if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
+            uint256 blocks = block.timestamp.sub(pool.lastRewardTimestamp);
+            uint256 tokenReward = blocks.mul(tokenPerSec).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
             accTokenPerShare = accTokenPerShare.add(
                 tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
             );

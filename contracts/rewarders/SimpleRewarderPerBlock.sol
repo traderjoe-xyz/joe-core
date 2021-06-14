@@ -100,7 +100,7 @@ interface IMasterChefJoeV2 {
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
  */
-contract RewarderPerBlockMock is IRewarder, BoringOwnable {
+contract RewarderPerBlock is IRewarder, BoringOwnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
