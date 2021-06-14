@@ -80,7 +80,7 @@ interface IMasterChefJoeV2 {
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this poolInfo. SUSHI to distribute per block.
-        uint256 lastRewardTimestamp; // Last block number that SUSHI distribution occurs.
+        uint256 lastRewardTimestamp; // Last block timestamp that SUSHI distribution occurs.
         uint256 accJoePerShare; // Accumulated SUSHI per share, times 1e12. See below.
     }
 
