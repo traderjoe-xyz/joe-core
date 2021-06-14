@@ -34,14 +34,18 @@ Both of these assume your project uses a Sushi-style MasterChef contract, except
 
 ![Image of Double Reward Farming](MasterChefJoeV2.png)
 
-Here we assume that your project uses a Sushi-style MasterChef and the question is how to reward your tokens (pictured here as XYZ) to our farms.
+Here we assume that your project uses a Sushi-style MasterChef:
 
 Setup:
-1. You will need to create a new pool with a "dummy" or fake token. 
-2. IRewarder contract will deposit the dummy token into this pool so it now receives XYZ (we define an `init()` function for this).
-3. JOE-XYZ LP with the above IRewarder contract is added as pool to MasterChefJoeV2.
-4. User can now deposit JOE-XYZ LPs into the pool.
-5. Each time user harvests from MasterChefJoeV2, he/she receives both JOE and XYZ.
+1. Create a new dummy token, `DUMMY`, with supply of 1 (in Wei).
+2. Transfer 1 `DUMMY` to the deployer and then renouncen ownership of the token.
+3. Create a new pool in your MasterChef for `DUMMY`.
+4. Deploy the IRewarder contract.
+5. Approve the IRewarder contract to spend 1 `DUMMY`.
+6. Call the `init()` method in IRewarder contract, passing in the `DUMMY` token address - this will allow the IRewarder to deposit the dummy token into your MasterChef and start receiving your rewards.
+7. JOE-XYZ LP with the above IRewarder contract is added as pool to MasterChefJoeV2.
+8. Users can now deposit JOE-XYZ LPs into the pool.
+9. Each time user harvests from MasterChefJoeV2, he/she receives both JOE and XYZ.
 
 ## Tests
 
