@@ -96,29 +96,29 @@ interface IMasterChefJoeV2 {
  * stakers with their native token alongside JOE.
  *
  * It assumes no minting rights, so requires a set amount of YOUR_TOKEN to be transferred to this contract prior.
- * E.g. say you've allocated 100,000 XYZ to the JOE-XYZ farm over 30 days. Then you wold need to transfer
+ * E.g. say you've allocated 100,000 XYZ to the JOE-XYZ farm over 30 days. Then you would need to transfer
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
  */
-contract RewarderPerBlock is IRewarder, BoringOwnable {
+contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 private immutable rewardToken;
-    IERC20 private immutable lpToken;
-    IMasterChefJoeV2 private immutable MC_V2;
+    IERC20 public immutable rewardToken;
+    IERC20 public immutable lpToken;
+    IMasterChefJoeV2 public immutable MC_V2;
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
-    /// `rewardDebt` The amount of JOE entitled to the user.
+    /// `rewardDebt` The amount of YOUR_TOKEN entitled to the user.
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
     }
 
     /// @notice Info of each MCV2 poolInfo.
-    /// `accTokenPerShare` Amount of JOE each LP token is worth.
-    /// `lastRewardTimestamp` The last time JOE was rewarded to the poolInfo.
+    /// `accTokenPerShare` Amount of YOUR_TOKEN each LP token is worth.
+    /// `lastRewardBlock` The last block YOUR_TOKEN was rewarded to the poolInfo.
     struct PoolInfo {
         uint256 accTokenPerShare;
         uint256 lastRewardBlock;
@@ -195,7 +195,7 @@ contract RewarderPerBlock is IRewarder, BoringOwnable {
 
     /// @notice Sets the distribution reward rate. This will also update the poolInfo.
     /// @param _tokenPerBlock The number of tokens to distribute per block
-    function setRewardRate(uint256 _tokenPerBlock, uint256[] calldata _pids)
+    function setRewardRate(uint256 _tokenPerBlock)
         external
         onlyOwner
     {
