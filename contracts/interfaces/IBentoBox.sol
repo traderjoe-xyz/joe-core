@@ -6,26 +6,69 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
 
 interface IBentoBox {
-    event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
-    event LogDeposit(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
-    event LogFlashLoan(address indexed borrower, address indexed token, uint256 amount, uint256 feeAmount, address indexed receiver);
+    event LogDeploy(
+        address indexed masterContract,
+        bytes data,
+        address indexed cloneAddress
+    );
+    event LogDeposit(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 share
+    );
+    event LogFlashLoan(
+        address indexed borrower,
+        address indexed token,
+        uint256 amount,
+        uint256 feeAmount,
+        address indexed receiver
+    );
     event LogRegisterProtocol(address indexed protocol);
-    event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool approved);
+    event LogSetMasterContractApproval(
+        address indexed masterContract,
+        address indexed user,
+        bool approved
+    );
     event LogStrategyDivest(address indexed token, uint256 amount);
     event LogStrategyInvest(address indexed token, uint256 amount);
     event LogStrategyLoss(address indexed token, uint256 amount);
     event LogStrategyProfit(address indexed token, uint256 amount);
     event LogStrategyQueued(address indexed token, address indexed strategy);
     event LogStrategySet(address indexed token, address indexed strategy);
-    event LogStrategyTargetPercentage(address indexed token, uint256 targetPercentage);
-    event LogTransfer(address indexed token, address indexed from, address indexed to, uint256 share);
-    event LogWhiteListMasterContract(address indexed masterContract, bool approved);
-    event LogWithdraw(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event LogStrategyTargetPercentage(
+        address indexed token,
+        uint256 targetPercentage
+    );
+    event LogTransfer(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 share
+    );
+    event LogWhiteListMasterContract(
+        address indexed masterContract,
+        bool approved
+    );
+    event LogWithdraw(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 share
+    );
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     function balanceOf(IERC20, address) external view returns (uint256);
 
-    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns (bool[] memory successes, bytes[] memory results);
+    function batch(bytes[] calldata calls, bool revertOnFail)
+        external
+        payable
+        returns (bool[] memory successes, bytes[] memory results);
 
     function claimOwnership() external;
 
@@ -49,7 +92,10 @@ interface IBentoBox {
         uint256 maxChangeAmount
     ) external;
 
-    function masterContractApproved(address, address) external view returns (bool);
+    function masterContractApproved(address, address)
+        external
+        view
+        returns (bool);
 
     function masterContractOf(address) external view returns (address);
 
@@ -85,7 +131,8 @@ interface IBentoBox {
 
     function setStrategy(IERC20 token, IStrategy newStrategy) external;
 
-    function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_) external;
+    function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_)
+        external;
 
     function strategy(IERC20) external view returns (IStrategy);
 
@@ -110,7 +157,10 @@ interface IBentoBox {
         bool roundUp
     ) external view returns (uint256 share);
 
-    function totals(IERC20) external view returns (uint128 elastic, uint128 base);
+    function totals(IERC20)
+        external
+        view
+        returns (uint128 elastic, uint128 base);
 
     function transfer(
         IERC20 token,
@@ -132,7 +182,8 @@ interface IBentoBox {
         bool renounce
     ) external;
 
-    function whitelistMasterContract(address masterContract, bool approved) external;
+    function whitelistMasterContract(address masterContract, bool approved)
+        external;
 
     function whitelistedMasterContracts(address) external view returns (bool);
 

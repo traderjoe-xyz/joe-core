@@ -46,7 +46,9 @@ interface IKashiPair {
 
     function bentoBox() external view returns (IBentoBox);
 
-    function borrow(address to, uint256 amount) external returns (uint256 part, uint256 share);
+    function borrow(address to, uint256 amount)
+        external
+        returns (uint256 part, uint256 share);
 
     function claimOwnership() external;
 
@@ -107,7 +109,9 @@ interface IKashiPair {
         bytes32 s
     ) external;
 
-    function removeAsset(address to, uint256 fraction) external returns (uint256 share);
+    function removeAsset(address to, uint256 fraction)
+        external
+        returns (uint256 share);
 
     function removeCollateral(address to, uint256 share) external;
 

@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./SushiToken.sol";
 
-
 // MasterChef is the master of Sushi. He can make Sushi and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
@@ -97,7 +96,9 @@ contract MasterChefPerSec is Ownable {
         if (_withUpdate) {
             massUpdatePools();
         }
-        uint256 lastRewardTimestamp = block.timestamp > startTimestamp ? block.timestamp : startTimestamp;
+        uint256 lastRewardTimestamp = block.timestamp > startTimestamp
+            ? block.timestamp
+            : startTimestamp;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(
             PoolInfo({
@@ -153,12 +154,14 @@ contract MasterChefPerSec is Ownable {
         uint256 accSushiPerShare = pool.accSushiPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
-            uint256 multiplier =
-                getMultiplier(pool.lastRewardTimestamp, block.timestamp);
-            uint256 sushiReward =
-                multiplier.mul(sushiPerSec).mul(pool.allocPoint).div(
-                    totalAllocPoint
-                );
+            uint256 multiplier = getMultiplier(
+                pool.lastRewardTimestamp,
+                block.timestamp
+            );
+            uint256 sushiReward = multiplier
+            .mul(sushiPerSec)
+            .mul(pool.allocPoint)
+            .div(totalAllocPoint);
             accSushiPerShare = accSushiPerShare.add(
                 sushiReward.mul(1e12).div(lpSupply)
             );
@@ -185,11 +188,14 @@ contract MasterChefPerSec is Ownable {
             pool.lastRewardTimestamp = block.timestamp;
             return;
         }
-        uint256 multiplier = getMultiplier(pool.lastRewardTimestamp, block.timestamp);
-        uint256 sushiReward =
-            multiplier.mul(sushiPerSec).mul(pool.allocPoint).div(
-                totalAllocPoint
-            );
+        uint256 multiplier = getMultiplier(
+            pool.lastRewardTimestamp,
+            block.timestamp
+        );
+        uint256 sushiReward = multiplier
+        .mul(sushiPerSec)
+        .mul(pool.allocPoint)
+        .div(totalAllocPoint);
         sushi.mint(devaddr, sushiReward.div(10));
         sushi.mint(address(this), sushiReward);
         pool.accSushiPerShare = pool.accSushiPerShare.add(
@@ -204,10 +210,11 @@ contract MasterChefPerSec is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending =
-                user.amount.mul(pool.accSushiPerShare).div(1e12).sub(
-                    user.rewardDebt
-                );
+            uint256 pending = user
+            .amount
+            .mul(pool.accSushiPerShare)
+            .div(1e12)
+            .sub(user.rewardDebt);
             safeSushiTransfer(msg.sender, pending);
         }
         pool.lpToken.safeTransferFrom(
@@ -226,10 +233,9 @@ contract MasterChefPerSec is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending =
-            user.amount.mul(pool.accSushiPerShare).div(1e12).sub(
-                user.rewardDebt
-            );
+        uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(
+            user.rewardDebt
+        );
         safeSushiTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
