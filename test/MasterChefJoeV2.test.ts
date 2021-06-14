@@ -36,6 +36,7 @@ describe("MasterChefJoeV2", function () {
     this.partnerStartBlock = 0
     this.partnerBonusEndBlock = 10
     this.partnerChefPid = 0
+    this.partnerChefAllocPoint = 100
   })
 
   beforeEach(async function () {
@@ -230,6 +231,7 @@ describe("MasterChefJoeV2", function () {
           ADDRESS_ZERO,
           this.lp.address,
           this.partnerRewardPerBlock,
+          this.partnerChefAllocPoint,
           this.partnerChefPid,
           this.partnerChef.address,
           this.chef.address
@@ -241,6 +243,7 @@ describe("MasterChefJoeV2", function () {
           this.joe.address,
           ADDRESS_ZERO,
           this.partnerRewardPerBlock,
+          "100",
           this.partnerChefPid,
           this.partnerChef.address,
           this.chef.address
@@ -252,6 +255,7 @@ describe("MasterChefJoeV2", function () {
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerBlock,
+          "100",
           this.partnerChefPid,
           ADDRESS_ZERO,
           this.chef.address
@@ -263,6 +267,7 @@ describe("MasterChefJoeV2", function () {
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerBlock,
+          "100",
           this.partnerChefPid,
           this.partnerChef.address,
           ADDRESS_ZERO
@@ -287,6 +292,7 @@ describe("MasterChefJoeV2", function () {
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -308,7 +314,7 @@ describe("MasterChefJoeV2", function () {
       await expect(this.rewarder.connect(this.alice).init(this.dummyToken.address)).to.be.revertedWith("init: Balance must exceed 0")
 
       // Successfully init the rewarder
-      await this.partnerChef.add("100", this.dummyToken.address, true)
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true)
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1")
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address)
       expect((await this.partnerChef.poolInfo(this.partnerChefPid)).lpToken).to.equal(this.dummyToken.address)
@@ -331,6 +337,7 @@ describe("MasterChefJoeV2", function () {
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -389,6 +396,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -396,7 +404,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -437,6 +445,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -444,7 +453,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -524,6 +533,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -531,7 +541,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -598,6 +608,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -605,7 +616,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -667,6 +678,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -674,7 +686,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -806,6 +818,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -813,7 +826,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -897,6 +910,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -904,7 +918,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58, b=15
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55, b=18
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54, b=19
@@ -978,6 +992,7 @@ describe("MasterChefJoeV2", function () {
           ADDRESS_ZERO,
           this.lp.address,
           this.partnerRewardPerSec,
+          this.partnerChefAllocPoint,
           this.partnerChefPid,
           this.partnerChef.address,
           this.chef.address
@@ -989,6 +1004,7 @@ describe("MasterChefJoeV2", function () {
           this.joe.address,
           ADDRESS_ZERO,
           this.partnerRewardPerSec,
+          this.partnerChefAllocPoint,
           this.partnerChefPid,
           this.partnerChef.address,
           this.chef.address
@@ -1000,6 +1016,7 @@ describe("MasterChefJoeV2", function () {
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerSec,
+          this.partnerChefAllocPoint,
           this.partnerChefPid,
           ADDRESS_ZERO,
           this.chef.address
@@ -1011,6 +1028,7 @@ describe("MasterChefJoeV2", function () {
           this.joe.address,
           this.lp.address,
           this.partnerRewardPerSec,
+          this.partnerChefAllocPoint,
           this.partnerChefPid,
           this.partnerChef.address,
           ADDRESS_ZERO
@@ -1035,6 +1053,7 @@ describe("MasterChefJoeV2", function () {
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1056,7 +1075,7 @@ describe("MasterChefJoeV2", function () {
       await expect(this.rewarder.connect(this.alice).init(this.dummyToken.address)).to.be.revertedWith("init: Balance must exceed 0")
 
       // Successfully init the rewarder
-      await this.partnerChef.add("100", this.dummyToken.address, true)
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true)
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1")
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address)
       expect((await this.partnerChef.poolInfo(this.partnerChefPid)).lpToken).to.equal(this.dummyToken.address)
@@ -1079,6 +1098,7 @@ describe("MasterChefJoeV2", function () {
         this.joe.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1137,6 +1157,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1144,7 +1165,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
@@ -1185,6 +1206,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1192,7 +1214,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
@@ -1270,6 +1292,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1277,7 +1300,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
@@ -1344,6 +1367,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1351,7 +1375,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
@@ -1413,6 +1437,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1420,7 +1445,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
@@ -1552,6 +1577,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1559,7 +1585,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
@@ -1643,6 +1669,7 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
         this.partnerChefPid,
         this.partnerChef.address,
         this.chef.address
@@ -1650,7 +1677,7 @@ describe("MasterChefJoeV2", function () {
       await this.rewarder.deployed() // t-58
 
       await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
-      await this.partnerChef.add("100", this.dummyToken.address, true) // t-56
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
 
       await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-55
       await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-54
