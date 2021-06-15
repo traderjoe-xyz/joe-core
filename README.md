@@ -6,7 +6,6 @@ This repository contains all the contracts for Trader Joe.
 
 N/A
 
-
 ## Setup
 
 Make a copy of `.env.example` and rename it `.env`.
