@@ -24,34 +24,79 @@ The most important is `onJoeReward`, which is called whenever a user harvests fr
 
 It is in this function where you would want to contain the logic to mint/transfer your project's tokens to the user. 
 
-The implementation is completely up to you. But to make your life easier, we have implemented two sample rewarder contracts and their accompanying tests.
-Both of these assume your project uses a Sushi-style MasterChef contract, except one rewards per block and the other rewards per second:
-- [contracts/mocks/MasterChefRewarderPerBlockMock.sol](contracts/mocks/MasterChefRewarderPerBlockMock.sol)
-- [contract/mocks/MasterChefRewarderPerSecMock.sol](contract/mocks/MasterChefRewarderPerSecMock.sol)
-- [test/MasterChefJoeV2.test.ts](test/MasterChefJoeV2.test.ts)
+The implementation is completely up to you and it is does not matter if your tokens are minted per block or per second - either will work.
 
-## Example of How It Works with Sushi-style MasterChef
+But to make your life easier, we have implemented two types of rewarders: a simple version and a version if your project also uses a Sushi-style masterchef.
+
+Both types come in per block or per second:
+- [contracts/rewarders/SimpleRewarderPerBlock.sol](contracts/rewarders/SimpleRewarderPerBlock.sol) (recommended)
+- [contracts/rewarders/SimpleRewarderPerSec.sol](contracts/rewarders/SimpleRewarderPerSec.sol) (recommended)
+- [contracts/rewarders/MasterChefRewarderPerBlock.sol](contracts/rewarders/MasterChefRewarderPerBlock.sol)
+- [contract/rewarders/MasterChefRewarderPerSec.sol](contract/rewarders/MasterChefRewarderPerSec.sol)
+
+
+## Example: Simple Rewarder (recommended)
+- [contracts/rewarders/SimpleRewarderPerBlock.sol](contracts/rewarders/SimpleRewarderPerBlock.sol) 
+- [contracts/rewarders/SimpleRewarderPerSec.sol](contracts/rewarders/SimpleRewarderPerSec.sol) 
+
+This is the version we recommend simply because it's the easiest and less prone to accidental failures.
+
+The concept is simple: a fixed amount of reward tokens is transferred to the contract prior. Then our masterchef will
+distribute it according to the reward rate set on it. This requires no coordination with your own masterchef whatsoever.
+
+Key points:
+- Easy setup, no coordination with your masterchef.
+- Needs to be funded with your reward tokens beforehand.
+- Once the rewarder is funded with your reward tokens, there is **no** way to get them back.
+
+Setup:
+1. The rewarder contract is deployed.
+2. A fixed amount of your token is transferred to the contract.
+3. The reward rate is set on the rewarder contract.
+4. The rewarder contract is added to the pool on our MasterChefJoeV2.
+5. Users will now be able to claim double rewards when they start staking.
+
+To stop:
+1. Set reward rate on rewarder contract to 0.
+
+
+## Example: MasterChef Rewarder
+
+- [contracts/rewarders/MasterChefRewarderPerBlock.sol](contracts/rewarders/MasterChefRewarderPerBlock.sol)
+- [contract/rewarders/MasterChefRewarderPerSec.sol](contract/rewarders/MasterChefRewarderPerSec.sol)
+
+This is only applicable if your project uses a Sushi-style MasterChef contract. 
+
+Even if it does, we still recommend the Simple Rewarder. But in some cases, your project may not be able to pre-fund the rewarder.
+In this case, the MasterChef Rewarder is suitable.
 
 ![Image of Double Reward Farming](MasterChefJoeV2.png)
 
-Here we assume that your project uses a Sushi-style MasterChef:
+It works by creating a proxy pool in your own MasterChef using a dummy token, which the MasterChef Rewarder contract deposits in order
+to receive your reward tokens. Once it harvests your reward tokens, it is then able to distribute them to the users.
+
+Key points:
+- Requires coordination with your masterchef.
+- Does not need pre-funding beforehand. 
+- **Highly recommend** not to change any pool weights and/or add new pools in your MasterChef for the duration of the rewarder is live. If you do need to change any pool's weights
+  or add new pools, please inform us as it requires coordination to ensure users don't under/over harvest rewards.
 
 Setup:
 1. Create a new dummy token, `DUMMY`, with supply of 1 (in Wei).
-2. Transfer 1 `DUMMY` to the deployer and then renouncen ownership of the token.
+2. Transfer 1 `DUMMY` to the deployer and then renounce ownership of the token.
 3. Create a new pool in your MasterChef for `DUMMY`.
-4. Deploy the IRewarder contract.
-5. Approve the IRewarder contract to spend 1 `DUMMY`.
-6. Call the `init()` method in IRewarder contract, passing in the `DUMMY` token address - this will allow the IRewarder to deposit the dummy token into your MasterChef and start receiving your rewards.
-7. JOE-XYZ LP with the above IRewarder contract is added as pool to MasterChefJoeV2.
-8. Users can now deposit JOE-XYZ LPs into the pool.
-9. Each time user harvests from MasterChefJoeV2, he/she receives both JOE and XYZ.
+4. Deploy the rewarder contract.
+5. Approve the rewarder contract to spend 1 `DUMMY`.
+6. Call the `init()` method in IRewarder contract, passing in the `DUMMY` token address - this will allow the rewarder to deposit the dummy token into your MasterChef and start receiving your rewards.
+7. The rewarder contract is added to the pool on our MasterChefJoeV2.
+8. Users will now be able to claim double rewards when they start staking.
 
-## Tests
+## Security and Testing
 
-We encourage you to check out our unit tests in test/MasterChefJoe.test.ts.
+None of these contracts are audited.
 
-MasterChefJoeV2 rewards per second, but is compatible with MasterChefs that reward both per block or per second. In the test file you will find tests for both.
+However, we have gone to extreme lengths to test every edge case possible. We implore you take a look at our test cases to be satisfied:
+- [test/MasterChefJoeV2.test.ts](test/MasterChefJoeV2.test.ts)
 
 A quick note about testing with timestamp: it's less predictable than testing with blocks so instead of asserting the reward is an exact amount, we assert it falls within a certain range.
 
@@ -70,9 +115,11 @@ yarn test:coverage --testfiles "test/MasterChefJoeV2.test.ts"
 File | Statements | Branches
 --- | --- | ---
 MasterChefJoeV2.sol | 100% | 100%
-MasterChefRewarderPerBlockMock.sol | 98.15% | 90.91%
-MasterChefRewarderPerSecMock.sol | 98.15% | 90.91%
+SimpleRewarderPerBlock.sol | 100% | 93.75%
+SimpleRewarerPerSec.sol | 100% | 93.75%
+MasterChefRewarderPerBlockMock.sol | 98.28% | 90.91%
+MasterChefRewarderPerSecMock.sol | 98.28% | 90.91%
 
 Notes:
-- Rewarder mocks have branches that are really hard to hit, hence why statements are not 100%.
+- Rewarders have branches that are really hard to hit, hence why statements are not 100%.
 - Same with the branches.
