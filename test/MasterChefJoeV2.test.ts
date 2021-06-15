@@ -2694,9 +2694,9 @@ describe("MasterChefJoeV2", function () {
       await this.chef.connect(this.bob).deposit(0, "0") // t-10
       // Bob should have:
       //   - 0 JoeToken
-      //   - 37*40*1/3 = 493 PartnerToken
+      //   - 37*40*1/3 = 493 (+60) PartnerToken
       expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
-      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(493 - this.tokenOffset, 493 + this.tokenOffset)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(493 - this.tokenOffset, 553 + this.tokenOffset)
       await advanceTimeAndBlock(8) // t-2
 
       await this.chef.connect(this.bob).deposit(0, "0") // t-1
@@ -2706,9 +2706,9 @@ describe("MasterChefJoeV2", function () {
       await this.chef.connect(this.bob).deposit(0, "0") // t+10
       // Bob should have:
       //   - 10*60 = 600 (+60) JoeToken
-      //   - 493 + 20*40*1/3 = 760 PartnerToken
+      //   - 493 + 20*40*1/3 = 760 (+60) PartnerToken
       expect(await this.joe.balanceOf(this.bob.address)).to.be.within(600, 660)
-      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760 - this.tokenOffset, 760 + this.tokenOffset)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760 - this.tokenOffset, 820 + this.tokenOffset)
 
       // Increase pool 1's alloc point
       //   For a brief amount of time, the rewarder is emitting 40/4 = 10 tokens per sec because the total allocPoint
@@ -2725,9 +2725,9 @@ describe("MasterChefJoeV2", function () {
 
       // Bob should have:
       //   - 600 + 20*60 = 1800 (+60) JoeToken
-      //   - 760 + 3*40*1/4 + 17*40*1/2 = 1130 PartnerToken
+      //   - 760 + 3*40*1/4 + 17*40*1/2 = 1130 (+60) PartnerToken
       expect(await this.joe.balanceOf(this.bob.address)).to.be.within(1800, 1860)
-      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(1130 - this.tokenOffset, 1130 + this.tokenOffset)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(1130 - this.tokenOffset, 1190 + this.tokenOffset)
     })
 
     it("should give out JOEs only after farming time", async function () {
