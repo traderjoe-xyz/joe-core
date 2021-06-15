@@ -1,5 +1,5 @@
 const JOE_AVAX_LP = new Map();
-JOE_AVAX_LP.set("4", "0x747ec6f38ab5aba02bc5c5b16837f8ae1e9f2822");
+JOE_AVAX_LP.set("4", "0xab9ba8c7e7b00381027061a8506d895e8938060b");
 
 module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
   const { deploy } = deployments;
