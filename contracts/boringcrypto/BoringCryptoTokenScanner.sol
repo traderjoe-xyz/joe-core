@@ -149,10 +149,10 @@ interface IMasterChef {
         view
         returns (uint256, uint256);
 
-    function pendingJoe(uint256 nr, address who)
+    function pendingTokens(uint256 pid, address who)
         external
         view
-        returns (uint256);
+        returns (uint256, address, string memory, uint256);
 }
 
 interface IPair is IERC20 {

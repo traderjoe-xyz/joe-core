@@ -76,10 +76,10 @@ interface IMasterChef {
         view
         returns (uint256, uint256);
 
-    function pendingJoe(uint256 nr, address who)
+    function pendingTokens(uint256 pid, address who)
         external
         view
-        returns (uint256);
+        returns (uint256, address, string memory, uint256);
 }
 
 interface IPair is IERC20 {
@@ -750,7 +750,8 @@ contract BoringHelperV1 is Ownable {
             uint256 poolLength = chef.poolLength();
             uint256 pendingJoe;
             for (uint256 i = 0; i < poolLength; i++) {
-                pendingJoe += chef.pendingJoe(i, who);
+                (uint256 pendingJoeAmt, , , ) = chef.pendingTokens(i, who);
+                pendingJoe += pendingJoeAmt;
             }
             info.pendingJoe = pendingJoe;
         }
@@ -920,19 +921,19 @@ contract BoringHelperV1 is Ownable {
         for (uint256 i = 0; i < pids.length; i++) {
             pools[i].pid = pids[i];
             (address lpToken, uint256 allocPoint, , ) = chef.poolInfo(pids[i]);
-            IPair pangolin = IPair(lpToken);
-            pools[i].lpToken = pangolin;
+            IPair pair = IPair(lpToken);
+            pools[i].lpToken = pair;
             pools[i].allocPoint = allocPoint;
 
-            pools[i].name = pangolin.name();
-            pools[i].symbol = pangolin.symbol();
-            pools[i].decimals = pangolin.decimals();
+            pools[i].name = pair.name();
+            pools[i].symbol = pair.symbol();
+            pools[i].decimals = pair.decimals();
 
-            pools[i].factory = pangolin.factory();
+            pools[i].factory = pair.factory();
             if (pools[i].factory != IFactory(0)) {
                 pools[i].isPair = true;
-                pools[i].token0 = pangolin.token0();
-                pools[i].token1 = pangolin.token1();
+                pools[i].token0 = pair.token0();
+                pools[i].token1 = pair.token1();
             }
         }
         return (info, pools);
@@ -981,19 +982,20 @@ contract BoringHelperV1 is Ownable {
         for (uint256 i = 0; i < pids.length; i++) {
             (uint256 amount, ) = chef.userInfo(pids[i], who);
             pools[i].balance = amount;
-            pools[i].pending = chef.pendingJoe(pids[i], who);
+            (uint256 pendingJoe, , , ) = chef.pendingTokens(pids[i], who);
+            pools[i].pending = pendingJoe;
 
             (address lpToken, , , ) = chef.poolInfo(pids[i]);
             pools[i].pid = pids[i];
-            IPair pangolin = IPair(lpToken);
-            IFactory factory = pangolin.factory();
+            IPair pair = IPair(lpToken);
+            IFactory factory = pair.factory();
             if (factory != IFactory(0)) {
-                pools[i].totalSupply = pangolin.balanceOf(address(chef));
-                pools[i].lpAllowance = pangolin.allowance(who, address(chef));
-                pools[i].lpBalance = pangolin.balanceOf(who);
-                pools[i].lpTotalSupply = pangolin.totalSupply();
+                pools[i].totalSupply = pair.balanceOf(address(chef));
+                pools[i].lpAllowance = pair.allowance(who, address(chef));
+                pools[i].lpBalance = pair.balanceOf(who);
+                pools[i].lpTotalSupply = pair.totalSupply();
 
-                (uint112 reserve0, uint112 reserve1, ) = pangolin.getReserves();
+                (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
                 pools[i].reserve0 = reserve0;
                 pools[i].reserve1 = reserve1;
             }
