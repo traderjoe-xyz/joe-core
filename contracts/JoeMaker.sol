@@ -227,8 +227,7 @@ contract JoeMaker is BoringOwnable {
     ) internal returns (uint256 amountOut) {
         // Checks
         // X1 - X5: OK
-        IJoePair pair =
-            IJoePair(factory.getPair(fromToken, toToken));
+        IJoePair pair = IJoePair(factory.getPair(fromToken, toToken));
         require(address(pair) != address(0), "JoeMaker: Cannot convert");
 
         // Interactions

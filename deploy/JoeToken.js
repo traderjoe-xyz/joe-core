@@ -1,14 +1,14 @@
- module.exports = async function ({ getNamedAccounts, deployments }) {
-  const { deploy } = deployments
+module.exports = async function ({ getNamedAccounts, deployments }) {
+  const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts();
 
   await deploy("JoeToken", {
     from: deployer,
     log: true,
-    deterministicDeployment: false
-  })
-}
+    deterministicDeployment: false,
+  });
+};
 
-module.exports.tags = ["JoeToken"]
-module.exports.dependencies = ["JoeFactory", "JoeRouter02"]
+module.exports.tags = ["JoeToken"];
+module.exports.dependencies = ["JoeFactory", "JoeRouter02"];

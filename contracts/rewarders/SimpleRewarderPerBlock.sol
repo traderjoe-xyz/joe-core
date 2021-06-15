@@ -144,10 +144,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
 
     /// @notice Sets the distribution reward rate. This will also update the poolInfo.
     /// @param _tokenPerBlock The number of tokens to distribute per block
-    function setRewardRate(uint256 _tokenPerBlock)
-        external
-        onlyOwner
-    {
+    function setRewardRate(uint256 _tokenPerBlock) external onlyOwner {
         updatePool();
 
         uint256 oldRate = tokenPerBlock;

@@ -126,11 +126,13 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     function updatePool() public returns (PoolInfo memory pool) {
         pool = poolInfo;
 
-        if (block.timestamp> pool.lastRewardTimestamp) {
+        if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
 
             if (lpSupply > 0) {
-                uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
+                uint256 timeElapsed = block.timestamp.sub(
+                    pool.lastRewardTimestamp
+                );
                 uint256 tokenReward = timeElapsed.mul(tokenPerSec);
                 pool.accTokenPerShare = pool.accTokenPerShare.add(
                     (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
@@ -144,10 +146,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
 
     /// @notice Sets the distribution reward rate. This will also update the poolInfo.
     /// @param _tokenPerSec The number of tokens to distribute per second
-    function setRewardRate(uint256 _tokenPerSec)
-        external
-        onlyOwner
-    {
+    function setRewardRate(uint256 _tokenPerSec) external onlyOwner {
         updatePool();
 
         uint256 oldRate = tokenPerSec;
@@ -200,7 +199,9 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
 
         if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
-            uint256 timeElapsed = block.timestamp.sub(poolInfo.lastRewardTimestamp);
+            uint256 timeElapsed = block.timestamp.sub(
+                poolInfo.lastRewardTimestamp
+            );
             uint256 tokenReward = timeElapsed.mul(tokenPerSec);
             accTokenPerShare = accTokenPerShare.add(
                 tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply

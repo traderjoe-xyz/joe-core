@@ -15,7 +15,12 @@ interface IMasterChef {
     }
 
     function deposit(uint256 _pid, uint256 _amount) external;
-    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
+
+    function poolInfo(uint256 pid)
+        external
+        view
+        returns (IMasterChef.PoolInfo memory);
+
     function totalAllocPoint() external view returns (uint256);
 }
 
@@ -158,7 +163,10 @@ contract MasterChefRewarderPerBlock is IRewarder, Ownable {
 
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
+                uint256 tokenReward = blocks
+                .mul(tokenPerBlock)
+                .mul(pool.allocPoint)
+                .div(MCV1.totalAllocPoint());
                 pool.accTokenPerShare = pool.accTokenPerShare.add(
                     (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
                 );
@@ -183,12 +191,12 @@ contract MasterChefRewarderPerBlock is IRewarder, Ownable {
     /// @notice Sets the allocation point. THis will also update the poolInfo.
     /// @param _allocPoint The new allocation point of the pool
     function setAllocPoint(uint256 _allocPoint) external onlyOwner {
-      updatePool();
+        updatePool();
 
-      uint256 oldAllocPoint = poolInfo.allocPoint;
-      poolInfo.allocPoint = _allocPoint;
+        uint256 oldAllocPoint = poolInfo.allocPoint;
+        poolInfo.allocPoint = _allocPoint;
 
-      emit AllocPointUpdated(oldAllocPoint, _allocPoint);
+        emit AllocPointUpdated(oldAllocPoint, _allocPoint);
     }
 
     /// @notice Claims reward tokens from MCV1 farm.
@@ -247,7 +255,10 @@ contract MasterChefRewarderPerBlock is IRewarder, Ownable {
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
+            uint256 tokenReward = blocks
+            .mul(tokenPerBlock)
+            .mul(pool.allocPoint)
+            .div(MCV1.totalAllocPoint());
             accTokenPerShare = accTokenPerShare.add(
                 tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
             );
