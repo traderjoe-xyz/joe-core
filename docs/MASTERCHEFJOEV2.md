@@ -99,6 +99,12 @@ Setup:
 7. The rewarder contract is added to the pool on our MasterChefJoeV2.
 8. Users will now be able to claim double rewards when they start staking.
 
+To stop:
+1. Set allocation point of dummy pool on your MasterChef to 0.
+2. Call `updatePool` on rewarder contract.
+3. Set reward rate on rewarder contract to 0.
+4. Set allocation point on rewarder contract to 0.
+
 ## Security and Testing
 
 None of these contracts are audited.
