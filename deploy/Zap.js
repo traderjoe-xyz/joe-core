@@ -11,8 +11,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
 
   const zap = await ethers.getContract("Zap");
-  await zap.initialize();
+  const joe = await deployments.get("JoeToken");
+  const router = await deployments.get("JoeRouter02");
+  await zap.initialize(joe.address, router.address);
 };
 
 module.exports.tags = ["Zap"];
-module.exports.dependencies = ["JoeFactory", "JoeRouter02", "JoeToken"];
+module.exports.dependencies = ["JoeRouter02", "JoeToken"];
