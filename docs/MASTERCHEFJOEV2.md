@@ -100,6 +100,7 @@ Setup:
 8. Users will now be able to claim double rewards when they start staking.
 
 To stop:
+
 1. Set allocation point of dummy pool on your MasterChef to 0.
 2. Call `updatePool` on rewarder contract.
 3. Set reward rate on rewarder contract to 0.
