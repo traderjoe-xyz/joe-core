@@ -1815,6 +1815,86 @@ describe("MasterChefJoeV2", function () {
       expect(await this.partnerToken.balanceOf(this.bob.address)).to.equal(120)
     })
 
+    it("should allow allocation point to be set mid farming", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent
+      )
+      await this.chef.deployed() // t-59, b=14
+
+      this.rewarder = await this.MasterChefRewarderPerBlock.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerBlock,
+        this.partnerChefAllocPoint,
+        this.partnerChefPid,
+        this.partnerChef.address,
+        this.chef.address
+      )
+      await this.rewarder.deployed() // t-58, b=15
+
+      await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57, b=16
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56, b=17
+      await this.partnerChef.add("200", this.lp2.address, true) // t-55, b=18
+
+      await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-54, b=19
+      await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-53, b=20
+
+      await this.joe.transferOwnership(this.chef.address) // t-52, b=21
+      await this.chef.setDevPercent(this.devPercent) // t-51, b=22
+      await this.chef.setTreasuryPercent(this.treasuryPercent) // t-50, b=23
+
+      await this.chef.add("100", this.lp.address, this.rewarder.address) // t-49, b=24
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-48, b=25
+      await this.chef.connect(this.bob).deposit(0, "100") // t-47, b=26
+      await advanceTimeAndBlock(36) // t-11, b=27
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-10, b=28
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 2*40*1/3 = 26 PartnerToken
+      expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(26 - this.tokenOffset, 26 + this.tokenOffset)
+      await advanceTimeAndBlock(8) // t-2, b=29
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-1, b=30
+      expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
+      await advanceTimeAndBlock(10) // t+9, b=31
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t+10, b=32
+      // Bob should have:
+      //   - 10*60 = 600 (+60) JoeToken
+      //   - 26 + 4*40*1/3 = 79 PartnerToken
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(600, 660)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(79 - this.tokenOffset, 79 + this.tokenOffset)
+
+      // Increase pool 1's alloc point
+      //   For a brief amount of time, the rewarder is emitting 40/4 = 10 tokens per block because the total allocPoint
+      //   has increased to 400, but the pool alloc point on the rewarder has not been increased yet.
+      await this.partnerChef.set(0, "200", true) // t+11, b=33
+      await this.rewarder.updatePool() // t+12, b=34
+      await this.rewarder.setAllocPoint(200) // t+13, b=35
+
+      await advanceTimeAndBlock(2) // t+15, b=36
+      await advanceTimeAndBlock(5) // t+20, b=37
+      await advanceTimeAndBlock(9) // t+29, b=38
+
+      await this.chef.connect(this.bob).deposit(0, 0) // t+30, b=39
+
+      // Bob should have:
+      //   - 600 + 20*60 = 1800 (+60) JoeToken
+      //   - 79 + 3*40*1/4 + 4*40*1/2 = 189 PartnerToken
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(1800, 1860)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(189 - this.tokenOffset, 189 + this.tokenOffset)
+    })
+
     it("should give out JOEs only after farming time", async function () {
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
@@ -2568,6 +2648,86 @@ describe("MasterChefJoeV2", function () {
       //   - 400 (+40) ParnterToken
       expect(await this.joe.balanceOf(this.bob.address)).to.be.within(3060, 3120)
       expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(400, 440)
+    })
+
+    it("should allow allocation point to be set mid farming", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent
+      )
+      await this.chef.deployed() // t-59
+
+      this.rewarder = await this.MasterChefRewarderPerSec.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerSec,
+        this.partnerChefAllocPoint,
+        this.partnerChefPid,
+        this.partnerChef.address,
+        this.chef.address
+      )
+      await this.rewarder.deployed() // t-58
+
+      await this.partnerToken.transferOwnership(this.partnerChef.address) // t-57
+      await this.partnerChef.add(this.partnerChefAllocPoint, this.dummyToken.address, true) // t-56
+      await this.partnerChef.add("200", this.lp2.address, true) // t-55
+
+      await this.dummyToken.connect(this.partnerDev).approve(this.rewarder.address, "1") // t-54
+      await this.rewarder.connect(this.partnerDev).init(this.dummyToken.address) // t-53
+
+      await this.joe.transferOwnership(this.chef.address) // t-52
+      await this.chef.setDevPercent(this.devPercent) // t-51
+      await this.chef.setTreasuryPercent(this.treasuryPercent) // t-50
+
+      await this.chef.add("100", this.lp.address, this.rewarder.address) // t-49
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-48
+      await this.chef.connect(this.bob).deposit(0, "100") // t-47
+      await advanceTimeAndBlock(36) // t-11
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-10
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 37*40*1/3 = 493 PartnerToken
+      expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(493 - this.tokenOffset, 493 + this.tokenOffset)
+      await advanceTimeAndBlock(8) // t-2
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-1
+      expect(await this.joe.balanceOf(this.bob.address)).to.equal("0")
+      await advanceTimeAndBlock(10) // t+9
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t+10
+      // Bob should have:
+      //   - 10*60 = 600 (+60) JoeToken
+      //   - 493 + 20*40*1/3 = 760 PartnerToken
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(600, 660)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760 - this.tokenOffset, 760 + this.tokenOffset)
+
+      // Increase pool 1's alloc point
+      //   For a brief amount of time, the rewarder is emitting 40/4 = 10 tokens per sec because the total allocPoint
+      //   has increased to 400, but the pool alloc point on the rewarder has not been increased yet.
+      await this.partnerChef.set(0, "200", true) // t+11
+      await this.rewarder.updatePool() // t+12
+      await this.rewarder.setAllocPoint(200) // t+13
+
+      await advanceTimeAndBlock(2) // t+15
+      await advanceTimeAndBlock(5) // t+20
+      await advanceTimeAndBlock(9) // t+29
+
+      await this.chef.connect(this.bob).deposit(0, 0) // t+30
+
+      // Bob should have:
+      //   - 600 + 20*60 = 1800 (+60) JoeToken
+      //   - 760 + 3*40*1/4 + 17*40*1/2 = 1130 PartnerToken
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.within(1800, 1860)
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(1130 - this.tokenOffset, 1130 + this.tokenOffset)
     })
 
     it("should give out JOEs only after farming time", async function () {
