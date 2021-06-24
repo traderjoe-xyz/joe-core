@@ -246,7 +246,7 @@ describe("MasterChefJoeV2", function () {
       expect((await this.chef.poolInfo(0)).rewarder).to.equal(this.rewarder.address)
     })
 
-    it("should allow emergency withdraw", async function () {
+    it("should allow emergency withdraw from MasterChefJoeV2", async function () {
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
         this.joe.address,
@@ -270,6 +270,20 @@ describe("MasterChefJoeV2", function () {
       await this.chef.connect(this.bob).emergencyWithdraw(0)
 
       expect(await this.lp.balanceOf(this.bob.address)).to.equal("1000")
+    })
+
+    it("should allow emergency withdraw from rewarder contract", async function () {
+      this.rewarder = await this.SimpleRewarderPerBlock.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerBlock,
+        this.chef.address
+      )
+      await this.rewarder.deployed()
+
+      await this.partnerToken.mint(this.rewarder.address, "1000000")
+      await this.rewarder.emergencyWithdraw()
+      expect(await this.partnerToken.balanceOf(this.alice.address)).to.equal("1000000")
     })
 
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
@@ -917,6 +931,20 @@ describe("MasterChefJoeV2", function () {
       await this.chef.set("0", "150", this.rewarder.address, true)
       expect((await this.chef.poolInfo(0)).allocPoint).to.equal("150")
       expect((await this.chef.poolInfo(0)).rewarder).to.equal(this.rewarder.address)
+    })
+
+    it("should allow emergency withdraw from rewarder contract", async function () {
+      this.rewarder = await this.SimpleRewarderPerSec.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerSec,
+        this.chef.address
+      )
+      await this.rewarder.deployed()
+
+      await this.partnerToken.mint(this.rewarder.address, "1000000")
+      await this.rewarder.emergencyWithdraw()
+      expect(await this.partnerToken.balanceOf(this.alice.address)).to.equal("1000000")
     })
 
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
