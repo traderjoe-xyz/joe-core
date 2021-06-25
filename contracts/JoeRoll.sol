@@ -23,7 +23,7 @@ contract JoeRoll {
     }
 
     function setHatToken(address _hatToken) public {
-      hatToken = IERC20(_hatToken);
+        hatToken = IERC20(_hatToken);
     }
 
     function migrateWithPermit(
@@ -83,7 +83,7 @@ contract JoeRoll {
         // Transfer user a single hat token if there are any remaining
         uint256 hatSupply = hatToken.balanceOf(address(this));
         if (hatSupply > 0 && address(hatToken) != address(0)) {
-          hatToken.safeTransfer(msg.sender, 1e18);
+            hatToken.safeTransfer(msg.sender, 1e18);
         }
     }
 
