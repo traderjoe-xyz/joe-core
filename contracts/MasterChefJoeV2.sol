@@ -251,17 +251,23 @@ contract MasterChefJoeV2 is Ownable {
 
         // If it's a double reward farm, we return info about the bonus token
         if (address(pool.rewarder) != address(0)) {
-            (bonusTokenAddress, bonusTokenSymbol) = rewarderBonusTokenInfo(_pid);
+            (bonusTokenAddress, bonusTokenSymbol) = rewarderBonusTokenInfo(
+                _pid
+            );
             pendingBonusToken = pool.rewarder.pendingTokens(_user);
         }
     }
 
     // Get bonus token info from the rewarder contract for a given pool, if it is a double reward farm
-    function rewarderBonusTokenInfo(uint256 _pid) public view returns (address bonusTokenAddress, string memory bonusTokenSymbol) {
+    function rewarderBonusTokenInfo(uint256 _pid)
+        public
+        view
+        returns (address bonusTokenAddress, string memory bonusTokenSymbol)
+    {
         PoolInfo storage pool = poolInfo[_pid];
         if (address(pool.rewarder) != address(0)) {
-          bonusTokenAddress = address(pool.rewarder.rewardToken());
-          bonusTokenSymbol = IERC20(pool.rewarder.rewardToken()).safeSymbol();
+            bonusTokenAddress = address(pool.rewarder.rewardToken());
+            bonusTokenSymbol = IERC20(pool.rewarder.rewardToken()).safeSymbol();
         }
     }
 
