@@ -247,7 +247,10 @@ contract MasterChefJoeV2 is Ownable {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
-            uint256 lpPercent = 1000 - devPercent - treasuryPercent - investorPercent;
+            uint256 lpPercent = 1000 -
+                devPercent -
+                treasuryPercent -
+                investorPercent;
             uint256 joeReward = multiplier
             .mul(joePerSec)
             .mul(pool.allocPoint)
@@ -307,7 +310,10 @@ contract MasterChefJoeV2 is Ownable {
         uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(
             totalAllocPoint
         );
-        uint256 lpPercent = 1000 - devPercent - treasuryPercent - investorPercent;
+        uint256 lpPercent = 1000 -
+            devPercent -
+            treasuryPercent -
+            investorPercent;
         joe.mint(devAddr, joeReward.mul(devPercent).div(1000));
         joe.mint(treasuryAddr, joeReward.mul(treasuryPercent).div(1000));
         joe.mint(investorAddr, joeReward.mul(investorPercent).div(1000));
@@ -423,8 +429,8 @@ contract MasterChefJoeV2 is Ownable {
 
     // Update treasury address by the previous treasury.
     function setTreasuryAddr(address _treasuryAddr) public {
-      require(msg.sender == treasuryAddr, "setTreasuryAddr: wut?");
-      treasuryAddr = _treasuryAddr;
+        require(msg.sender == treasuryAddr, "setTreasuryAddr: wut?");
+        treasuryAddr = _treasuryAddr;
     }
 
     function setTreasuryPercent(uint256 _newTreasuryPercent) public onlyOwner {
@@ -441,8 +447,8 @@ contract MasterChefJoeV2 is Ownable {
 
     // Update the investor address by the previous investor.
     function setInvestorAddr(address _investorAddr) public {
-      require(msg.sender == investorAddr, "setInvestorAddr: wut?");
-      investorAddr = _investorAddr;
+        require(msg.sender == investorAddr, "setInvestorAddr: wut?");
+        investorAddr = _investorAddr;
     }
 
     function setInvestorPercent(uint256 _newInvestorPercent) public onlyOwner {
