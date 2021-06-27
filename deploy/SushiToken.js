@@ -11,4 +11,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
 };
 
-module.exports.tags = ["SushiToken"];
+module.exports.tags = ["SushiToken", "double"];

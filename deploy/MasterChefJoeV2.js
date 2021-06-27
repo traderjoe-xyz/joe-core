@@ -11,10 +11,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       joe.address,
       dev,
       treasury,
-      "100000000000000000000",
-      "1619065864",
-      "200",
-      "200",
+      "30000000000000000000", // 30 JOE per sec
+      "1625335200", // Sat Jul 03 10:00
+      "200", // 20%
+      "200", // 20%
     ],
     log: true,
     deterministicDeployment: false,
@@ -27,5 +27,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   // }
 };
 
-module.exports.tags = ["MasterChefJoeV2"];
+module.exports.tags = ["MasterChefJoeV2", "chef"];
 module.exports.dependencies = ["JoeFactory", "JoeRouter02", "JoeToken"];

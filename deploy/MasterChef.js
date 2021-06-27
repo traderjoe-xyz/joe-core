@@ -26,5 +26,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   }
 };
 
-module.exports.tags = ["MasterChef"];
+module.exports.tags = ["MasterChef", "double"];
 module.exports.dependencies = ["SushiToken"];

@@ -39,5 +39,5 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
 };
 
-module.exports.tags = ["BoringCryptoDashboardV2"];
+module.exports.tags = ["BoringCryptoDashboardV2", "boring"];
 module.exports.dependencies = ["MasterChefJoeV2", "JoeFactory"];

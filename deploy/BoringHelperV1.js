@@ -47,7 +47,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
 };
 
-module.exports.tags = ["BoringHelperV1"];
+module.exports.tags = ["BoringHelperV1", "boring"];
 module.exports.dependencies = [
   "MasterChefJoeV2",
   "JoeMaker",
