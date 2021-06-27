@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./JoeToken.sol";
 import "./libraries/BoringERC20.sol";
+import "hardhat/console.sol";
 
 interface IRewarder {
     using SafeERC20 for IERC20;
@@ -69,15 +70,19 @@ contract MasterChefJoeV2 is Ownable {
     // The JOE TOKEN!
     JoeToken public joe;
     // Dev address.
-    address public devaddr;
+    address public devAddr;
     // Treasury address.
-    address public treasuryaddr;
+    address public treasuryAddr;
+    // Investor address
+    address public investorAddr;
     // JOE tokens created per second.
     uint256 public joePerSec;
     // Percentage of pool rewards that goto the devs.
     uint256 public devPercent;
     // Percentage of pool rewards that goes to the treasury.
     uint256 public treasuryPercent;
+    // Percentage of pool rewards that goes to the investor.
+    uint256 public investorPercent;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -121,12 +126,14 @@ contract MasterChefJoeV2 is Ownable {
 
     constructor(
         JoeToken _joe,
-        address _devaddr,
-        address _treasuryaddr,
+        address _devAddr,
+        address _treasuryAddr,
+        address _investorAddr,
         uint256 _joePerSec,
         uint256 _startTimestamp,
         uint256 _devPercent,
-        uint256 _treasuryPercent
+        uint256 _treasuryPercent,
+        uint256 _investorPercent
     ) public {
         require(
             0 <= _devPercent && _devPercent <= 1000,
@@ -137,16 +144,22 @@ contract MasterChefJoeV2 is Ownable {
             "constructor: invalid treasury percent value"
         );
         require(
-            _devPercent + _treasuryPercent <= 1000,
+            0 <= _investorPercent && _investorPercent <= 1000,
+            "constructor: invalid investor percent value"
+        );
+        require(
+            _devPercent + _treasuryPercent + _investorPercent <= 1000,
             "constructor: total percent over max"
         );
         joe = _joe;
-        devaddr = _devaddr;
-        treasuryaddr = _treasuryaddr;
+        devAddr = _devAddr;
+        treasuryAddr = _treasuryAddr;
+        investorAddr = _investorAddr;
         joePerSec = _joePerSec;
         startTimestamp = _startTimestamp;
         devPercent = _devPercent;
         treasuryPercent = _treasuryPercent;
+        investorPercent = _investorPercent;
         totalAllocPoint = 0;
     }
 
@@ -234,7 +247,7 @@ contract MasterChefJoeV2 is Ownable {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
-            uint256 lpPercent = 1000 - devPercent - treasuryPercent;
+            uint256 lpPercent = 1000 - devPercent - treasuryPercent - investorPercent;
             uint256 joeReward = multiplier
             .mul(joePerSec)
             .mul(pool.allocPoint)
@@ -288,9 +301,10 @@ contract MasterChefJoeV2 is Ownable {
         uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(
             totalAllocPoint
         );
-        uint256 lpPercent = 1000 - devPercent - treasuryPercent;
-        joe.mint(devaddr, joeReward.mul(devPercent).div(1000));
-        joe.mint(treasuryaddr, joeReward.mul(treasuryPercent).div(1000));
+        uint256 lpPercent = 1000 - devPercent - treasuryPercent - investorPercent;
+        joe.mint(devAddr, joeReward.mul(devPercent).div(1000));
+        joe.mint(treasuryAddr, joeReward.mul(treasuryPercent).div(1000));
+        joe.mint(investorAddr, joeReward.mul(investorPercent).div(1000));
         joe.mint(address(this), joeReward.mul(lpPercent).div(1000));
         pool.accJoePerShare = pool.accJoePerShare.add(
             joeReward.mul(1e12).div(lpSupply).mul(lpPercent).div(1000)
@@ -383,10 +397,10 @@ contract MasterChefJoeV2 is Ownable {
     }
 
     // Update dev address by the previous dev.
-    function dev(address _devaddr) public {
-        require(msg.sender == devaddr, "dev: wut?");
-        devaddr = _devaddr;
-        emit SetDevAddress(msg.sender, _devaddr);
+    function dev(address _devAddr) public {
+        require(msg.sender == devAddr, "dev: wut?");
+        devAddr = _devAddr;
+        emit SetDevAddress(msg.sender, _devAddr);
     }
 
     function setDevPercent(uint256 _newDevPercent) public onlyOwner {
@@ -395,10 +409,16 @@ contract MasterChefJoeV2 is Ownable {
             "setDevPercent: invalid percent value"
         );
         require(
-            treasuryPercent + _newDevPercent <= 1000,
+            treasuryPercent + _newDevPercent + investorPercent <= 1000,
             "setDevPercent: total percent over max"
         );
         devPercent = _newDevPercent;
+    }
+
+    // Update treasury address by the previous treasury.
+    function setTreasuryAddr(address _treasuryAddr) public {
+      require(msg.sender == treasuryAddr, "setTreasuryAddr: wut?");
+      treasuryAddr = _treasuryAddr;
     }
 
     function setTreasuryPercent(uint256 _newTreasuryPercent) public onlyOwner {
@@ -407,10 +427,28 @@ contract MasterChefJoeV2 is Ownable {
             "setTreasuryPercent: invalid percent value"
         );
         require(
-            devPercent + _newTreasuryPercent <= 1000,
+            devPercent + _newTreasuryPercent + investorPercent <= 1000,
             "setTreasuryPercent: total percent over max"
         );
         treasuryPercent = _newTreasuryPercent;
+    }
+
+    // Update the investor address by the previous investor.
+    function setInvestorAddr(address _investorAddr) public {
+      require(msg.sender == investorAddr, "setInvestorAddr: wut?");
+      investorAddr = _investorAddr;
+    }
+
+    function setInvestorPercent(uint256 _newInvestorPercent) public onlyOwner {
+        require(
+            0 <= _newInvestorPercent && _newInvestorPercent <= 1000,
+            "setInvestorPercent: invalid percent value"
+        );
+        require(
+            devPercent + _newInvestorPercent + treasuryPercent <= 1000,
+            "setInvestorPercent: total percent over max"
+        );
+        investorPercent = _newInvestorPercent;
     }
 
     // Pancake has to add hidden dummy pools inorder to alter the emission,
