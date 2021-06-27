@@ -167,7 +167,7 @@ library JoeLibrary {
                         hex"ff",
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"41e6225fa31c58579641c27f787341ba4a147ce63f7492b93f19d8303647d140" // init code fuji
+                        hex"0bbca9af0511ad1a1da383135cf3a8d2ac620e549ef9f6ae3a4c33c2fed0af91"
                     )
                 )
             )

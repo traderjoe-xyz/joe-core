@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-
 // File: contracts/traderjoe/interfaces/IJoeFactory.sol
 
 // SPDX-License-Identifier: GPL-3.0
@@ -42,6 +40,7 @@ interface IJoeFactory {
 
 // File: contracts/traderjoe/libraries/SafeMath.sol
 
+
 pragma solidity =0.6.12;
 
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
@@ -62,7 +61,9 @@ library SafeMathJoe {
 
 // File: contracts/traderjoe/JoeERC20.sol
 
+
 pragma solidity =0.6.12;
+
 
 contract JoeERC20 {
     using SafeMathJoe for uint256;
@@ -197,6 +198,7 @@ contract JoeERC20 {
 
 // File: contracts/traderjoe/libraries/Math.sol
 
+
 pragma solidity =0.6.12;
 
 // a library for performing various math operations
@@ -223,6 +225,7 @@ library Math {
 
 // File: contracts/traderjoe/libraries/UQ112x112.sol
 
+
 pragma solidity =0.6.12;
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
@@ -245,6 +248,7 @@ library UQ112x112 {
 }
 
 // File: contracts/traderjoe/interfaces/IERC20.sol
+
 
 pragma solidity >=0.5.0;
 
@@ -284,6 +288,7 @@ interface IERC20Joe {
 
 // File: contracts/traderjoe/interfaces/IJoeCallee.sol
 
+
 pragma solidity >=0.5.0;
 
 interface IJoeCallee {
@@ -297,7 +302,14 @@ interface IJoeCallee {
 
 // File: contracts/traderjoe/JoePair.sol
 
+
 pragma solidity =0.6.12;
+
+
+
+
+
+
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
@@ -601,7 +613,10 @@ contract JoePair is JoeERC20 {
 
 // File: contracts/traderjoe/JoeFactory.sol
 
+
 pragma solidity =0.6.12;
+
+
 
 contract JoeFactory is IJoeFactory {
     address public override feeTo;
