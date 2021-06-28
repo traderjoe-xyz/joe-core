@@ -24,8 +24,8 @@ contract JoeRoll {
     }
 
     function setHatToken(address _hatToken, uint256 _hatStartTimestamp) public {
-      hatToken = IERC20(_hatToken);
-      hatStartTimestamp = _hatStartTimestamp;
+        hatToken = IERC20(_hatToken);
+        hatStartTimestamp = _hatStartTimestamp;
     }
 
     function migrateWithPermit(
@@ -84,11 +84,15 @@ contract JoeRoll {
 
         // Transfer user a single hat token if there are any remaining and user has not received one yet
         if (address(hatToken) != address(0)) {
-          uint256 hatSupply = hatToken.balanceOf(address(this));
-          uint256 userSupply = hatToken.balanceOf(msg.sender);
-          if (hatSupply > 0 && userSupply == 0 && block.timestamp >= hatStartTimestamp) {
-            hatToken.safeTransfer(msg.sender, 1e18);
-          }
+            uint256 hatSupply = hatToken.balanceOf(address(this));
+            uint256 userSupply = hatToken.balanceOf(msg.sender);
+            if (
+                hatSupply > 0 &&
+                userSupply == 0 &&
+                block.timestamp >= hatStartTimestamp
+            ) {
+                hatToken.safeTransfer(msg.sender, 1e18);
+            }
         }
     }
 
