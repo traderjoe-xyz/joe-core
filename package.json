@@ -50,6 +50,8 @@
     "arbitrum:export": "hardhat --network arbitrum export --export exports/arbitrum.json",
     "fuji:deploy": "hardhat --network fuji deploy",
     "fuji:export": "hardhat --network fuji export --export exports/fuji.json",
+    "avalanche:deploy": "hardhat --network avalanche deploy",
+    "avalanche:export": "hardhat --network avalanche export --export exports/fuji.json",
     "export": "hardhat export --export-all exports/deployments.json",
     "test": "hardhat test",
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",

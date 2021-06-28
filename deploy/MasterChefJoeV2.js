@@ -1,7 +1,7 @@
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev, treasury } = await getNamedAccounts();
+  const { deployer, dev, treasury, investor } = await getNamedAccounts();
 
   const joe = await ethers.getContract("JoeToken");
 
@@ -11,20 +11,22 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       joe.address,
       dev,
       treasury,
+      investor,
       "30000000000000000000", // 30 JOE per sec
-      "1625335200", // Sat Jul 03 10:00
+      "1625320800", // Sat Jul 03 10:00
       "200", // 20%
       "200", // 20%
+      "100", // 10%
     ],
     log: true,
     deterministicDeployment: false,
   });
 
-  // if ((await joe.owner()) !== address) {
-  //   // Transfer Joe Ownership to MasterChefJoeV2
-  //   console.log("Transfer Joe Ownership to MasterChefJoeV2");
-  //   await (await joe.transferOwnership(address)).wait();
-  // }
+  if ((await joe.owner()) !== address) {
+    // Transfer Joe Ownership to MasterChefJoeV2
+    console.log("Transfer Joe Ownership to MasterChefJoeV2");
+    await (await joe.transferOwnership(address)).wait();
+  }
 };
 
 module.exports.tags = ["MasterChefJoeV2", "chef"];
