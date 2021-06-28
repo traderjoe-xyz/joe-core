@@ -1383,7 +1383,7 @@ describe("MasterChefJoeV2", function () {
       expect(await this.joe.balanceOf(this.dev.address)).to.be.within(400 - this.tokenOffset, 420 + this.tokenOffset)
       expect(await this.joe.balanceOf(this.treasury.address)).to.be.within(400 - this.tokenOffset, 420 + this.tokenOffset)
       expect(await this.joe.balanceOf(this.investor.address)).to.be.within(200 - this.tokenOffset, 210 + this.tokenOffset)
-      expect(await this.joe.balanceOf(this.chef.address)).to.be.within(408 - this.tokenOffset, 408 + this.tokenOffset)
+      expect(await this.joe.balanceOf(this.chef.address)).to.be.within(408 - this.tokenOffset, 508 + this.tokenOffset)
       // Alice withdraws 20 LPs at t+40
       // Bob withdraws 15 LPs at t+50
       // Carol withdraws 30 LPs at t+60
