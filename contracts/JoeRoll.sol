@@ -15,10 +15,17 @@ contract JoeRoll {
 
     IJoeRouter01 public oldRouter;
     IJoeRouter01 public router;
+    IERC20 public hatToken;
+    uint256 public hatStartTimestamp;
 
     constructor(IJoeRouter01 _oldRouter, IJoeRouter01 _router) public {
         oldRouter = _oldRouter;
         router = _router;
+    }
+
+    function setHatToken(address _hatToken, uint256 _hatStartTimestamp) public {
+      hatToken = IERC20(_hatToken);
+      hatStartTimestamp = _hatStartTimestamp;
     }
 
     function migrateWithPermit(
@@ -74,6 +81,15 @@ contract JoeRoll {
         if (amountB > pooledAmountB) {
             IERC20(tokenB).safeTransfer(msg.sender, amountB - pooledAmountB);
         }
+
+        // Transfer user a single hat token if there are any remaining and user has not received one yet
+        if (address(hatToken) != address(0)) {
+          uint256 hatSupply = hatToken.balanceOf(address(this));
+          uint256 userSupply = hatToken.balanceOf(msg.sender);
+          if (hatSupply > 0 && userSupply == 0 && block.timestamp >= hatStartTimestamp) {
+            hatToken.safeTransfer(msg.sender, 1e18);
+          }
+        }
     }
 
     function removeLiquidity(
@@ -112,7 +128,7 @@ contract JoeRoll {
                         hex"ff",
                         oldRouter.factory(),
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"41e6225fa31c58579641c27f787341ba4a147ce63f7492b93f19d8303647d140" // init code hash
+                        hex"0bbca9af0511ad1a1da383135cf3a8d2ac620e549ef9f6ae3a4c33c2fed0af91" // init code hash
                     )
                 )
             )
