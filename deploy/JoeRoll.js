@@ -40,4 +40,4 @@ module.exports = async function ({
 };
 
 module.exports.tags = ["JoeRoll"];
-module.exports.dependencies = ["JoeFactory", "JoeRouter02"];
+module.exports.dependencies = ["JoeRouter02"];
