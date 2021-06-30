@@ -22,9 +22,9 @@ contract Zap is OwnableUpgradeable {
     /* ========== CONSTANT VARIABLES ========== */
 
     address private JOE;
-    address private constant USDT = 0xE734779cA7A5ECA71bf87AF3938B60B22f628cD3;
-    address private constant DAI = 0xE734779cA7A5ECA71bf87AF3938B60B22f628cD3;
-    address private constant WAVAX = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
+    address private constant USDT = 0xde3A24028580884448a5397872046a019649b084;
+    address private constant DAI = 0xbA7dEebBFC5fA1100Fb055a87773e1E99Cd3507a;
+    address private constant WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
     IJoeRouter02 private ROUTER;
 
