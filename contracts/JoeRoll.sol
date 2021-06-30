@@ -126,7 +126,7 @@ contract JoeRoll is Ownable {
                         hex"ff",
                         oldRouter.factory(),
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"41e6225fa31c58579641c27f787341ba4a147ce63f7492b93f19d8303647d140" // init code hash
+                        hex"40231f6b438bce0797c9ada29b718a87ea0a5cea3fe9a771abdd76bd41a3e545" // init code hash
                     )
                 )
             )
