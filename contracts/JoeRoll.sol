@@ -81,10 +81,7 @@ contract JoeRoll is Ownable {
         if (address(hatToken) != address(0)) {
             uint256 hatSupply = hatToken.balanceOf(address(this));
             uint256 userSupply = hatToken.balanceOf(msg.sender);
-            if (
-                hatSupply > 0 &&
-                userSupply == 0
-            ) {
+            if (hatSupply > 0 && userSupply == 0) {
                 hatToken.safeTransfer(msg.sender, 1e18);
             }
         }
