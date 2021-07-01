@@ -884,14 +884,14 @@ describe("MasterChefJoeV2", function () {
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116, b=25
       // At b=35, Alice should have:
-      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+20) JoeToken
+      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+50) JoeToken
       //   - 120 + 1*40 + 5*90 = 610 PartnerToken
       await advanceTimeAndBlock(2) // t+118, b=26
       await advanceTimeAndBlock(3) // t+121, b=27
       await advanceTimeAndBlock(4) // t+125, b=28
       await advanceTimeAndBlock(5) // t+130, b=29
       await advanceTimeAndBlock(6) // t+136, b=30
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5570)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5600)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(610)
     })
   })
@@ -2446,14 +2446,14 @@ describe("MasterChefJoeV2", function () {
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116, b=28
       // At b=35, Alice should have:
-      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+20) JoeToken
+      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+50) JoeToken
       //   - 120 + 1*40 + 5*90 = 610 PartnerToken
       await advanceTimeAndBlock(2) // t+118, b=29
       await advanceTimeAndBlock(3) // t+121, b=30
       await advanceTimeAndBlock(4) // t+125, b=31
       await advanceTimeAndBlock(5) // t+130, b=32
       await advanceTimeAndBlock(6) // t+136, b=33
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5570)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5600)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(610)
     })
   })
