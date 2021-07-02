@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
-import "hardhat/console.sol";
 
 interface IRewarder {
     using SafeERC20 for IERC20;
