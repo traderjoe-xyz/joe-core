@@ -17,6 +17,11 @@ library SafeMath {
         require(b == 0 || (c = a * b) / b == a, "SafeMath: Mul Overflow");
     }
 
+    function div(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        require(b > 0, "SafeMath: Div by Zero");
+        c = a / b;
+    }
+
     function to128(uint256 a) internal pure returns (uint128 c) {
         require(a <= uint128(-1), "SafeMath: uint128 Overflow");
         c = uint128(a);
@@ -72,6 +77,7 @@ interface IERC20 {
 
 pragma solidity 0.6.12;
 
+
 library SafeERC20 {
     function safeSymbol(IERC20 token) internal view returns (string memory) {
         (bool success, bytes memory data) = address(token).staticcall(
@@ -124,6 +130,7 @@ library SafeERC20 {
 }
 
 // File: contracts/traderjoe/interfaces/IJoeERC20.sol
+
 
 pragma solidity >=0.5.0;
 
@@ -178,6 +185,7 @@ interface IJoeERC20 {
 }
 
 // File: contracts/traderjoe/interfaces/IJoePair.sol
+
 
 pragma solidity >=0.5.0;
 
@@ -292,6 +300,7 @@ interface IJoePair {
 
 // File: contracts/traderjoe/interfaces/IJoeFactory.sol
 
+
 pragma solidity >=0.5.0;
 
 interface IJoeFactory {
@@ -328,39 +337,36 @@ interface IJoeFactory {
     function setMigrator(address) external;
 }
 
-// File: contracts/Ownable.sol
+// File: contracts/boringcrypto/BoringOwnable.sol
 
-// Audit on 5-Jan-2021 by Keno and BoringCrypto
-
-// P1 - P3: OK
 pragma solidity 0.6.12;
 
+// Audit on 5-Jan-2021 by Keno and BoringCrypto
 // Source: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol + Claimable.sol
 // Edited by BoringCrypto
 
-// T1 - T4: OK
-contract OwnableData {
-    // V1 - V5: OK
+contract BoringOwnableData {
     address public owner;
-    // V1 - V5: OK
     address public pendingOwner;
 }
 
-// T1 - T4: OK
-contract Ownable is OwnableData {
-    // E1: OK
+contract BoringOwnable is BoringOwnableData {
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
     );
 
-    constructor() internal {
+    /// @notice `owner` defaults to msg.sender on construction.
+    constructor() public {
         owner = msg.sender;
         emit OwnershipTransferred(address(0), msg.sender);
     }
 
-    // F1 - F9: OK
-    // C1 - C21: OK
+    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
+    /// Can only be invoked by the current `owner`.
+    /// @param newOwner Address of the new owner.
+    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
+    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
     function transferOwnership(
         address newOwner,
         bool direct,
@@ -376,14 +382,14 @@ contract Ownable is OwnableData {
             // Effects
             emit OwnershipTransferred(owner, newOwner);
             owner = newOwner;
+            pendingOwner = address(0);
         } else {
             // Effects
             pendingOwner = newOwner;
         }
     }
 
-    // F1 - F9: OK
-    // C1 - C21: OK
+    /// @notice Needs to be called by `pendingOwner` to claim ownership.
     function claimOwnership() public {
         address _pendingOwner = pendingOwner;
 
@@ -399,8 +405,7 @@ contract Ownable is OwnableData {
         pendingOwner = address(0);
     }
 
-    // M1 - M5: OK
-    // C1 - C21: OK
+    /// @notice Only allows the `owner` to execute the function.
     modifier onlyOwner() {
         require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
@@ -409,14 +414,21 @@ contract Ownable is OwnableData {
 
 // File: contracts/JoeMaker.sol
 
+
 // P1 - P3: OK
 pragma solidity 0.6.12;
+
+
+
+
+
+
 
 // JoeMaker is MasterJoe's left hand and kinda a wizard. He can cook up Joe from pretty much anything!
 // This contract handles "serving up" rewards for xJoe holders by trading tokens collected from fees for Joe.
 
 // T1 - T4: OK
-contract JoeMaker is Ownable {
+contract JoeMaker is BoringOwnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
