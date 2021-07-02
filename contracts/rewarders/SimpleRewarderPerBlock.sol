@@ -170,7 +170,12 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
             pending = (user.amount.mul(pool.accTokenPerShare) /
                 ACC_TOKEN_PRECISION)
             .sub(user.rewardDebt);
-            rewardToken.safeTransfer(_user, pending);
+            uint256 balance = rewardToken.balanceOf(address(this));
+            if (pending > balance) {
+              rewardToken.safeTransfer(_user, balance);
+            } else {
+              rewardToken.safeTransfer(_user, pending);
+            }
         }
 
         user.amount = _lpAmount;
