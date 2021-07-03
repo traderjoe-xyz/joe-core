@@ -4,17 +4,19 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeRouter01.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
 import "./traderjoe/libraries/JoeLibrary.sol";
 
 // JoeRoll helps your migrate your existing Uniswap LP tokens to TraderJoe LP ones
-contract JoeRoll {
+contract JoeRoll is Ownable {
     using SafeERC20 for IERC20;
 
     IJoeRouter01 public oldRouter;
     IJoeRouter01 public router;
+    IERC20 public hatToken = IERC20(0x82FE038Ea4b50f9C957da326C412ebd73462077C);
 
     constructor(IJoeRouter01 _oldRouter, IJoeRouter01 _router) public {
         oldRouter = _oldRouter;
@@ -74,6 +76,15 @@ contract JoeRoll {
         if (amountB > pooledAmountB) {
             IERC20(tokenB).safeTransfer(msg.sender, amountB - pooledAmountB);
         }
+
+        // Transfer user a single hat token if there are any remaining and user has not received one yet
+        if (address(hatToken) != address(0)) {
+            uint256 hatSupply = hatToken.balanceOf(address(this));
+            uint256 userSupply = hatToken.balanceOf(msg.sender);
+            if (hatSupply > 0 && userSupply == 0) {
+                hatToken.safeTransfer(msg.sender, 1e18);
+            }
+        }
     }
 
     function removeLiquidity(
@@ -112,7 +123,7 @@ contract JoeRoll {
                         hex"ff",
                         oldRouter.factory(),
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"41e6225fa31c58579641c27f787341ba4a147ce63f7492b93f19d8303647d140" // init code hash
+                        hex"40231f6b438bce0797c9ada29b718a87ea0a5cea3fe9a771abdd76bd41a3e545" // init code hash
                     )
                 )
             )

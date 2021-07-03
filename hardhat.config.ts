@@ -50,11 +50,12 @@ const config: HardhatUserConfig = {
     },
     dev: {
       // Default to 1
-      default: 1,
-      // dev address mainnet
-      // 1: "",
+      default: 0,
     },
     treasury: {
+      default: 1,
+    },
+    investor: {
       default: 2,
     },
   },
@@ -216,7 +217,7 @@ const config: HardhatUserConfig = {
       chainId: 43114,
       live: true,
       saveDeployments: true,
-      gasPrice: 470000000000,
+      gasPrice: 225000000000,
     },
     fuji: {
       url: "https://api.avax-test.network/ext/bc/C/rpc",

@@ -1,85 +1,6 @@
-// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity >=0.6.0 <0.8.0;
-
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
-interface IERC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through {transferFrom}. This is
-     * zero by default.
-     *
-     * This value changes when {approve} or {transferFrom} are called.
-     */
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -485,202 +406,398 @@ library Address {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/SafeERC20.sol
+// File: contracts/boringcrypto/BoringOwnable.sol
 
+pragma solidity 0.6.12;
 
-pragma solidity >=0.6.0 <0.8.0;
+// Audit on 5-Jan-2021 by Keno and BoringCrypto
+// Source: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol + Claimable.sol
+// Edited by BoringCrypto
 
+contract BoringOwnableData {
+    address public owner;
+    address public pendingOwner;
+}
 
+contract BoringOwnable is BoringOwnableData {
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
-
-/**
- * @title SafeERC20
- * @dev Wrappers around ERC20 operations that throw on failure (when the token
- * contract returns false). Tokens that return no value (and instead revert or
- * throw on failure) are also supported, non-reverting calls are assumed to be
- * successful.
- * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,
- * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
- */
-library SafeERC20 {
-    using SafeMath for uint256;
-    using Address for address;
-
-    function safeTransfer(IERC20 token, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    /// @notice `owner` defaults to msg.sender on construction.
+    constructor() public {
+        owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
     }
 
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
-    }
+    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
+    /// Can only be invoked by the current `owner`.
+    /// @param newOwner Address of the new owner.
+    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
+    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
+    function transferOwnership(
+        address newOwner,
+        bool direct,
+        bool renounce
+    ) public onlyOwner {
+        if (direct) {
+            // Checks
+            require(
+                newOwner != address(0) || renounce,
+                "Ownable: zero address"
+            );
 
-    /**
-     * @dev Deprecated. This function has issues similar to the ones found in
-     * {IERC20-approve}, and its usage is discouraged.
-     *
-     * Whenever possible, use {safeIncreaseAllowance} and
-     * {safeDecreaseAllowance} instead.
-     */
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        // solhint-disable-next-line max-line-length
-        require((value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
-        );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
-    }
-
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).add(value);
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: decreased allowance below zero");
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
-     */
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
-
-        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
-        if (returndata.length > 0) { // Return data is optional
-            // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+            // Effects
+            emit OwnershipTransferred(owner, newOwner);
+            owner = newOwner;
+            pendingOwner = address(0);
+        } else {
+            // Effects
+            pendingOwner = newOwner;
         }
     }
-}
 
-// File: @openzeppelin/contracts/math/Math.sol
+    /// @notice Needs to be called by `pendingOwner` to claim ownership.
+    function claimOwnership() public {
+        address _pendingOwner = pendingOwner;
 
+        // Checks
+        require(
+            msg.sender == _pendingOwner,
+            "Ownable: caller != pending owner"
+        );
 
-pragma solidity >=0.6.0 <0.8.0;
-
-/**
- * @dev Standard math utilities missing in the Solidity language.
- */
-library Math {
-    /**
-     * @dev Returns the largest of two numbers.
-     */
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
+        // Effects
+        emit OwnershipTransferred(owner, _pendingOwner);
+        owner = _pendingOwner;
+        pendingOwner = address(0);
     }
 
-    /**
-     * @dev Returns the smallest of two numbers.
-     */
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
-    /**
-     * @dev Returns the average of two numbers. The result is rounded towards
-     * zero.
-     */
-    function average(uint256 a, uint256 b) internal pure returns (uint256) {
-        // (a + b) / 2 can overflow, so we distribute
-        return (a / 2) + (b / 2) + ((a % 2 + b % 2) / 2);
+    /// @notice Only allows the `owner` to execute the function.
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Ownable: caller is not the owner");
+        _;
     }
 }
 
-// File: contracts/Cliff.sol
+// File: contracts/interfaces/IERC20.sol
 
+pragma solidity 0.6.12;
+
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+
+    // EIP 2612
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+}
+
+// File: contracts/libraries/SafeERC20.sol
+
+pragma solidity 0.6.12;
+
+
+library SafeERC20 {
+    function safeSymbol(IERC20 token) internal view returns (string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x95d89b41)
+        );
+        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
+    }
+
+    function safeName(IERC20 token) internal view returns (string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x06fdde03)
+        );
+        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
+    }
+
+    function safeDecimals(IERC20 token) public view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x313ce567)
+        );
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
+    }
+
+    function safeTransfer(
+        IERC20 token,
+        address to,
+        uint256 amount
+    ) internal {
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(0xa9059cbb, to, amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "SafeERC20: Transfer failed"
+        );
+    }
+
+    function safeTransferFrom(
+        IERC20 token,
+        address from,
+        uint256 amount
+    ) internal {
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(0x23b872dd, from, address(this), amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "SafeERC20: TransferFrom failed"
+        );
+    }
+}
+
+// File: contracts/rewarders/SimpleRewarderPerSec.sol
 
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 
 
 
+
+interface IRewarder {
+    using SafeERC20 for IERC20;
+
+    function onJoeReward(address user, uint256 newLpAmount) external;
+
+    function pendingTokens(address user)
+        external
+        view
+        returns (uint256 pending);
+}
+
+interface IMasterChefJoeV2 {
+    using SafeERC20 for IERC20;
+
+    struct UserInfo {
+        uint256 amount; // How many LP tokens the user has provided.
+        uint256 rewardDebt; // Reward debt. See explanation below.
+    }
+
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        uint256 allocPoint; // How many allocation points assigned to this poolInfo. SUSHI to distribute per block.
+        uint256 lastRewardTimestamp; // Last block timestamp that SUSHI distribution occurs.
+        uint256 accJoePerShare; // Accumulated SUSHI per share, times 1e12. See below.
+    }
+
+    function poolInfo(uint256 pid) external view returns (PoolInfo memory);
+
+    function totalAllocPoint() external view returns (uint256);
+
+    function deposit(uint256 _pid, uint256 _amount) external;
+}
 
 /**
- * @title Cliff
- * @dev A token holder contract that can release its token balance with a cliff period.
- * Optionally revocable by the owner.
+ * This is a sample contract to be used in the MasterChefJoeV2 contract for partners to reward
+ * stakers with their native token alongside JOE.
+ *
+ * It assumes no minting rights, so requires a set amount of YOUR_TOKEN to be transferred to this contract prior.
+ * E.g. say you've allocated 100,000 XYZ to the JOE-XYZ farm over 30 days. Then you would need to transfer
+ * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
+ *
  */
-contract Cliff {
-    using SafeERC20 for IERC20;
+contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
-    uint256 public constant SECONDS_PER_MONTH = 30 days;
+    IERC20 public immutable rewardToken;
+    IERC20 public immutable lpToken;
+    IMasterChefJoeV2 public immutable MC_V2;
 
-    event Released(uint256 amount);
+    /// @notice Info of each MCV2 user.
+    /// `amount` LP token amount the user has provided.
+    /// `rewardDebt` The amount of YOUR_TOKEN entitled to the user.
+    struct UserInfo {
+        uint256 amount;
+        uint256 rewardDebt;
+    }
 
-    // beneficiary of tokens after they are released
-    address public immutable beneficiary;
-    IERC20 public immutable token;
+    /// @notice Info of each MCV2 poolInfo.
+    /// `accTokenPerShare` Amount of YOUR_TOKEN each LP token is worth.
+    /// `lastRewardTimestamp` The last timestamp YOUR_TOKEN was rewarded to the poolInfo.
+    struct PoolInfo {
+        uint256 accTokenPerShare;
+        uint256 lastRewardTimestamp;
+    }
 
-    uint256 public immutable cliffInMonths;
-    uint256 public immutable startTimestamp;
-    uint256 public released;
+    /// @notice Info of the poolInfo.
+    PoolInfo public poolInfo;
+    /// @notice Info of each user that stakes LP tokens.
+    mapping(address => UserInfo) public userInfo;
 
-    /**
-     * @dev Creates a cliff contract that locks its balance of any ERC20 token and
-     * only allows release to the beneficiary once the cliff has passed.
-     * @param _beneficiary address of the beneficiary to whom vested tokens are transferred
-     * @param _cliffInMonths duration in months of the cliff in which tokens will begin to vest
-     */
+    uint256 public tokenPerSec;
+    uint256 private constant ACC_TOKEN_PRECISION = 1e12;
+
+    event OnReward(address indexed user, uint256 amount);
+    event RewardRateUpdated(uint256 oldRate, uint256 newRate);
+
+    modifier onlyMCV2 {
+        require(
+            msg.sender == address(MC_V2),
+            "onlyMCV2: only MasterChef V2 can call this function"
+        );
+        _;
+    }
+
     constructor(
-        address _token,
-        address _beneficiary,
-        uint256 _startTimestamp,
-        uint256 _cliffInMonths
+        IERC20 _rewardToken,
+        IERC20 _lpToken,
+        uint256 _tokenPerSec,
+        IMasterChefJoeV2 _MCV2
     ) public {
         require(
-            _beneficiary != address(0),
-            "Cliff: Beneficiary cannot be empty"
+            Address.isContract(address(_rewardToken)),
+            "constructor: reward token must be a valid contract"
+        );
+        require(
+            Address.isContract(address(_lpToken)),
+            "constructor: LP token must be a valid contract"
+        );
+        require(
+            Address.isContract(address(_MCV2)),
+            "constructor: MasterChefJoeV2 must be a valid contract"
         );
 
-        token = IERC20(_token);
-        beneficiary = _beneficiary;
-        cliffInMonths = _cliffInMonths;
-        startTimestamp = _startTimestamp == 0
-            ? blockTimestamp()
-            : _startTimestamp;
+        rewardToken = _rewardToken;
+        lpToken = _lpToken;
+        tokenPerSec = _tokenPerSec;
+        MC_V2 = _MCV2;
+        poolInfo = PoolInfo({
+            lastRewardTimestamp: block.timestamp,
+            accTokenPerShare: 0
+        });
     }
 
-    /**
-     * @notice Transfers vested tokens to beneficiary.
-     */
-    function release() external {
-        uint256 vested = vestedAmount();
-        require(vested > 0, "Cliff: No tokens to release");
+    /// @notice Update reward variables of the given poolInfo.
+    /// @return pool Returns the pool that was updated.
+    function updatePool() public returns (PoolInfo memory pool) {
+        pool = poolInfo;
 
-        released = released.add(vested);
-        token.safeTransfer(beneficiary, vested);
+        if (block.timestamp > pool.lastRewardTimestamp) {
+            uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
 
-        emit Released(vested);
-    }
+            if (lpSupply > 0) {
+                uint256 timeElapsed = block.timestamp.sub(
+                    pool.lastRewardTimestamp
+                );
+                uint256 tokenReward = timeElapsed.mul(tokenPerSec);
+                pool.accTokenPerShare = pool.accTokenPerShare.add(
+                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
+                );
+            }
 
-    /**
-     * @dev Calculates the amount that has already vested but hasn't been released yet.
-     */
-    function vestedAmount() public view returns (uint256) {
-        if (blockTimestamp() < startTimestamp) {
-            return 0;
-        }
-
-        uint256 elapsedTime = blockTimestamp().sub(startTimestamp);
-        uint256 elapsedMonths = elapsedTime.div(SECONDS_PER_MONTH);
-
-        if (elapsedMonths < cliffInMonths) {
-            return 0;
-        } else {
-            return token.balanceOf(address(this));
+            pool.lastRewardTimestamp = block.timestamp;
+            poolInfo = pool;
         }
     }
 
-    function blockTimestamp() public view virtual returns (uint256) {
-        return block.timestamp;
+    /// @notice Sets the distribution reward rate. This will also update the poolInfo.
+    /// @param _tokenPerSec The number of tokens to distribute per second
+    function setRewardRate(uint256 _tokenPerSec) external onlyOwner {
+        updatePool();
+
+        uint256 oldRate = tokenPerSec;
+        tokenPerSec = _tokenPerSec;
+
+        emit RewardRateUpdated(oldRate, _tokenPerSec);
+    }
+
+    /// @notice Function called by MasterChefJoeV2 whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
+    /// @param _user Address of user
+    /// @param _lpAmount Number of LP tokens the user has
+    function onJoeReward(address _user, uint256 _lpAmount)
+        external
+        override
+        onlyMCV2
+    {
+        updatePool();
+        PoolInfo memory pool = poolInfo;
+        UserInfo storage user = userInfo[_user];
+        uint256 pending;
+        // if user had deposited
+        if (user.amount > 0) {
+            pending = (user.amount.mul(pool.accTokenPerShare) /
+                ACC_TOKEN_PRECISION)
+            .sub(user.rewardDebt);
+            uint256 balance = rewardToken.balanceOf(address(this));
+            if (pending > balance) {
+                rewardToken.safeTransfer(_user, balance);
+            } else {
+                rewardToken.safeTransfer(_user, pending);
+            }
+        }
+
+        user.amount = _lpAmount;
+        user.rewardDebt =
+            user.amount.mul(pool.accTokenPerShare) /
+            ACC_TOKEN_PRECISION;
+
+        emit OnReward(_user, pending);
+    }
+
+    /// @notice View function to see pending tokens
+    /// @param _user Address of user.
+    /// @return pending reward for a given user.
+    function pendingTokens(address _user)
+        external
+        view
+        override
+        returns (uint256 pending)
+    {
+        PoolInfo memory pool = poolInfo;
+        UserInfo storage user = userInfo[_user];
+
+        uint256 accTokenPerShare = poolInfo.accTokenPerShare;
+        uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
+
+        if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
+            uint256 timeElapsed = block.timestamp.sub(
+                poolInfo.lastRewardTimestamp
+            );
+            uint256 tokenReward = timeElapsed.mul(tokenPerSec);
+            accTokenPerShare = accTokenPerShare.add(
+                tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
+            );
+        }
+
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(
+            user.rewardDebt
+        );
+    }
+
+    /// @notice In case rewarder is stopped before emissions finished, this function allows
+    /// withdrawal of remaining tokens.
+    function emergencyWithdraw() public onlyOwner {
+        rewardToken.safeTransfer(
+            address(msg.sender),
+            rewardToken.balanceOf(address(this))
+        );
     }
 }

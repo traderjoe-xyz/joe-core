@@ -329,6 +329,68 @@ describe("MasterChefJoeV2", function () {
       expect(await this.partnerToken.balanceOf(this.alice.address)).to.equal("1000000")
     })
 
+    it("should reward partner token accurately after rewarder runs out of tokens and is topped up again", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.investor.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent,
+        this.investorPercent
+      )
+      await this.chef.deployed() // t-59, b=14
+
+      this.rewarder = await this.SimpleRewarderPerBlock.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerBlock,
+        this.chef.address
+      )
+      await this.rewarder.deployed() // t-58, b=15
+
+      await this.partnerToken.mint(this.rewarder.address, "80") // t-57, b=16
+
+      await this.joe.transferOwnership(this.chef.address) // t-56, b=17
+
+      await this.chef.add("100", this.lp.address, this.rewarder.address) // t-55, b=18
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-54, b=19
+      await this.chef.connect(this.bob).deposit(0, "100") // t-53, b=20
+      await advanceTimeAndBlock(1) // t-52, b=21
+      await advanceTimeAndBlock(1) // t-51, b=22
+      await advanceTimeAndBlock(1) // t-50, b=23
+      await advanceTimeAndBlock(1) // t-49, b=24
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-48, b=25
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 80 PartnerToken
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.equal(80)
+      await advanceTimeAndBlock(1) // t-47, b=26
+      await advanceTimeAndBlock(1) // t-46, b=27
+      await advanceTimeAndBlock(1) // t-45, b=28
+      await advanceTimeAndBlock(1) // t-44, b=29
+      await advanceTimeAndBlock(1) // t-43, b=30
+
+      await this.partnerToken.mint(this.rewarder.address, "1000") // t-42, b=31
+      await advanceTimeAndBlock(1) // t-41, b=32
+      await advanceTimeAndBlock(1) // t-40, b=33
+      await advanceTimeAndBlock(1) // t-39, b=34
+      await advanceTimeAndBlock(1) // t-38, b=35
+      await advanceTimeAndBlock(1) // t-37, b=36
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-36, b=37
+
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 80 + 12*40 = 560 (+40) PartnerToken
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(560, 600)
+    })
+
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
@@ -884,14 +946,14 @@ describe("MasterChefJoeV2", function () {
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116, b=25
       // At b=35, Alice should have:
-      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+20) JoeToken
+      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+50) JoeToken
       //   - 120 + 1*40 + 5*90 = 610 PartnerToken
       await advanceTimeAndBlock(2) // t+118, b=26
       await advanceTimeAndBlock(3) // t+121, b=27
       await advanceTimeAndBlock(4) // t+125, b=28
       await advanceTimeAndBlock(5) // t+130, b=29
       await advanceTimeAndBlock(6) // t+136, b=30
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5570)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5600)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(610)
     })
   })
@@ -1005,6 +1067,57 @@ describe("MasterChefJoeV2", function () {
       await this.partnerToken.mint(this.rewarder.address, "1000000")
       await this.rewarder.emergencyWithdraw()
       expect(await this.partnerToken.balanceOf(this.alice.address)).to.equal("1000000")
+    })
+
+    it("should reward partner token accurately after rewarder runs out of tokens and is topped up again", async function () {
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.investor.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent,
+        this.investorPercent
+      )
+      await this.chef.deployed() // t-59
+
+      this.rewarder = await this.SimpleRewarderPerSec.deploy(
+        this.partnerToken.address,
+        this.lp.address,
+        this.partnerRewardPerSec,
+        this.chef.address
+      )
+      await this.rewarder.deployed() // t-58
+
+      await this.partnerToken.mint(this.rewarder.address, "80") // t-57
+
+      await this.joe.transferOwnership(this.chef.address) // t-56
+
+      await this.chef.add("100", this.lp.address, this.rewarder.address) // t-55
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-54
+      await this.chef.connect(this.bob).deposit(0, "100") // t-53
+      await advanceTimeAndBlock(4) // t-49
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-48
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 80 PartnerToken
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.equal(80)
+      await advanceTimeAndBlock(5) // t-43
+
+      await this.partnerToken.mint(this.rewarder.address, "1000") // t-42
+      await advanceTimeAndBlock(10) // t-32
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-31
+
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 80 + 17*40 = 760 (+40) PartnerToken
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760, 800)
     })
 
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
@@ -2446,14 +2559,14 @@ describe("MasterChefJoeV2", function () {
       // Increase PartnerToken emission rate to 90 PartnerToken per block
       await this.rewarder.setRewardRate(90) // t+116, b=28
       // At b=35, Alice should have:
-      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+20) JoeToken
+      //   - 5130 + 1*40*0.5 + 20*40*0.5 = 5550 (+50) JoeToken
       //   - 120 + 1*40 + 5*90 = 610 PartnerToken
       await advanceTimeAndBlock(2) // t+118, b=29
       await advanceTimeAndBlock(3) // t+121, b=30
       await advanceTimeAndBlock(4) // t+125, b=31
       await advanceTimeAndBlock(5) // t+130, b=32
       await advanceTimeAndBlock(6) // t+136, b=33
-      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5570)
+      expect((await this.chef.pendingTokens(0, this.alice.address)).pendingJoe).to.be.within(5550, 5600)
       expect(await this.rewarder.pendingTokens(this.alice.address)).to.equal(610)
     })
   })

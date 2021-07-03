@@ -1,6 +1,32 @@
-// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+// File: @openzeppelin/contracts/utils/Context.sol
 
 // SPDX-License-Identifier: MIT
+
+pragma solidity >=0.6.0 <0.8.0;
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with GSN meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address payable) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes memory) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -76,32 +102,6 @@ interface IERC20 {
      * a call to {approve}. `value` is the new allowance.
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-// File: @openzeppelin/contracts/utils/Context.sol
-
-
-pragma solidity >=0.6.0 <0.8.0;
-
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with GSN meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes memory) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
-    }
 }
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
@@ -627,56 +627,62 @@ contract ERC20 is Context, IERC20 {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
 }
 
-// File: contracts/JoeBar.sol
+// File: @openzeppelin/contracts/token/ERC20/ERC20Burnable.sol
 
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.0 <0.8.0;
 
 
 
-
-// JoeBar is the coolest bar in town. You come in with some Joe, and leave with more! The longer you stay, the more Joe you get.
-//
-// This contract handles swapping to and from xJoe, JoeSwap's staking token.
-contract JoeBar is ERC20("JoeBar", "xJOE") {
+/**
+ * @dev Extension of {ERC20} that allows token holders to destroy both their own
+ * tokens and those that they have an allowance for, in a way that can be
+ * recognized off-chain (via event analysis).
+ */
+abstract contract ERC20Burnable is Context, ERC20 {
     using SafeMath for uint256;
-    IERC20 public joe;
 
-    // Define the Joe token contract
-    constructor(IERC20 _joe) public {
-        joe = _joe;
+    /**
+     * @dev Destroys `amount` tokens from the caller.
+     *
+     * See {ERC20-_burn}.
+     */
+    function burn(uint256 amount) public virtual {
+        _burn(_msgSender(), amount);
     }
 
-    // Enter the bar. Pay some JOEs. Earn some shares.
-    // Locks Joe and mints xJoe
-    function enter(uint256 _amount) public {
-        // Gets the amount of Joe locked in the contract
-        uint256 totalJoe = joe.balanceOf(address(this));
-        // Gets the amount of xJoe in existence
-        uint256 totalShares = totalSupply();
-        // If no xJoe exists, mint it 1:1 to the amount put in
-        if (totalShares == 0 || totalJoe == 0) {
-            _mint(msg.sender, _amount);
-        }
-        // Calculate and mint the amount of xJoe the Joe is worth. The ratio will change overtime, as xJoe is burned/minted and Joe deposited + gained from fees / withdrawn.
-        else {
-            uint256 what = _amount.mul(totalShares).div(totalJoe);
-            _mint(msg.sender, what);
-        }
-        // Lock the Joe in the contract
-        joe.transferFrom(msg.sender, address(this), _amount);
-    }
+    /**
+     * @dev Destroys `amount` tokens from `account`, deducting from the caller's
+     * allowance.
+     *
+     * See {ERC20-_burn} and {ERC20-allowance}.
+     *
+     * Requirements:
+     *
+     * - the caller must have allowance for ``accounts``'s tokens of at least
+     * `amount`.
+     */
+    function burnFrom(address account, uint256 amount) public virtual {
+        uint256 decreasedAllowance = allowance(account, _msgSender()).sub(amount, "ERC20: burn amount exceeds allowance");
 
-    // Leave the bar. Claim back your JOEs.
-    // Unlocks the staked + gained Joe and burns xJoe
-    function leave(uint256 _share) public {
-        // Gets the amount of xJoe in existence
-        uint256 totalShares = totalSupply();
-        // Calculates the amount of Joe the xJoe is worth
-        uint256 what = _share.mul(joe.balanceOf(address(this))).div(
-            totalShares
-        );
-        _burn(msg.sender, _share);
-        joe.transfer(msg.sender, what);
+        _approve(account, _msgSender(), decreasedAllowance);
+        _burn(account, amount);
+    }
+}
+
+// File: contracts/JoeHatToken.sol
+
+pragma solidity ^0.6.2;
+
+
+contract JoeHatToken is ERC20Burnable {
+    /**
+     * @dev Mints `initialSupply` amount of token and transfers them to `owner`.
+     *
+     * See {ERC20-constructor}.
+     */
+    constructor(address owner) public ERC20("Joe Hat Token", "HAT") {
+        uint256 initialSupply = 150e18;
+        _mint(owner, initialSupply);
     }
 }

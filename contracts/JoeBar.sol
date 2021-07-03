@@ -11,18 +11,18 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 // This contract handles swapping to and from xJoe, JoeSwap's staking token.
 contract JoeBar is ERC20("JoeBar", "xJOE") {
     using SafeMath for uint256;
-    IERC20 public sushi;
+    IERC20 public joe;
 
     // Define the Joe token contract
-    constructor(IERC20 _sushi) public {
-        sushi = _sushi;
+    constructor(IERC20 _joe) public {
+        joe = _joe;
     }
 
     // Enter the bar. Pay some JOEs. Earn some shares.
     // Locks Joe and mints xJoe
     function enter(uint256 _amount) public {
         // Gets the amount of Joe locked in the contract
-        uint256 totalJoe = sushi.balanceOf(address(this));
+        uint256 totalJoe = joe.balanceOf(address(this));
         // Gets the amount of xJoe in existence
         uint256 totalShares = totalSupply();
         // If no xJoe exists, mint it 1:1 to the amount put in
@@ -35,7 +35,7 @@ contract JoeBar is ERC20("JoeBar", "xJOE") {
             _mint(msg.sender, what);
         }
         // Lock the Joe in the contract
-        sushi.transferFrom(msg.sender, address(this), _amount);
+        joe.transferFrom(msg.sender, address(this), _amount);
     }
 
     // Leave the bar. Claim back your JOEs.
@@ -44,10 +44,10 @@ contract JoeBar is ERC20("JoeBar", "xJOE") {
         // Gets the amount of xJoe in existence
         uint256 totalShares = totalSupply();
         // Calculates the amount of Joe the xJoe is worth
-        uint256 what = _share.mul(sushi.balanceOf(address(this))).div(
+        uint256 what = _share.mul(joe.balanceOf(address(this))).div(
             totalShares
         );
         _burn(msg.sender, _share);
-        sushi.transfer(msg.sender, what);
+        joe.transfer(msg.sender, what);
     }
 }

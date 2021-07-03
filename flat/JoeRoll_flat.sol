@@ -25,9 +25,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -36,10 +34,7 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     /**
      * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
@@ -66,11 +61,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -84,14 +75,11 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
+
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -114,11 +102,7 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryAdd(uint256 a, uint256 b)
-        internal
-        pure
-        returns (bool, uint256)
-    {
+    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         uint256 c = a + b;
         if (c < a) return (false, 0);
         return (true, c);
@@ -129,11 +113,7 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function trySub(uint256 a, uint256 b)
-        internal
-        pure
-        returns (bool, uint256)
-    {
+    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         if (b > a) return (false, 0);
         return (true, a - b);
     }
@@ -143,11 +123,7 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryMul(uint256 a, uint256 b)
-        internal
-        pure
-        returns (bool, uint256)
-    {
+    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
         // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
@@ -162,11 +138,7 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryDiv(uint256 a, uint256 b)
-        internal
-        pure
-        returns (bool, uint256)
-    {
+    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         if (b == 0) return (false, 0);
         return (true, a / b);
     }
@@ -176,11 +148,7 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryMod(uint256 a, uint256 b)
-        internal
-        pure
-        returns (bool, uint256)
-    {
+    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         if (b == 0) return (false, 0);
         return (true, a % b);
     }
@@ -280,11 +248,7 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         return a - b;
     }
@@ -304,11 +268,7 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         return a / b;
     }
@@ -328,17 +288,14 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         return a % b;
     }
 }
 
 // File: @openzeppelin/contracts/utils/Address.sol
+
 
 pragma solidity >=0.6.2 <0.8.0;
 
@@ -370,9 +327,7 @@ library Address {
 
         uint256 size;
         // solhint-disable-next-line no-inline-assembly
-        assembly {
-            size := extcodesize(account)
-        }
+        assembly { size := extcodesize(account) }
         return size > 0;
     }
 
@@ -393,17 +348,11 @@ library Address {
      * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(
-            address(this).balance >= amount,
-            "Address: insufficient balance"
-        );
+        require(address(this).balance >= amount, "Address: insufficient balance");
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{value: amount}("");
-        require(
-            success,
-            "Address: unable to send value, recipient may have reverted"
-        );
+        (bool success, ) = recipient.call{ value: amount }("");
+        require(success, "Address: unable to send value, recipient may have reverted");
     }
 
     /**
@@ -424,11 +373,8 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data)
-        internal
-        returns (bytes memory)
-    {
-        return functionCall(target, data, "Address: low-level call failed");
+    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+      return functionCall(target, data, "Address: low-level call failed");
     }
 
     /**
@@ -437,11 +383,7 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(
-        address target,
-        bytes memory data,
-        string memory errorMessage
-    ) internal returns (bytes memory) {
+    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
         return functionCallWithValue(target, data, 0, errorMessage);
     }
 
@@ -456,18 +398,8 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(
-        address target,
-        bytes memory data,
-        uint256 value
-    ) internal returns (bytes memory) {
-        return
-            functionCallWithValue(
-                target,
-                data,
-                value,
-                "Address: low-level call with value failed"
-            );
+    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
     }
 
     /**
@@ -476,22 +408,12 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(
-        address target,
-        bytes memory data,
-        uint256 value,
-        string memory errorMessage
-    ) internal returns (bytes memory) {
-        require(
-            address(this).balance >= value,
-            "Address: insufficient balance for call"
-        );
+    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
+        require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.call{value: value}(
-            data
-        );
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
         return _verifyCallResult(success, returndata, errorMessage);
     }
 
@@ -501,17 +423,8 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(address target, bytes memory data)
-        internal
-        view
-        returns (bytes memory)
-    {
-        return
-            functionStaticCall(
-                target,
-                data,
-                "Address: low-level static call failed"
-            );
+    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
+        return functionStaticCall(target, data, "Address: low-level static call failed");
     }
 
     /**
@@ -520,11 +433,7 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(
-        address target,
-        bytes memory data,
-        string memory errorMessage
-    ) internal view returns (bytes memory) {
+    function functionStaticCall(address target, bytes memory data, string memory errorMessage) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -538,16 +447,8 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(address target, bytes memory data)
-        internal
-        returns (bytes memory)
-    {
-        return
-            functionDelegateCall(
-                target,
-                data,
-                "Address: low-level delegate call failed"
-            );
+    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
+        return functionDelegateCall(target, data, "Address: low-level delegate call failed");
     }
 
     /**
@@ -556,11 +457,7 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(
-        address target,
-        bytes memory data,
-        string memory errorMessage
-    ) internal returns (bytes memory) {
+    function functionDelegateCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -568,11 +465,7 @@ library Address {
         return _verifyCallResult(success, returndata, errorMessage);
     }
 
-    function _verifyCallResult(
-        bool success,
-        bytes memory returndata,
-        string memory errorMessage
-    ) private pure returns (bytes memory) {
+    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns(bytes memory) {
         if (success) {
             return returndata;
         } else {
@@ -594,7 +487,11 @@ library Address {
 
 // File: @openzeppelin/contracts/token/ERC20/SafeERC20.sol
 
+
 pragma solidity >=0.6.0 <0.8.0;
+
+
+
 
 /**
  * @title SafeERC20
@@ -609,27 +506,12 @@ library SafeERC20 {
     using SafeMath for uint256;
     using Address for address;
 
-    function safeTransfer(
-        IERC20 token,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transfer.selector, to, value)
-        );
+    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
     }
 
-    function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transferFrom.selector, from, to, value)
-        );
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
     }
 
     /**
@@ -639,60 +521,25 @@ library SafeERC20 {
      * Whenever possible, use {safeIncreaseAllowance} and
      * {safeDecreaseAllowance} instead.
      */
-    function safeApprove(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
+    function safeApprove(IERC20 token, address spender, uint256 value) internal {
         // safeApprove should only be called when setting an initial allowance,
         // or when resetting it to zero. To increase and decrease it, use
         // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
         // solhint-disable-next-line max-line-length
-        require(
-            (value == 0) || (token.allowance(address(this), spender) == 0),
+        require((value == 0) || (token.allowance(address(this), spender) == 0),
             "SafeERC20: approve from non-zero to non-zero allowance"
         );
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.approve.selector, spender, value)
-        );
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
     }
 
-    function safeIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).add(
-            value
-        );
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(
-                token.approve.selector,
-                spender,
-                newAllowance
-            )
-        );
+    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        uint256 newAllowance = token.allowance(address(this), spender).add(value);
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
 
-    function safeDecreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).sub(
-            value,
-            "SafeERC20: decreased allowance below zero"
-        );
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(
-                token.approve.selector,
-                spender,
-                newAllowance
-            )
-        );
+    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: decreased allowance below zero");
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
 
     /**
@@ -706,22 +553,111 @@ library SafeERC20 {
         // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
         // the target address contains contract code and also asserts for success in the low-level call.
 
-        bytes memory returndata = address(token).functionCall(
-            data,
-            "SafeERC20: low-level call failed"
-        );
-        if (returndata.length > 0) {
-            // Return data is optional
+        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
+        if (returndata.length > 0) { // Return data is optional
             // solhint-disable-next-line max-line-length
-            require(
-                abi.decode(returndata, (bool)),
-                "SafeERC20: ERC20 operation did not succeed"
-            );
+            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
         }
     }
 }
 
+// File: @openzeppelin/contracts/utils/Context.sol
+
+
+pragma solidity >=0.6.0 <0.8.0;
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with GSN meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address payable) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes memory) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+// File: @openzeppelin/contracts/access/Ownable.sol
+
+
+pragma solidity >=0.6.0 <0.8.0;
+
+/**
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
+ *
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
+ */
+abstract contract Ownable is Context {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    constructor () internal {
+        address msgSender = _msgSender();
+        _owner = msgSender;
+        emit OwnershipTransferred(address(0), msgSender);
+    }
+
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public virtual onlyOwner {
+        emit OwnershipTransferred(_owner, address(0));
+        _owner = address(0);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+}
+
 // File: contracts/traderjoe/interfaces/IJoePair.sol
+
 
 pragma solidity >=0.5.0;
 
@@ -835,6 +771,7 @@ interface IJoePair {
 }
 
 // File: contracts/traderjoe/interfaces/IJoeRouter01.sol
+
 
 pragma solidity >=0.6.2;
 
@@ -999,6 +936,7 @@ interface IJoeRouter01 {
 
 // File: contracts/traderjoe/interfaces/IJoeFactory.sol
 
+
 pragma solidity >=0.5.0;
 
 interface IJoeFactory {
@@ -1037,6 +975,7 @@ interface IJoeFactory {
 
 // File: contracts/traderjoe/libraries/SafeMath.sol
 
+
 pragma solidity =0.6.12;
 
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
@@ -1057,7 +996,10 @@ library SafeMathJoe {
 
 // File: contracts/traderjoe/libraries/JoeLibrary.sol
 
+
 pragma solidity >=0.5.0;
+
+
 
 library JoeLibrary {
     using SafeMathJoe for uint256;
@@ -1089,7 +1031,7 @@ library JoeLibrary {
                         hex"ff",
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"41e6225fa31c58579641c27f787341ba4a147ce63f7492b93f19d8303647d140" // init code fuji
+                        hex"0bbca9af0511ad1a1da383135cf3a8d2ac620e549ef9f6ae3a4c33c2fed0af91" // init code fuji
                     )
                 )
             )
@@ -1199,14 +1141,23 @@ library JoeLibrary {
 
 // File: contracts/JoeRoll.sol
 
+
 pragma solidity 0.6.12;
 
+
+
+
+
+
+
+
 // JoeRoll helps your migrate your existing Uniswap LP tokens to TraderJoe LP ones
-contract JoeRoll {
+contract JoeRoll is Ownable {
     using SafeERC20 for IERC20;
 
     IJoeRouter01 public oldRouter;
     IJoeRouter01 public router;
+    IERC20 public hatToken = IERC20(0x82FE038Ea4b50f9C957da326C412ebd73462077C);
 
     constructor(IJoeRouter01 _oldRouter, IJoeRouter01 _router) public {
         oldRouter = _oldRouter;
@@ -1266,6 +1217,15 @@ contract JoeRoll {
         if (amountB > pooledAmountB) {
             IERC20(tokenB).safeTransfer(msg.sender, amountB - pooledAmountB);
         }
+
+        // Transfer user a single hat token if there are any remaining and user has not received one yet
+        if (address(hatToken) != address(0)) {
+            uint256 hatSupply = hatToken.balanceOf(address(this));
+            uint256 userSupply = hatToken.balanceOf(msg.sender);
+            if (hatSupply > 0 && userSupply == 0) {
+                hatToken.safeTransfer(msg.sender, 1e18);
+            }
+        }
     }
 
     function removeLiquidity(
@@ -1304,7 +1264,7 @@ contract JoeRoll {
                         hex"ff",
                         oldRouter.factory(),
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f" // init code hash
+                        hex"40231f6b438bce0797c9ada29b718a87ea0a5cea3fe9a771abdd76bd41a3e545" // init code hash
                     )
                 )
             )
