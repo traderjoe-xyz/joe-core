@@ -33,7 +33,7 @@ But to make your life easier, we have implemented two types of rewarders: a simp
 
 Both types come in per block or per second:
 
-- [contracts/rewarders/SimpleRewarderPerBlock.sol](contracts/rewarders/SimpleRewarderPerBlock.sol) (recommended)
+- [contracts/rewarders/SimpleRewarderPerBlock.sol](contracts/rewarders/SimpleRewarderPerBlock.sol)
 - [contracts/rewarders/SimpleRewarderPerSec.sol](contracts/rewarders/SimpleRewarderPerSec.sol) (recommended)
 - [contracts/rewarders/MasterChefRewarderPerBlock.sol](contracts/rewarders/MasterChefRewarderPerBlock.sol)
 - [contract/rewarders/MasterChefRewarderPerSec.sol](contract/rewarders/MasterChefRewarderPerSec.sol)
