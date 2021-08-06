@@ -10,17 +10,21 @@ describe("Timelock", function () {
     this.carol = this.signers[2]
     this.dev = this.signers[3]
     this.treasury = this.signers[4]
-    this.minter = this.signers[5]
+    this.investor = this.signers[5]
+    this.minter = this.signers[6]
 
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.Timelock = await ethers.getContractFactory("Timelock")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
     this.MasterChef = await ethers.getContractFactory("MasterChefJoe")
+    this.MasterChefJoeV2 = await ethers.getContractFactory("MasterChefJoeV2")
+    this.CustomMasterChefJoeV2Timelock = await ethers.getContractFactory("CustomMasterChefJoeV2Timelock")
   })
 
   beforeEach(async function () {
     this.joe = await this.JoeToken.deploy()
     this.timelock = await this.Timelock.deploy(this.bob.address, "259200")
+    this.customTimelock = await this.CustomMasterChefJoeV2Timelock.deploy(this.bob.address, "259200", "200", "200", "100")
   })
 
   it("should not allow non-owner to do operation", async function () {
@@ -90,6 +94,69 @@ describe("Timelock", function () {
     expect((await this.chef.poolInfo("0")).allocPoint).to.equal("200")
     expect(await this.chef.totalAllocPoint()).to.equal("300")
     expect(await this.chef.poolLength()).to.equal("2")
+  })
+
+  it("should restrict percent changes above the limits with MasterChefJoeV2", async function () {
+    this.chef = await this.MasterChefJoeV2.deploy(
+      this.joe.address,
+      this.dev.address,
+      this.treasury.address,
+      this.investor.address,
+      "100",
+      "0",
+      "200",
+      "200",
+      "100"
+    )
+    await this.chef.transferOwnership(this.customTimelock.address)
+    const eta = (await latest()).add(duration.days(4))
+
+    // Test setDevPercent
+    await expect(
+      this.customTimelock
+        .connect(this.bob)
+        .queueTransaction(this.chef.address, "0", "setDevPercent(uint256)", encodeParameters(["uint256"], ["201"]), eta)
+    ).to.be.revertedWith("CustomMasterChefJoeV2Timelock::withinLimits: devPercent must not exceed limit.")
+    await this.customTimelock
+      .connect(this.bob)
+      .queueTransaction(this.chef.address, "0", "setDevPercent(uint256)", encodeParameters(["uint256"], ["199"]), eta)
+    await increase(duration.days(4))
+    await this.customTimelock
+      .connect(this.bob)
+      .executeTransaction(this.chef.address, "0", "setDevPercent(uint256)", encodeParameters(["uint256"], ["199"]), eta)
+    expect(await this.chef.devPercent()).to.equal("199")
+
+    // Test setTreasuryPercent
+    const eta2 = (await latest()).add(duration.days(4))
+    await expect(
+      this.customTimelock
+        .connect(this.bob)
+        .queueTransaction(this.chef.address, "0", "setTreasuryPercent(uint256)", encodeParameters(["uint256"], ["201"]), eta2)
+    ).to.be.revertedWith("CustomMasterChefJoeV2Timelock::withinLimits: treasuryPercent must not exceed limit.")
+    await this.customTimelock
+      .connect(this.bob)
+      .queueTransaction(this.chef.address, "0", "setTreasuryPercent(uint256)", encodeParameters(["uint256"], ["199"]), eta2)
+    await increase(duration.days(4))
+    await this.customTimelock
+      .connect(this.bob)
+      .executeTransaction(this.chef.address, "0", "setTreasuryPercent(uint256)", encodeParameters(["uint256"], ["199"]), eta2)
+    expect(await this.chef.treasuryPercent()).to.equal("199")
+
+    // Test setInvestorPercent
+    const eta3 = (await latest()).add(duration.days(4))
+    await expect(
+      this.customTimelock
+        .connect(this.bob)
+        .queueTransaction(this.chef.address, "0", "setInvestorPercent(uint256)", encodeParameters(["uint256"], ["101"]), eta3)
+    ).to.be.revertedWith("CustomMasterChefJoeV2Timelock::withinLimits: investorPercent must not exceed limit.")
+    await this.customTimelock
+      .connect(this.bob)
+      .queueTransaction(this.chef.address, "0", "setInvestorPercent(uint256)", encodeParameters(["uint256"], ["99"]), eta3)
+    await increase(duration.days(4))
+    await this.customTimelock
+      .connect(this.bob)
+      .executeTransaction(this.chef.address, "0", "setInvestorPercent(uint256)", encodeParameters(["uint256"], ["99"]), eta3)
+    expect(await this.chef.investorPercent()).to.equal("99")
   })
 
   after(async function () {
