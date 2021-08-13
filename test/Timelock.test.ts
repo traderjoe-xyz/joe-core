@@ -24,7 +24,7 @@ describe("Timelock", function () {
   beforeEach(async function () {
     this.joe = await this.JoeToken.deploy()
     this.timelock = await this.Timelock.deploy(this.bob.address, "259200")
-    this.customTimelock = await this.CustomMasterChefJoeV2Timelock.deploy(this.bob.address, "259200", "200", "200", "100")
+    this.customTimelock = await this.CustomMasterChefJoeV2Timelock.deploy(this.bob.address, "259200", "200", "200", "100", "100")
   })
 
   it("should not allow non-owner to do operation", async function () {
@@ -96,7 +96,7 @@ describe("Timelock", function () {
     expect(await this.chef.poolLength()).to.equal("2")
   })
 
-  it("should restrict percent changes above the limits with MasterChefJoeV2", async function () {
+  it("should restrict changes above the limits with MasterChefJoeV2", async function () {
     this.chef = await this.MasterChefJoeV2.deploy(
       this.joe.address,
       this.dev.address,
@@ -157,6 +157,22 @@ describe("Timelock", function () {
       .connect(this.bob)
       .executeTransaction(this.chef.address, "0", "setInvestorPercent(uint256)", encodeParameters(["uint256"], ["99"]), eta3)
     expect(await this.chef.investorPercent()).to.equal("99")
+
+    // Test updateEmissionRate
+    const eta4 = (await latest()).add(duration.days(4))
+    await expect(
+      this.customTimelock
+        .connect(this.bob)
+        .queueTransaction(this.chef.address, "0", "updateEmissionRate(uint256)", encodeParameters(["uint256"], ["101"]), eta4)
+    ).to.be.revertedWith("CustomMasterChefJoeV2Timelock::withinLimits: joePerSec must not exceed limit.")
+    await this.customTimelock
+      .connect(this.bob)
+      .queueTransaction(this.chef.address, "0", "updateEmissionRate(uint256)", encodeParameters(["uint256"], ["99"]), eta4)
+    await increase(duration.days(4))
+    await this.customTimelock
+      .connect(this.bob)
+      .executeTransaction(this.chef.address, "0", "updateEmissionRate(uint256)", encodeParameters(["uint256"], ["99"]), eta4)
+    expect(await this.chef.joePerSec()).to.equal("99")
   })
 
   after(async function () {

@@ -54,6 +54,7 @@ contract CustomMasterChefJoeV2Timelock {
     string private constant SET_DEV_PERCENT_SIG = "setDevPercent(uint256)";
     string private constant SET_TREASURY_PERCENT_SIG = "setTreasuryPercent(uint256)";
     string private constant SET_INVESTOR_PERCENT_SIG = "setInvestorPercent(uint256)";
+    string private constant UPDATE_EMISSION_RATE_SIG = "updateEmissionRate(uint256)";
 
     address public admin;
     address public pendingAdmin;
@@ -61,6 +62,7 @@ contract CustomMasterChefJoeV2Timelock {
     uint256 public devPercentLimit;
     uint256 public investorPercentLimit;
     uint256 public treasuryPercentLimit;
+    uint256 public joePerSecLimit;
     bool public admin_initialized;
 
 
@@ -79,12 +81,17 @@ contract CustomMasterChefJoeV2Timelock {
         uint256 investorPercent = abi.decode(data, (uint256));
         require(investorPercent <= investorPercentLimit,
                 "CustomMasterChefJoeV2Timelock::withinLimits: investorPercent must not exceed limit.");
+      } else if (keccak256(bytes(signature)) ==
+                 keccak256(bytes(UPDATE_EMISSION_RATE_SIG))) {
+        uint256 joePerSec = abi.decode(data, (uint256));
+        require(joePerSec <= joePerSecLimit, "CustomMasterChefJoeV2Timelock::withinLimits: joePerSec must not exceed limit.");
       }
       _;
     }
 
     constructor(address admin_, uint256 delay_, uint256 devPercentLimit_,
-                uint256 treasuryPercentLimit_, uint256 investorPercentLimit_) public {
+                uint256 treasuryPercentLimit_, uint256 investorPercentLimit_,
+                uint256 joePerSecLimit_) public {
         require(
             delay_ >= MINIMUM_DELAY,
             "CustomMasterChefJoeV2Timelock::constructor: Delay must exceed minimum delay."
@@ -100,6 +107,7 @@ contract CustomMasterChefJoeV2Timelock {
         devPercentLimit = devPercentLimit_;
         treasuryPercentLimit = treasuryPercentLimit_;
         investorPercentLimit = investorPercentLimit_;
+        joePerSecLimit = joePerSecLimit_;
     }
 
     // XXX: function() external payable { }
@@ -230,14 +238,10 @@ contract CustomMasterChefJoeV2Timelock {
 
         bytes memory callData;
 
-        if (bytes(signature).length == 0) {
-            callData = data;
-        } else {
-            callData = abi.encodePacked(
-                bytes4(keccak256(bytes(signature))),
-                data
-            );
-        }
+        callData = abi.encodePacked(
+            bytes4(keccak256(bytes(signature))),
+            data
+        );
 
         // solium-disable-next-line security/no-call-value
         (bool success, bytes memory returnData) = target.call.value(value)(
