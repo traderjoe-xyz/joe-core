@@ -65,7 +65,6 @@ contract CustomMasterChefJoeV2Timelock {
     uint256 public joePerSecLimit;
     bool public admin_initialized;
 
-
     mapping(bytes32 => bool) public queuedTransactions;
 
     modifier withinLimits(string memory signature, bytes memory data) {
@@ -167,7 +166,7 @@ contract CustomMasterChefJoeV2Timelock {
         string memory signature,
         bytes memory data,
         uint256 eta
-    ) public withinLimits(signature, data) returns (bytes32)  {
+    ) public withinLimits(signature, data) returns (bytes32) {
         require(
             msg.sender == admin,
             "CustomMasterChefJoeV2Timelock::queueTransaction: Call must come from admin."
