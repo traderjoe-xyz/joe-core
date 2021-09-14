@@ -1,0 +1,662 @@
+{
+  "address": "0xF1293a00C8921F561af4dB1b49846a2B89F6BCfB",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "admin_",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "delay_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "devPercentLimit_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "treasuryPercentLimit_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "investorPercentLimit_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "joePerSecLimit_",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "signature",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "eta",
+          "type": "uint256"
+        }
+      ],
+      "name": "CancelTransaction",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "signature",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "eta",
+          "type": "uint256"
+        }
+      ],
+      "name": "ExecuteTransaction",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "NewAdmin",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "newDelay",
+          "type": "uint256"
+        }
+      ],
+      "name": "NewDelay",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newPendingAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "NewPendingAdmin",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "signature",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "eta",
+          "type": "uint256"
+        }
+      ],
+      "name": "QueueTransaction",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "GRACE_PERIOD",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MAXIMUM_DELAY",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MINIMUM_DELAY",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "acceptAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "admin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "admin_initialized",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "signature",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "eta",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelTransaction",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "delay",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "devPercentLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "signature",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "eta",
+          "type": "uint256"
+        }
+      ],
+      "name": "executeTransaction",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "investorPercentLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "joePerSecLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pendingAdmin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "signature",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "eta",
+          "type": "uint256"
+        }
+      ],
+      "name": "queueTransaction",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "queuedTransactions",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "delay_",
+          "type": "uint256"
+        }
+      ],
+      "name": "setDelay",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "pendingAdmin_",
+          "type": "address"
+        }
+      ],
+      "name": "setPendingAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "treasuryPercentLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "transactionHash": "0xc34080e6147f833c68e911004ebec4c766c695d17ab34f509a219d2dca7824f2",
+  "receipt": {
+    "to": null,
+    "from": "0x5D3e4C0FE11e0aE4c32F0FF74B4544C49538AC61",
+    "contractAddress": "0xF1293a00C8921F561af4dB1b49846a2B89F6BCfB",
+    "transactionIndex": 1,
+    "gasUsed": "1861700",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x24c2895cfaf2f0b90cfb387ad1d237437095c45e9c3acb299438315bb6aa97c4",
+    "transactionHash": "0xc34080e6147f833c68e911004ebec4c766c695d17ab34f509a219d2dca7824f2",
+    "logs": [],
+    "blockNumber": 9235914,
+    "cumulativeGasUsed": "1940862",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x5D3e4C0FE11e0aE4c32F0FF74B4544C49538AC61",
+    "300",
+    "200",
+    "200",
+    "100",
+    "40000000000000000000"
+  ],
+  "solcInputHash": "583a7ab4e2f2ec84aa570eede54f4303",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"delay_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"devPercentLimit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"treasuryPercentLimit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"investorPercentLimit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"joePerSecLimit_\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"signature\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"eta\",\"type\":\"uint256\"}],\"name\":\"CancelTransaction\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"signature\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"eta\",\"type\":\"uint256\"}],\"name\":\"ExecuteTransaction\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newAdmin\",\"type\":\"address\"}],\"name\":\"NewAdmin\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"newDelay\",\"type\":\"uint256\"}],\"name\":\"NewDelay\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newPendingAdmin\",\"type\":\"address\"}],\"name\":\"NewPendingAdmin\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"signature\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"eta\",\"type\":\"uint256\"}],\"name\":\"QueueTransaction\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"GRACE_PERIOD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MAXIMUM_DELAY\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MINIMUM_DELAY\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"acceptAdmin\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"admin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"admin_initialized\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"signature\",\"type\":\"string\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"eta\",\"type\":\"uint256\"}],\"name\":\"cancelTransaction\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"delay\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"devPercentLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"signature\",\"type\":\"string\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"eta\",\"type\":\"uint256\"}],\"name\":\"executeTransaction\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"investorPercentLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"joePerSecLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pendingAdmin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"signature\",\"type\":\"string\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"eta\",\"type\":\"uint256\"}],\"name\":\"queueTransaction\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"queuedTransactions\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"delay_\",\"type\":\"uint256\"}],\"name\":\"setDelay\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingAdmin_\",\"type\":\"address\"}],\"name\":\"setPendingAdmin\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"treasuryPercentLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/timelock/CustomMasterChefJoeV2Timelock.sol\":\"CustomMasterChefJoeV2Timelock\"},\"evmVersion\":\"istanbul\",\"libraries\":{\"__CACHE_BREAKER__\":\"0x00000000d41867734bbee4c6863d9255b2b06ac1\"},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/math/SafeMath.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.0 <0.8.0;\\n\\n/**\\n * @dev Wrappers over Solidity's arithmetic operations with added overflow\\n * checks.\\n *\\n * Arithmetic operations in Solidity wrap on overflow. This can easily result\\n * in bugs, because programmers usually assume that an overflow raises an\\n * error, which is the standard behavior in high level programming languages.\\n * `SafeMath` restores this intuition by reverting the transaction when an\\n * operation overflows.\\n *\\n * Using this library instead of the unchecked operations eliminates an entire\\n * class of bugs, so it's recommended to use it always.\\n */\\nlibrary SafeMath {\\n    /**\\n     * @dev Returns the addition of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        uint256 c = a + b;\\n        if (c < a) return (false, 0);\\n        return (true, c);\\n    }\\n\\n    /**\\n     * @dev Returns the substraction of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        if (b > a) return (false, 0);\\n        return (true, a - b);\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n        // benefit is lost if 'b' is also tested.\\n        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n        if (a == 0) return (true, 0);\\n        uint256 c = a * b;\\n        if (c / a != b) return (false, 0);\\n        return (true, c);\\n    }\\n\\n    /**\\n     * @dev Returns the division of two unsigned integers, with a division by zero flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        if (b == 0) return (false, 0);\\n        return (true, a / b);\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        if (b == 0) return (false, 0);\\n        return (true, a % b);\\n    }\\n\\n    /**\\n     * @dev Returns the addition of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `+` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Addition cannot overflow.\\n     */\\n    function add(uint256 a, uint256 b) internal pure returns (uint256) {\\n        uint256 c = a + b;\\n        require(c >= a, \\\"SafeMath: addition overflow\\\");\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b) internal pure returns (uint256) {\\n        require(b <= a, \\\"SafeMath: subtraction overflow\\\");\\n        return a - b;\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `*` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Multiplication cannot overflow.\\n     */\\n    function mul(uint256 a, uint256 b) internal pure returns (uint256) {\\n        if (a == 0) return 0;\\n        uint256 c = a * b;\\n        require(c / a == b, \\\"SafeMath: multiplication overflow\\\");\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers, reverting on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b) internal pure returns (uint256) {\\n        require(b > 0, \\\"SafeMath: division by zero\\\");\\n        return a / b;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * reverting when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b) internal pure returns (uint256) {\\n        require(b > 0, \\\"SafeMath: modulo by zero\\\");\\n        return a % b;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on\\n     * overflow (when the result is negative).\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {trySub}.\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b <= a, errorMessage);\\n        return a - b;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers, reverting with custom message on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {tryDiv}.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b > 0, errorMessage);\\n        return a / b;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * reverting with custom message when dividing by zero.\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {tryMod}.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b > 0, errorMessage);\\n        return a % b;\\n    }\\n}\\n\",\"keccak256\":\"0xcc78a17dd88fa5a2edc60c8489e2f405c0913b377216a5b26b35656b2d0dab52\",\"license\":\"MIT\"},\"contracts/timelock/CustomMasterChefJoeV2Timelock.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n// COPIED FROM https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/GovernorAlpha.sol\\n// Copyright 2020 Compound Labs, Inc.\\n// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:\\n// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.\\n// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.\\n// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\\n// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \\\"AS IS\\\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\\n//\\n// Ctrl+f for XXX to see all the modifications.\\n\\n// XXX: pragma solidity ^0.5.16;\\npragma solidity 0.6.12;\\n\\n// XXX: import \\\"./SafeMath.sol\\\";\\nimport \\\"@openzeppelin/contracts/math/SafeMath.sol\\\";\\n\\ncontract CustomMasterChefJoeV2Timelock {\\n    using SafeMath for uint256;\\n\\n    event NewAdmin(address indexed newAdmin);\\n    event NewPendingAdmin(address indexed newPendingAdmin);\\n    event NewDelay(uint256 indexed newDelay);\\n    event CancelTransaction(\\n        bytes32 indexed txHash,\\n        address indexed target,\\n        uint256 value,\\n        string signature,\\n        bytes data,\\n        uint256 eta\\n    );\\n    event ExecuteTransaction(\\n        bytes32 indexed txHash,\\n        address indexed target,\\n        uint256 value,\\n        string signature,\\n        bytes data,\\n        uint256 eta\\n    );\\n    event QueueTransaction(\\n        bytes32 indexed txHash,\\n        address indexed target,\\n        uint256 value,\\n        string signature,\\n        bytes data,\\n        uint256 eta\\n    );\\n\\n    uint256 public constant GRACE_PERIOD = 14 days;\\n    uint256 public constant MINIMUM_DELAY = 300;\\n    uint256 public constant MAXIMUM_DELAY = 30 days;\\n\\n    string private constant SET_DEV_PERCENT_SIG = \\\"setDevPercent(uint256)\\\";\\n    string private constant SET_TREASURY_PERCENT_SIG = \\\"setTreasuryPercent(uint256)\\\";\\n    string private constant SET_INVESTOR_PERCENT_SIG = \\\"setInvestorPercent(uint256)\\\";\\n    string private constant UPDATE_EMISSION_RATE_SIG = \\\"updateEmissionRate(uint256)\\\";\\n\\n    address public admin;\\n    address public pendingAdmin;\\n    uint256 public delay;\\n    uint256 public devPercentLimit;\\n    uint256 public investorPercentLimit;\\n    uint256 public treasuryPercentLimit;\\n    uint256 public joePerSecLimit;\\n    bool public admin_initialized;\\n\\n    mapping(bytes32 => bool) public queuedTransactions;\\n\\n    modifier withinLimits(string memory signature, bytes memory data) {\\n      if (keccak256(bytes(signature)) == keccak256(bytes(SET_DEV_PERCENT_SIG))) {\\n        uint256 devPercent = abi.decode(data, (uint256));\\n        require(devPercent <= devPercentLimit,\\n                \\\"CustomMasterChefJoeV2Timelock::withinLimits: devPercent must not exceed limit.\\\");\\n      } else if (keccak256(bytes(signature)) == keccak256(bytes(SET_TREASURY_PERCENT_SIG))) {\\n        uint256 treasuryPercent = abi.decode(data, (uint256));\\n        require(treasuryPercent <= treasuryPercentLimit,\\n                \\\"CustomMasterChefJoeV2Timelock::withinLimits: treasuryPercent must not exceed limit.\\\");\\n      } else if (keccak256(bytes(signature)) == keccak256(bytes(SET_INVESTOR_PERCENT_SIG))) {\\n        uint256 investorPercent = abi.decode(data, (uint256));\\n        require(investorPercent <= investorPercentLimit,\\n                \\\"CustomMasterChefJoeV2Timelock::withinLimits: investorPercent must not exceed limit.\\\");\\n      } else if (keccak256(bytes(signature)) ==\\n                 keccak256(bytes(UPDATE_EMISSION_RATE_SIG))) {\\n        uint256 joePerSec = abi.decode(data, (uint256));\\n        require(joePerSec <= joePerSecLimit, \\\"CustomMasterChefJoeV2Timelock::withinLimits: joePerSec must not exceed limit.\\\");\\n      }\\n      _;\\n    }\\n\\n    constructor(address admin_, uint256 delay_, uint256 devPercentLimit_,\\n                uint256 treasuryPercentLimit_, uint256 investorPercentLimit_,\\n                uint256 joePerSecLimit_) public {\\n        require(\\n            delay_ >= MINIMUM_DELAY,\\n            \\\"CustomMasterChefJoeV2Timelock::constructor: Delay must exceed minimum delay.\\\"\\n        );\\n        require(\\n            delay_ <= MAXIMUM_DELAY,\\n            \\\"CustomMasterChefJoeV2Timelock::constructor: Delay must not exceed maximum delay.\\\"\\n        );\\n\\n        admin = admin_;\\n        delay = delay_;\\n        admin_initialized = false;\\n        devPercentLimit = devPercentLimit_;\\n        treasuryPercentLimit = treasuryPercentLimit_;\\n        investorPercentLimit = investorPercentLimit_;\\n        joePerSecLimit = joePerSecLimit_;\\n    }\\n\\n    // XXX: function() external payable { }\\n    receive() external payable {}\\n\\n    function setDelay(uint256 delay_) public {\\n        require(\\n            msg.sender == address(this),\\n            \\\"CustomMasterChefJoeV2Timelock::setDelay: Call must come from CustomMasterChefJoeV2Timelock.\\\"\\n        );\\n        require(\\n            delay_ >= MINIMUM_DELAY,\\n            \\\"CustomMasterChefJoeV2Timelock::setDelay: Delay must exceed minimum delay.\\\"\\n        );\\n        require(\\n            delay_ <= MAXIMUM_DELAY,\\n            \\\"CustomMasterChefJoeV2Timelock::setDelay: Delay must not exceed maximum delay.\\\"\\n        );\\n        delay = delay_;\\n\\n        emit NewDelay(delay);\\n    }\\n\\n    function acceptAdmin() public {\\n        require(\\n            msg.sender == pendingAdmin,\\n            \\\"CustomMasterChefJoeV2Timelock::acceptAdmin: Call must come from pendingAdmin.\\\"\\n        );\\n        admin = msg.sender;\\n        pendingAdmin = address(0);\\n\\n        emit NewAdmin(admin);\\n    }\\n\\n    function setPendingAdmin(address pendingAdmin_) public {\\n        // allows one time setting of admin for deployment purposes\\n        if (admin_initialized) {\\n            require(\\n                msg.sender == address(this),\\n                \\\"CustomMasterChefJoeV2Timelock::setPendingAdmin: Call must come from CustomMasterChefJoeV2Timelock.\\\"\\n            );\\n        } else {\\n            require(\\n                msg.sender == admin,\\n                \\\"CustomMasterChefJoeV2Timelock::setPendingAdmin: First call must come from admin.\\\"\\n            );\\n            admin_initialized = true;\\n        }\\n        pendingAdmin = pendingAdmin_;\\n\\n        emit NewPendingAdmin(pendingAdmin);\\n    }\\n\\n    function queueTransaction(\\n        address target,\\n        uint256 value,\\n        string memory signature,\\n        bytes memory data,\\n        uint256 eta\\n    ) public withinLimits(signature, data) returns (bytes32) {\\n        require(\\n            msg.sender == admin,\\n            \\\"CustomMasterChefJoeV2Timelock::queueTransaction: Call must come from admin.\\\"\\n        );\\n        require(\\n            eta >= getBlockTimestamp().add(delay),\\n            \\\"CustomMasterChefJoeV2Timelock::queueTransaction: Estimated execution block must satisfy delay.\\\"\\n        );\\n\\n        bytes32 txHash = keccak256(\\n            abi.encode(target, value, signature, data, eta)\\n        );\\n        queuedTransactions[txHash] = true;\\n\\n        emit QueueTransaction(txHash, target, value, signature, data, eta);\\n        return txHash;\\n    }\\n\\n    function cancelTransaction(\\n        address target,\\n        uint256 value,\\n        string memory signature,\\n        bytes memory data,\\n        uint256 eta\\n    ) public {\\n        require(\\n            msg.sender == admin,\\n            \\\"CustomMasterChefJoeV2Timelock::cancelTransaction: Call must come from admin.\\\"\\n        );\\n\\n        bytes32 txHash = keccak256(\\n            abi.encode(target, value, signature, data, eta)\\n        );\\n        queuedTransactions[txHash] = false;\\n\\n        emit CancelTransaction(txHash, target, value, signature, data, eta);\\n    }\\n\\n    function executeTransaction(\\n        address target,\\n        uint256 value,\\n        string memory signature,\\n        bytes memory data,\\n        uint256 eta\\n    ) public payable returns (bytes memory) {\\n        require(\\n            msg.sender == admin,\\n            \\\"CustomMasterChefJoeV2Timelock::executeTransaction: Call must come from admin.\\\"\\n        );\\n\\n        bytes32 txHash = keccak256(\\n            abi.encode(target, value, signature, data, eta)\\n        );\\n        require(\\n            queuedTransactions[txHash],\\n            \\\"CustomMasterChefJoeV2Timelock::executeTransaction: Transaction hasn't been queued.\\\"\\n        );\\n        require(\\n            getBlockTimestamp() >= eta,\\n            \\\"CustomMasterChefJoeV2Timelock::executeTransaction: Transaction hasn't surpassed time lock.\\\"\\n        );\\n        require(\\n            getBlockTimestamp() <= eta.add(GRACE_PERIOD),\\n            \\\"CustomMasterChefJoeV2Timelock::executeTransaction: Transaction is stale.\\\"\\n        );\\n\\n        queuedTransactions[txHash] = false;\\n\\n        bytes memory callData;\\n\\n        callData = abi.encodePacked(\\n            bytes4(keccak256(bytes(signature))),\\n            data\\n        );\\n\\n        // solium-disable-next-line security/no-call-value\\n        (bool success, bytes memory returnData) = target.call.value(value)(\\n            callData\\n        );\\n        require(\\n            success,\\n            \\\"CustomMasterChefJoeV2Timelock::executeTransaction: Transaction execution reverted.\\\"\\n        );\\n\\n        emit ExecuteTransaction(txHash, target, value, signature, data, eta);\\n\\n        return returnData;\\n    }\\n\\n    function getBlockTimestamp() internal view returns (uint256) {\\n        // solium-disable-next-line security/no-block-members\\n        return block.timestamp;\\n    }\\n}\\n\",\"keccak256\":\"0x1c739fabd96adf1277f4ebf450db522f88752d1491754469f702f0c959bdef5d\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50604051611fe5380380611fe5833981810160405260c081101561003357600080fd5b508051602082015160408301516060840151608085015160a090950151939492939192909161012c8510156100995760405162461bcd60e51b815260040180806020018281038252604c815260200180611f49604c913960600191505060405180910390fd5b62278d008511156100db5760405162461bcd60e51b8152600401808060200182810382526050815260200180611f956050913960600191505060405180910390fd5b600080546001600160a01b039097166001600160a01b0319909716969096179095556002939093556007805460ff19169055600391909155600555600455600655611e1e8061012b6000396000f3fe60806040526004361061010d5760003560e01c80636fc1f57e11610095578063b1b43ae511610064578063b1b43ae51461069c578063c1a287e2146106b1578063e177246e146106c6578063f2b06537146106f0578063f851a4401461071a57610114565b80636fc1f57e146106345780637d645fab1461065d5780639cb6269514610672578063af7183e51461068757610114565b80633a66f901116100dc5780633a66f9011461033d5780634dd18bf51461048a578063591fcdfe146104bd57806363da8c0c1461060a5780636a42b8f81461061f57610114565b80630825f38f146101195780630e18b681146102ce5780631e0244ac146102e5578063267822471461030c57610114565b3661011457005b600080fd5b610259600480360360a081101561012f57600080fd5b6001600160a01b0382351691602081013591810190606081016040820135600160201b81111561015e57600080fd5b82018360208201111561017057600080fd5b803590602001918460018302840111600160201b8311171561019157600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295949360208101935035915050600160201b8111156101e357600080fd5b8201836020820111156101f557600080fd5b803590602001918460018302840111600160201b8311171561021657600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250929550509135925061072f915050565b6040805160208082528351818301528351919283929083019185019080838360005b8381101561029357818101518382015260200161027b565b50505050905090810190601f1680156102c05780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b3480156102da57600080fd5b506102e3610c23565b005b3480156102f157600080fd5b506102fa610cbf565b60408051918252519081900360200190f35b34801561031857600080fd5b50610321610cc5565b604080516001600160a01b039092168252519081900360200190f35b34801561034957600080fd5b506102fa600480360360a081101561036057600080fd5b6001600160a01b0382351691602081013591810190606081016040820135600160201b81111561038f57600080fd5b8201836020820111156103a157600080fd5b803590602001918460018302840111600160201b831117156103c257600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295949360208101935035915050600160201b81111561041457600080fd5b82018360208201111561042657600080fd5b803590602001918460018302840111600160201b8311171561044757600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295505091359250610cd4915050565b34801561049657600080fd5b506102e3600480360360208110156104ad57600080fd5b50356001600160a01b03166112db565b3480156104c957600080fd5b506102e3600480360360a08110156104e057600080fd5b6001600160a01b0382351691602081013591810190606081016040820135600160201b81111561050f57600080fd5b82018360208201111561052157600080fd5b803590602001918460018302840111600160201b8311171561054257600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295949360208101935035915050600160201b81111561059457600080fd5b8201836020820111156105a657600080fd5b803590602001918460018302840111600160201b831117156105c757600080fd5b91908080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525092955050913592506113d0915050565b34801561061657600080fd5b506102fa61167d565b34801561062b57600080fd5b506102fa611683565b34801561064057600080fd5b50610649611689565b604080519115158252519081900360200190f35b34801561066957600080fd5b506102fa611692565b34801561067e57600080fd5b506102fa611699565b34801561069357600080fd5b506102fa61169f565b3480156106a857600080fd5b506102fa6116a5565b3480156106bd57600080fd5b506102fa6116ab565b3480156106d257600080fd5b506102e3600480360360208110156106e957600080fd5b50356116b2565b3480156106fc57600080fd5b506106496004803603602081101561071357600080fd5b50356117a6565b34801561072657600080fd5b506103216117bb565b6000546060906001600160a01b0316331461077b5760405162461bcd60e51b815260040180806020018281038252604d815260200180611cfa604d913960600191505060405180910390fd5b6000868686868660405160200180866001600160a01b031681526020018581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b838110156107e15781810151838201526020016107c9565b50505050905090810190601f16801561080e5780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015610841578181015183820152602001610829565b50505050905090810190601f16801561086e5780820380516001836020036101000a031916815260200191505b5060408051601f1981840301815291815281516020928301206000818152600890935291205490995060ff1697506108df96505050505050505760405162461bcd60e51b8152600401808060200182810382526052815260200180611d476052913960600191505060405180910390fd5b826108e86117ca565b10156109255760405162461bcd60e51b815260040180806020018281038252605a815260200180611830605a913960600191505060405180910390fd5b61093283621275006117ce565b61093a6117ca565b11156109775760405162461bcd60e51b81526004018080602001828103825260488152602001806119356048913960600191505060405180910390fd5b600081815260086020908152604091829020805460ff1916905586518782012091516001600160e01b03198316818301908152875160609493899360240191908401908083835b602083106109dd5780518252601f1990920191602091820191016109be565b6001836020036101000a03801982511681845116808217855250505050505090500192505050604051602081830303815290604052905060006060896001600160a01b031689846040518082805190602001908083835b60208310610a535780518252601f199092019160209182019101610a34565b6001836020036101000a03801982511681845116808217855250505050505090500191505060006040518083038185875af1925050503d8060008114610ab5576040519150601f19603f3d011682016040523d82523d6000602084013e610aba565b606091505b509150915081610afb5760405162461bcd60e51b8152600401808060200182810382526052815260200180611a1c6052913960600191505060405180910390fd5b896001600160a01b0316847fa560e3198060a2f10670c1ec5b403077ea6ae93ca8de1c32b451dc1a943cd6e78b8b8b8b604051808581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b83811015610b78578181015183820152602001610b60565b50505050905090810190601f168015610ba55780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015610bd8578181015183820152602001610bc0565b50505050905090810190601f168015610c055780820380516001836020036101000a031916815260200191505b50965050505050505060405180910390a39998505050505050505050565b6001546001600160a01b03163314610c6c5760405162461bcd60e51b815260040180806020018281038252604d81526020018061188a604d913960600191505060405180910390fd5b60008054336001600160a01b031991821617808355600180549092169091556040516001600160a01b03909116917f71614071b88dee5e0b2ae578a9dd7b2ebbe9ae832ba419dc0242cd065a290b6c91a2565b60065481565b6001546001600160a01b031681565b60408051808201909152601681527573657444657650657263656e742875696e743235362960501b602091820152835190840120600090849084907f6eaddad2b4e0939c3df608ceffb2d63903eb63686c02f7d429d43a5f325fead51415610d99576000818060200190516020811015610d4d57600080fd5b5051600354909150811115610d935760405162461bcd60e51b815260040180806020018281038252604e815260200180611b51604e913960600191505060405180910390fd5b50610fd8565b60408051808201909152601b81527f736574547265617375727950657263656e742875696e743235362900000000006020918201528251908301207f89a2bc253c3144e59a2188a3aef8fd7db15a6218ad542cf966f3edce1b8997311415610e58576000818060200190516020811015610e1257600080fd5b5051600554909150811115610d935760405162461bcd60e51b815260040180806020018281038252605381526020018061197d6053913960600191505060405180910390fd5b60408051808201909152601b81527f736574496e766573746f7250657263656e742875696e743235362900000000006020918201528251908301207f876d3c9c3c7a70c9a938c69133884f02133eb7d3decbdb7bd39566d28c97d5f41415610f17576000818060200190516020811015610ed157600080fd5b5051600454909150811115610d935760405162461bcd60e51b8152600401808060200182810382526053815260200180611c4c6053913960600191505060405180910390fd5b60408051808201909152601b81527f757064617465456d697373696f6e526174652875696e743235362900000000006020918201528251908301207f0ba84cd2f0535c9a481170fa535603a94aca2116d737c6cac42f0b7670813ce11415610fd8576000818060200190516020811015610f9057600080fd5b5051600654909150811115610fd65760405162461bcd60e51b815260040180806020018281038252604d815260200180611b04604d913960600191505060405180910390fd5b505b6000546001600160a01b031633146110215760405162461bcd60e51b815260040180806020018281038252604b815260200180611b9f604b913960600191505060405180910390fd5b61103560025461102f6117ca565b906117ce565b8410156110735760405162461bcd60e51b815260040180806020018281038252605e8152602001806118d7605e913960600191505060405180910390fd5b6000888888888860405160200180866001600160a01b031681526020018581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b838110156110d95781810151838201526020016110c1565b50505050905090810190601f1680156111065780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015611139578181015183820152602001611121565b50505050905090810190601f1680156111665780820380516001836020036101000a031916815260200191505b5097505050505050505060405160208183030381529060405280519060200120905060016008600083815260200190815260200160002060006101000a81548160ff021916908315150217905550886001600160a01b0316817f76e2796dc3a81d57b0e8504b647febcbeeb5f4af818e164f11eef8131a6a763f8a8a8a8a604051808581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b83811015611231578181015183820152602001611219565b50505050905090810190601f16801561125e5780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015611291578181015183820152602001611279565b50505050905090810190601f1680156112be5780820380516001836020036101000a031916815260200191505b50965050505050505060405180910390a398975050505050505050565b60075460ff1615611329573330146113245760405162461bcd60e51b8152600401808060200182810382526062815260200180611bea6062913960800191505060405180910390fd5b611380565b6000546001600160a01b031633146113725760405162461bcd60e51b8152600401808060200182810382526050815260200180611d996050913960600191505060405180910390fd5b6007805460ff191660011790555b600180546001600160a01b0319166001600160a01b0383811691909117918290556040519116907f69d78e38a01985fbb1462961809b4b2d65531bc93b2b94037f3334b82ca4a75690600090a250565b6000546001600160a01b031633146114195760405162461bcd60e51b815260040180806020018281038252604c8152602001806119d0604c913960600191505060405180910390fd5b6000858585858560405160200180866001600160a01b031681526020018581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b8381101561147f578181015183820152602001611467565b50505050905090810190601f1680156114ac5780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b838110156114df5781810151838201526020016114c7565b50505050905090810190601f16801561150c5780820380516001836020036101000a031916815260200191505b5097505050505050505060405160208183030381529060405280519060200120905060006008600083815260200190815260200160002060006101000a81548160ff021916908315150217905550856001600160a01b0316817f2fffc091a501fd91bfbff27141450d3acb40fb8e6d8382b243ec7a812a3aaf8787878787604051808581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b838110156115d75781810151838201526020016115bf565b50505050905090810190601f1680156116045780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b8381101561163757818101518382015260200161161f565b50505050905090810190601f1680156116645780820380516001836020036101000a031916815260200191505b50965050505050505060405180910390a3505050505050565b60055481565b60025481565b60075460ff1681565b62278d0081565b60045481565b60035481565b61012c81565b6212750081565b3330146116f05760405162461bcd60e51b815260040180806020018281038252605b815260200180611c9f605b913960600191505060405180910390fd5b61012c8110156117315760405162461bcd60e51b8152600401808060200182810382526049815260200180611a6e6049913960600191505060405180910390fd5b62278d008111156117735760405162461bcd60e51b815260040180806020018281038252604d815260200180611ab7604d913960600191505060405180910390fd5b600281905560405181907f948b1f6a42ee138b7e34058ba85a37f716d55ff25ff05a763f15bed6a04c8d2c90600090a250565b60086020526000908152604090205460ff1681565b6000546001600160a01b031681565b4290565b600082820183811015611828576040805162461bcd60e51b815260206004820152601b60248201527f536166654d6174683a206164646974696f6e206f766572666c6f770000000000604482015290519081900360640190fd5b939250505056fe437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e206861736e2774207375727061737365642074696d65206c6f636b2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a61636365707441646d696e3a2043616c6c206d75737420636f6d652066726f6d2070656e64696e6741646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a71756575655472616e73616374696f6e3a20457374696d6174656420657865637574696f6e20626c6f636b206d75737420736174697366792064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e206973207374616c652e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a20747265617375727950657263656e74206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a63616e63656c5472616e73616374696f6e3a2043616c6c206d75737420636f6d652066726f6d2061646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e20657865637574696f6e2072657665727465642e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657444656c61793a2044656c6179206d75737420657863656564206d696e696d756d2064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657444656c61793a2044656c6179206d757374206e6f7420657863656564206d6178696d756d2064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a206a6f65506572536563206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a2064657650657263656e74206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a71756575655472616e73616374696f6e3a2043616c6c206d75737420636f6d652066726f6d2061646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657450656e64696e6741646d696e3a2043616c6c206d75737420636f6d652066726f6d20437573746f6d4d6173746572436865664a6f65563254696d656c6f636b2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a20696e766573746f7250657263656e74206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657444656c61793a2043616c6c206d75737420636f6d652066726f6d20437573746f6d4d6173746572436865664a6f65563254696d656c6f636b2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a2043616c6c206d75737420636f6d652066726f6d2061646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e206861736e2774206265656e207175657565642e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657450656e64696e6741646d696e3a2046697273742063616c6c206d75737420636f6d652066726f6d2061646d696e2ea2646970667358221220564a8cf0b193cb7890fd195f08bee96224331a34352b285077414e878a85ad3364736f6c634300060c0033437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a636f6e7374727563746f723a2044656c6179206d75737420657863656564206d696e696d756d2064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a636f6e7374727563746f723a2044656c6179206d757374206e6f7420657863656564206d6178696d756d2064656c61792e",
+  "deployedBytecode": "0x60806040526004361061010d5760003560e01c80636fc1f57e11610095578063b1b43ae511610064578063b1b43ae51461069c578063c1a287e2146106b1578063e177246e146106c6578063f2b06537146106f0578063f851a4401461071a57610114565b80636fc1f57e146106345780637d645fab1461065d5780639cb6269514610672578063af7183e51461068757610114565b80633a66f901116100dc5780633a66f9011461033d5780634dd18bf51461048a578063591fcdfe146104bd57806363da8c0c1461060a5780636a42b8f81461061f57610114565b80630825f38f146101195780630e18b681146102ce5780631e0244ac146102e5578063267822471461030c57610114565b3661011457005b600080fd5b610259600480360360a081101561012f57600080fd5b6001600160a01b0382351691602081013591810190606081016040820135600160201b81111561015e57600080fd5b82018360208201111561017057600080fd5b803590602001918460018302840111600160201b8311171561019157600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295949360208101935035915050600160201b8111156101e357600080fd5b8201836020820111156101f557600080fd5b803590602001918460018302840111600160201b8311171561021657600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250929550509135925061072f915050565b6040805160208082528351818301528351919283929083019185019080838360005b8381101561029357818101518382015260200161027b565b50505050905090810190601f1680156102c05780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b3480156102da57600080fd5b506102e3610c23565b005b3480156102f157600080fd5b506102fa610cbf565b60408051918252519081900360200190f35b34801561031857600080fd5b50610321610cc5565b604080516001600160a01b039092168252519081900360200190f35b34801561034957600080fd5b506102fa600480360360a081101561036057600080fd5b6001600160a01b0382351691602081013591810190606081016040820135600160201b81111561038f57600080fd5b8201836020820111156103a157600080fd5b803590602001918460018302840111600160201b831117156103c257600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295949360208101935035915050600160201b81111561041457600080fd5b82018360208201111561042657600080fd5b803590602001918460018302840111600160201b8311171561044757600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295505091359250610cd4915050565b34801561049657600080fd5b506102e3600480360360208110156104ad57600080fd5b50356001600160a01b03166112db565b3480156104c957600080fd5b506102e3600480360360a08110156104e057600080fd5b6001600160a01b0382351691602081013591810190606081016040820135600160201b81111561050f57600080fd5b82018360208201111561052157600080fd5b803590602001918460018302840111600160201b8311171561054257600080fd5b91908080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152509295949360208101935035915050600160201b81111561059457600080fd5b8201836020820111156105a657600080fd5b803590602001918460018302840111600160201b831117156105c757600080fd5b91908080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525092955050913592506113d0915050565b34801561061657600080fd5b506102fa61167d565b34801561062b57600080fd5b506102fa611683565b34801561064057600080fd5b50610649611689565b604080519115158252519081900360200190f35b34801561066957600080fd5b506102fa611692565b34801561067e57600080fd5b506102fa611699565b34801561069357600080fd5b506102fa61169f565b3480156106a857600080fd5b506102fa6116a5565b3480156106bd57600080fd5b506102fa6116ab565b3480156106d257600080fd5b506102e3600480360360208110156106e957600080fd5b50356116b2565b3480156106fc57600080fd5b506106496004803603602081101561071357600080fd5b50356117a6565b34801561072657600080fd5b506103216117bb565b6000546060906001600160a01b0316331461077b5760405162461bcd60e51b815260040180806020018281038252604d815260200180611cfa604d913960600191505060405180910390fd5b6000868686868660405160200180866001600160a01b031681526020018581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b838110156107e15781810151838201526020016107c9565b50505050905090810190601f16801561080e5780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015610841578181015183820152602001610829565b50505050905090810190601f16801561086e5780820380516001836020036101000a031916815260200191505b5060408051601f1981840301815291815281516020928301206000818152600890935291205490995060ff1697506108df96505050505050505760405162461bcd60e51b8152600401808060200182810382526052815260200180611d476052913960600191505060405180910390fd5b826108e86117ca565b10156109255760405162461bcd60e51b815260040180806020018281038252605a815260200180611830605a913960600191505060405180910390fd5b61093283621275006117ce565b61093a6117ca565b11156109775760405162461bcd60e51b81526004018080602001828103825260488152602001806119356048913960600191505060405180910390fd5b600081815260086020908152604091829020805460ff1916905586518782012091516001600160e01b03198316818301908152875160609493899360240191908401908083835b602083106109dd5780518252601f1990920191602091820191016109be565b6001836020036101000a03801982511681845116808217855250505050505090500192505050604051602081830303815290604052905060006060896001600160a01b031689846040518082805190602001908083835b60208310610a535780518252601f199092019160209182019101610a34565b6001836020036101000a03801982511681845116808217855250505050505090500191505060006040518083038185875af1925050503d8060008114610ab5576040519150601f19603f3d011682016040523d82523d6000602084013e610aba565b606091505b509150915081610afb5760405162461bcd60e51b8152600401808060200182810382526052815260200180611a1c6052913960600191505060405180910390fd5b896001600160a01b0316847fa560e3198060a2f10670c1ec5b403077ea6ae93ca8de1c32b451dc1a943cd6e78b8b8b8b604051808581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b83811015610b78578181015183820152602001610b60565b50505050905090810190601f168015610ba55780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015610bd8578181015183820152602001610bc0565b50505050905090810190601f168015610c055780820380516001836020036101000a031916815260200191505b50965050505050505060405180910390a39998505050505050505050565b6001546001600160a01b03163314610c6c5760405162461bcd60e51b815260040180806020018281038252604d81526020018061188a604d913960600191505060405180910390fd5b60008054336001600160a01b031991821617808355600180549092169091556040516001600160a01b03909116917f71614071b88dee5e0b2ae578a9dd7b2ebbe9ae832ba419dc0242cd065a290b6c91a2565b60065481565b6001546001600160a01b031681565b60408051808201909152601681527573657444657650657263656e742875696e743235362960501b602091820152835190840120600090849084907f6eaddad2b4e0939c3df608ceffb2d63903eb63686c02f7d429d43a5f325fead51415610d99576000818060200190516020811015610d4d57600080fd5b5051600354909150811115610d935760405162461bcd60e51b815260040180806020018281038252604e815260200180611b51604e913960600191505060405180910390fd5b50610fd8565b60408051808201909152601b81527f736574547265617375727950657263656e742875696e743235362900000000006020918201528251908301207f89a2bc253c3144e59a2188a3aef8fd7db15a6218ad542cf966f3edce1b8997311415610e58576000818060200190516020811015610e1257600080fd5b5051600554909150811115610d935760405162461bcd60e51b815260040180806020018281038252605381526020018061197d6053913960600191505060405180910390fd5b60408051808201909152601b81527f736574496e766573746f7250657263656e742875696e743235362900000000006020918201528251908301207f876d3c9c3c7a70c9a938c69133884f02133eb7d3decbdb7bd39566d28c97d5f41415610f17576000818060200190516020811015610ed157600080fd5b5051600454909150811115610d935760405162461bcd60e51b8152600401808060200182810382526053815260200180611c4c6053913960600191505060405180910390fd5b60408051808201909152601b81527f757064617465456d697373696f6e526174652875696e743235362900000000006020918201528251908301207f0ba84cd2f0535c9a481170fa535603a94aca2116d737c6cac42f0b7670813ce11415610fd8576000818060200190516020811015610f9057600080fd5b5051600654909150811115610fd65760405162461bcd60e51b815260040180806020018281038252604d815260200180611b04604d913960600191505060405180910390fd5b505b6000546001600160a01b031633146110215760405162461bcd60e51b815260040180806020018281038252604b815260200180611b9f604b913960600191505060405180910390fd5b61103560025461102f6117ca565b906117ce565b8410156110735760405162461bcd60e51b815260040180806020018281038252605e8152602001806118d7605e913960600191505060405180910390fd5b6000888888888860405160200180866001600160a01b031681526020018581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b838110156110d95781810151838201526020016110c1565b50505050905090810190601f1680156111065780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015611139578181015183820152602001611121565b50505050905090810190601f1680156111665780820380516001836020036101000a031916815260200191505b5097505050505050505060405160208183030381529060405280519060200120905060016008600083815260200190815260200160002060006101000a81548160ff021916908315150217905550886001600160a01b0316817f76e2796dc3a81d57b0e8504b647febcbeeb5f4af818e164f11eef8131a6a763f8a8a8a8a604051808581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b83811015611231578181015183820152602001611219565b50505050905090810190601f16801561125e5780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b83811015611291578181015183820152602001611279565b50505050905090810190601f1680156112be5780820380516001836020036101000a031916815260200191505b50965050505050505060405180910390a398975050505050505050565b60075460ff1615611329573330146113245760405162461bcd60e51b8152600401808060200182810382526062815260200180611bea6062913960800191505060405180910390fd5b611380565b6000546001600160a01b031633146113725760405162461bcd60e51b8152600401808060200182810382526050815260200180611d996050913960600191505060405180910390fd5b6007805460ff191660011790555b600180546001600160a01b0319166001600160a01b0383811691909117918290556040519116907f69d78e38a01985fbb1462961809b4b2d65531bc93b2b94037f3334b82ca4a75690600090a250565b6000546001600160a01b031633146114195760405162461bcd60e51b815260040180806020018281038252604c8152602001806119d0604c913960600191505060405180910390fd5b6000858585858560405160200180866001600160a01b031681526020018581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b8381101561147f578181015183820152602001611467565b50505050905090810190601f1680156114ac5780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b838110156114df5781810151838201526020016114c7565b50505050905090810190601f16801561150c5780820380516001836020036101000a031916815260200191505b5097505050505050505060405160208183030381529060405280519060200120905060006008600083815260200190815260200160002060006101000a81548160ff021916908315150217905550856001600160a01b0316817f2fffc091a501fd91bfbff27141450d3acb40fb8e6d8382b243ec7a812a3aaf8787878787604051808581526020018060200180602001848152602001838103835286818151815260200191508051906020019080838360005b838110156115d75781810151838201526020016115bf565b50505050905090810190601f1680156116045780820380516001836020036101000a031916815260200191505b50838103825285518152855160209182019187019080838360005b8381101561163757818101518382015260200161161f565b50505050905090810190601f1680156116645780820380516001836020036101000a031916815260200191505b50965050505050505060405180910390a3505050505050565b60055481565b60025481565b60075460ff1681565b62278d0081565b60045481565b60035481565b61012c81565b6212750081565b3330146116f05760405162461bcd60e51b815260040180806020018281038252605b815260200180611c9f605b913960600191505060405180910390fd5b61012c8110156117315760405162461bcd60e51b8152600401808060200182810382526049815260200180611a6e6049913960600191505060405180910390fd5b62278d008111156117735760405162461bcd60e51b815260040180806020018281038252604d815260200180611ab7604d913960600191505060405180910390fd5b600281905560405181907f948b1f6a42ee138b7e34058ba85a37f716d55ff25ff05a763f15bed6a04c8d2c90600090a250565b60086020526000908152604090205460ff1681565b6000546001600160a01b031681565b4290565b600082820183811015611828576040805162461bcd60e51b815260206004820152601b60248201527f536166654d6174683a206164646974696f6e206f766572666c6f770000000000604482015290519081900360640190fd5b939250505056fe437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e206861736e2774207375727061737365642074696d65206c6f636b2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a61636365707441646d696e3a2043616c6c206d75737420636f6d652066726f6d2070656e64696e6741646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a71756575655472616e73616374696f6e3a20457374696d6174656420657865637574696f6e20626c6f636b206d75737420736174697366792064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e206973207374616c652e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a20747265617375727950657263656e74206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a63616e63656c5472616e73616374696f6e3a2043616c6c206d75737420636f6d652066726f6d2061646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e20657865637574696f6e2072657665727465642e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657444656c61793a2044656c6179206d75737420657863656564206d696e696d756d2064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657444656c61793a2044656c6179206d757374206e6f7420657863656564206d6178696d756d2064656c61792e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a206a6f65506572536563206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a2064657650657263656e74206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a71756575655472616e73616374696f6e3a2043616c6c206d75737420636f6d652066726f6d2061646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657450656e64696e6741646d696e3a2043616c6c206d75737420636f6d652066726f6d20437573746f6d4d6173746572436865664a6f65563254696d656c6f636b2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a77697468696e4c696d6974733a20696e766573746f7250657263656e74206d757374206e6f7420657863656564206c696d69742e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657444656c61793a2043616c6c206d75737420636f6d652066726f6d20437573746f6d4d6173746572436865664a6f65563254696d656c6f636b2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a2043616c6c206d75737420636f6d652066726f6d2061646d696e2e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a657865637574655472616e73616374696f6e3a205472616e73616374696f6e206861736e2774206265656e207175657565642e437573746f6d4d6173746572436865664a6f65563254696d656c6f636b3a3a73657450656e64696e6741646d696e3a2046697273742063616c6c206d75737420636f6d652066726f6d2061646d696e2ea2646970667358221220564a8cf0b193cb7890fd195f08bee96224331a34352b285077414e878a85ad3364736f6c634300060c0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 18037,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "admin",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 18039,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "pendingAdmin",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_address"
+      },
+      {
+        "astId": 18041,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "delay",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 18043,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "devPercentLimit",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 18045,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "investorPercentLimit",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 18047,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "treasuryPercentLimit",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 18049,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "joePerSecLimit",
+        "offset": 0,
+        "slot": "6",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 18051,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "admin_initialized",
+        "offset": 0,
+        "slot": "7",
+        "type": "t_bool"
+      },
+      {
+        "astId": 18055,
+        "contract": "contracts/timelock/CustomMasterChefJoeV2Timelock.sol:CustomMasterChefJoeV2Timelock",
+        "label": "queuedTransactions",
+        "offset": 0,
+        "slot": "8",
+        "type": "t_mapping(t_bytes32,t_bool)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_bytes32,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

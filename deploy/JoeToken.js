@@ -11,4 +11,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 };
 
 module.exports.tags = ["JoeToken", "chef"];
-module.exports.dependencies = ["JoeFactory", "JoeRouter02"];
+// module.exports.dependencies = ["JoeFactory", "JoeRouter02"];

@@ -13,4 +13,5 @@ truffle.js
 MurlocToken*.*
 FishToken*.*
 deployments/localhost/
+contracts/.deps/
 
