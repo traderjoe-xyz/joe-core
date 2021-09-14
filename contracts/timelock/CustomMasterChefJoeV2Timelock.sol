@@ -52,9 +52,12 @@ contract CustomMasterChefJoeV2Timelock {
     uint256 public constant MAXIMUM_DELAY = 30 days;
 
     string private constant SET_DEV_PERCENT_SIG = "setDevPercent(uint256)";
-    string private constant SET_TREASURY_PERCENT_SIG = "setTreasuryPercent(uint256)";
-    string private constant SET_INVESTOR_PERCENT_SIG = "setInvestorPercent(uint256)";
-    string private constant UPDATE_EMISSION_RATE_SIG = "updateEmissionRate(uint256)";
+    string private constant SET_TREASURY_PERCENT_SIG =
+        "setTreasuryPercent(uint256)";
+    string private constant SET_INVESTOR_PERCENT_SIG =
+        "setInvestorPercent(uint256)";
+    string private constant UPDATE_EMISSION_RATE_SIG =
+        "updateEmissionRate(uint256)";
 
     address public admin;
     address public pendingAdmin;
@@ -68,29 +71,53 @@ contract CustomMasterChefJoeV2Timelock {
     mapping(bytes32 => bool) public queuedTransactions;
 
     modifier withinLimits(string memory signature, bytes memory data) {
-      if (keccak256(bytes(signature)) == keccak256(bytes(SET_DEV_PERCENT_SIG))) {
-        uint256 devPercent = abi.decode(data, (uint256));
-        require(devPercent <= devPercentLimit,
-                "CustomMasterChefJoeV2Timelock::withinLimits: devPercent must not exceed limit.");
-      } else if (keccak256(bytes(signature)) == keccak256(bytes(SET_TREASURY_PERCENT_SIG))) {
-        uint256 treasuryPercent = abi.decode(data, (uint256));
-        require(treasuryPercent <= treasuryPercentLimit,
-                "CustomMasterChefJoeV2Timelock::withinLimits: treasuryPercent must not exceed limit.");
-      } else if (keccak256(bytes(signature)) == keccak256(bytes(SET_INVESTOR_PERCENT_SIG))) {
-        uint256 investorPercent = abi.decode(data, (uint256));
-        require(investorPercent <= investorPercentLimit,
-                "CustomMasterChefJoeV2Timelock::withinLimits: investorPercent must not exceed limit.");
-      } else if (keccak256(bytes(signature)) ==
-                 keccak256(bytes(UPDATE_EMISSION_RATE_SIG))) {
-        uint256 joePerSec = abi.decode(data, (uint256));
-        require(joePerSec <= joePerSecLimit, "CustomMasterChefJoeV2Timelock::withinLimits: joePerSec must not exceed limit.");
-      }
-      _;
+        if (
+            keccak256(bytes(signature)) == keccak256(bytes(SET_DEV_PERCENT_SIG))
+        ) {
+            uint256 devPercent = abi.decode(data, (uint256));
+            require(
+                devPercent <= devPercentLimit,
+                "CustomMasterChefJoeV2Timelock::withinLimits: devPercent must not exceed limit."
+            );
+        } else if (
+            keccak256(bytes(signature)) ==
+            keccak256(bytes(SET_TREASURY_PERCENT_SIG))
+        ) {
+            uint256 treasuryPercent = abi.decode(data, (uint256));
+            require(
+                treasuryPercent <= treasuryPercentLimit,
+                "CustomMasterChefJoeV2Timelock::withinLimits: treasuryPercent must not exceed limit."
+            );
+        } else if (
+            keccak256(bytes(signature)) ==
+            keccak256(bytes(SET_INVESTOR_PERCENT_SIG))
+        ) {
+            uint256 investorPercent = abi.decode(data, (uint256));
+            require(
+                investorPercent <= investorPercentLimit,
+                "CustomMasterChefJoeV2Timelock::withinLimits: investorPercent must not exceed limit."
+            );
+        } else if (
+            keccak256(bytes(signature)) ==
+            keccak256(bytes(UPDATE_EMISSION_RATE_SIG))
+        ) {
+            uint256 joePerSec = abi.decode(data, (uint256));
+            require(
+                joePerSec <= joePerSecLimit,
+                "CustomMasterChefJoeV2Timelock::withinLimits: joePerSec must not exceed limit."
+            );
+        }
+        _;
     }
 
-    constructor(address admin_, uint256 delay_, uint256 devPercentLimit_,
-                uint256 treasuryPercentLimit_, uint256 investorPercentLimit_,
-                uint256 joePerSecLimit_) public {
+    constructor(
+        address admin_,
+        uint256 delay_,
+        uint256 devPercentLimit_,
+        uint256 treasuryPercentLimit_,
+        uint256 investorPercentLimit_,
+        uint256 joePerSecLimit_
+    ) public {
         require(
             delay_ >= MINIMUM_DELAY,
             "CustomMasterChefJoeV2Timelock::constructor: Delay must exceed minimum delay."
@@ -237,10 +264,7 @@ contract CustomMasterChefJoeV2Timelock {
 
         bytes memory callData;
 
-        callData = abi.encodePacked(
-            bytes4(keccak256(bytes(signature))),
-            data
-        );
+        callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
 
         // solium-disable-next-line security/no-call-value
         (bool success, bytes memory returnData) = target.call.value(value)(
