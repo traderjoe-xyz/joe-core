@@ -52,12 +52,9 @@ contract CustomMasterChefJoeV2Timelock {
     uint256 public constant MAXIMUM_DELAY = 30 days;
 
     string private constant SET_DEV_PERCENT_SIG = "setDevPercent(uint256)";
-    string private constant SET_TREASURY_PERCENT_SIG =
-        "setTreasuryPercent(uint256)";
-    string private constant SET_INVESTOR_PERCENT_SIG =
-        "setInvestorPercent(uint256)";
-    string private constant UPDATE_EMISSION_RATE_SIG =
-        "updateEmissionRate(uint256)";
+    string private constant SET_TREASURY_PERCENT_SIG = "setTreasuryPercent(uint256)";
+    string private constant SET_INVESTOR_PERCENT_SIG = "setInvestorPercent(uint256)";
+    string private constant UPDATE_EMISSION_RATE_SIG = "updateEmissionRate(uint256)";
 
     address public admin;
     address public pendingAdmin;
@@ -71,36 +68,25 @@ contract CustomMasterChefJoeV2Timelock {
     mapping(bytes32 => bool) public queuedTransactions;
 
     modifier withinLimits(string memory signature, bytes memory data) {
-        if (
-            keccak256(bytes(signature)) == keccak256(bytes(SET_DEV_PERCENT_SIG))
-        ) {
+        if (keccak256(bytes(signature)) == keccak256(bytes(SET_DEV_PERCENT_SIG))) {
             uint256 devPercent = abi.decode(data, (uint256));
             require(
                 devPercent <= devPercentLimit,
                 "CustomMasterChefJoeV2Timelock::withinLimits: devPercent must not exceed limit."
             );
-        } else if (
-            keccak256(bytes(signature)) ==
-            keccak256(bytes(SET_TREASURY_PERCENT_SIG))
-        ) {
+        } else if (keccak256(bytes(signature)) == keccak256(bytes(SET_TREASURY_PERCENT_SIG))) {
             uint256 treasuryPercent = abi.decode(data, (uint256));
             require(
                 treasuryPercent <= treasuryPercentLimit,
                 "CustomMasterChefJoeV2Timelock::withinLimits: treasuryPercent must not exceed limit."
             );
-        } else if (
-            keccak256(bytes(signature)) ==
-            keccak256(bytes(SET_INVESTOR_PERCENT_SIG))
-        ) {
+        } else if (keccak256(bytes(signature)) == keccak256(bytes(SET_INVESTOR_PERCENT_SIG))) {
             uint256 investorPercent = abi.decode(data, (uint256));
             require(
                 investorPercent <= investorPercentLimit,
                 "CustomMasterChefJoeV2Timelock::withinLimits: investorPercent must not exceed limit."
             );
-        } else if (
-            keccak256(bytes(signature)) ==
-            keccak256(bytes(UPDATE_EMISSION_RATE_SIG))
-        ) {
+        } else if (keccak256(bytes(signature)) == keccak256(bytes(UPDATE_EMISSION_RATE_SIG))) {
             uint256 joePerSec = abi.decode(data, (uint256));
             require(
                 joePerSec <= joePerSecLimit,
@@ -144,10 +130,7 @@ contract CustomMasterChefJoeV2Timelock {
             msg.sender == address(this),
             "CustomMasterChefJoeV2Timelock::setDelay: Call must come from CustomMasterChefJoeV2Timelock."
         );
-        require(
-            delay_ >= MINIMUM_DELAY,
-            "CustomMasterChefJoeV2Timelock::setDelay: Delay must exceed minimum delay."
-        );
+        require(delay_ >= MINIMUM_DELAY, "CustomMasterChefJoeV2Timelock::setDelay: Delay must exceed minimum delay.");
         require(
             delay_ <= MAXIMUM_DELAY,
             "CustomMasterChefJoeV2Timelock::setDelay: Delay must not exceed maximum delay."
@@ -194,18 +177,13 @@ contract CustomMasterChefJoeV2Timelock {
         bytes memory data,
         uint256 eta
     ) public withinLimits(signature, data) returns (bytes32) {
-        require(
-            msg.sender == admin,
-            "CustomMasterChefJoeV2Timelock::queueTransaction: Call must come from admin."
-        );
+        require(msg.sender == admin, "CustomMasterChefJoeV2Timelock::queueTransaction: Call must come from admin.");
         require(
             eta >= getBlockTimestamp().add(delay),
             "CustomMasterChefJoeV2Timelock::queueTransaction: Estimated execution block must satisfy delay."
         );
 
-        bytes32 txHash = keccak256(
-            abi.encode(target, value, signature, data, eta)
-        );
+        bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = true;
 
         emit QueueTransaction(txHash, target, value, signature, data, eta);
@@ -219,14 +197,9 @@ contract CustomMasterChefJoeV2Timelock {
         bytes memory data,
         uint256 eta
     ) public {
-        require(
-            msg.sender == admin,
-            "CustomMasterChefJoeV2Timelock::cancelTransaction: Call must come from admin."
-        );
+        require(msg.sender == admin, "CustomMasterChefJoeV2Timelock::cancelTransaction: Call must come from admin.");
 
-        bytes32 txHash = keccak256(
-            abi.encode(target, value, signature, data, eta)
-        );
+        bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
 
         emit CancelTransaction(txHash, target, value, signature, data, eta);
@@ -239,14 +212,9 @@ contract CustomMasterChefJoeV2Timelock {
         bytes memory data,
         uint256 eta
     ) public payable returns (bytes memory) {
-        require(
-            msg.sender == admin,
-            "CustomMasterChefJoeV2Timelock::executeTransaction: Call must come from admin."
-        );
+        require(msg.sender == admin, "CustomMasterChefJoeV2Timelock::executeTransaction: Call must come from admin.");
 
-        bytes32 txHash = keccak256(
-            abi.encode(target, value, signature, data, eta)
-        );
+        bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(
             queuedTransactions[txHash],
             "CustomMasterChefJoeV2Timelock::executeTransaction: Transaction hasn't been queued."
@@ -267,13 +235,8 @@ contract CustomMasterChefJoeV2Timelock {
         callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
 
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = target.call.value(value)(
-            callData
-        );
-        require(
-            success,
-            "CustomMasterChefJoeV2Timelock::executeTransaction: Transaction execution reverted."
-        );
+        (bool success, bytes memory returnData) = target.call.value(value)(callData);
+        require(success, "CustomMasterChefJoeV2Timelock::executeTransaction: Transaction execution reverted.");
 
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 

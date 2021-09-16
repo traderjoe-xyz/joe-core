@@ -11,11 +11,7 @@ library BoringERC20 {
     bytes4 private constant SIG_TRANSFER = 0xa9059cbb; // transfer(address,uint256)
     bytes4 private constant SIG_TRANSFER_FROM = 0x23b872dd; // transferFrom(address,address,uint256)
 
-    function returnDataToString(bytes memory data)
-        internal
-        pure
-        returns (string memory)
-    {
+    function returnDataToString(bytes memory data) internal pure returns (string memory) {
         if (data.length >= 64) {
             return abi.decode(data, (string));
         } else if (data.length == 32) {
@@ -37,9 +33,7 @@ library BoringERC20 {
     /// @param token The address of the ERC-20 token contract.
     /// @return (string) Token symbol.
     function safeSymbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(SIG_SYMBOL)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_SYMBOL));
         return success ? returnDataToString(data) : "???";
     }
 
@@ -47,9 +41,7 @@ library BoringERC20 {
     /// @param token The address of the ERC-20 token contract.
     /// @return (string) Token name.
     function safeName(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(SIG_NAME)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_NAME));
         return success ? returnDataToString(data) : "???";
     }
 
@@ -57,9 +49,7 @@ library BoringERC20 {
     /// @param token The address of the ERC-20 token contract.
     /// @return (uint8) Token decimals.
     function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(SIG_DECIMALS)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_DECIMALS));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
@@ -73,13 +63,8 @@ library BoringERC20 {
         address to,
         uint256 amount
     ) internal {
-        (bool success, bytes memory data) = address(token).call(
-            abi.encodeWithSelector(SIG_TRANSFER, to, amount)
-        );
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "BoringERC20: Transfer failed"
-        );
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(SIG_TRANSFER, to, amount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
     }
 
     /// @notice Provides a safe ERC20.transferFrom version for different ERC-20 implementations.
@@ -97,9 +82,6 @@ library BoringERC20 {
         (bool success, bytes memory data) = address(token).call(
             abi.encodeWithSelector(SIG_TRANSFER_FROM, from, to, amount)
         );
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "BoringERC20: TransferFrom failed"
-        );
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
     }
 }

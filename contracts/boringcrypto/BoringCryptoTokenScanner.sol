@@ -21,14 +21,9 @@ interface IERC20 {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
 
@@ -41,19 +36,11 @@ interface IERC20 {
     function owner() external view returns (address);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 library BoringERC20 {
-    function returnDataToString(bytes memory data)
-        internal
-        pure
-        returns (string memory)
-    {
+    function returnDataToString(bytes memory data) internal pure returns (string memory) {
         if (data.length >= 64) {
             return abi.decode(data, (string));
         } else if (data.length == 32) {
@@ -72,48 +59,31 @@ library BoringERC20 {
     }
 
     function symbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x95d89b41)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
         return success ? returnDataToString(data) : "???";
     }
 
     function name(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x06fdde03)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
         return success ? returnDataToString(data) : "???";
     }
 
     function decimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x313ce567)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
     function DOMAIN_SEPARATOR(IERC20 token) internal view returns (bytes32) {
-        (bool success, bytes memory data) = address(token).staticcall{
-            gas: 10000
-        }(abi.encodeWithSelector(0x3644e515));
-        return
-            success && data.length == 32
-                ? abi.decode(data, (bytes32))
-                : bytes32(0);
+        (bool success, bytes memory data) = address(token).staticcall{gas: 10000}(abi.encodeWithSelector(0x3644e515));
+        return success && data.length == 32 ? abi.decode(data, (bytes32)) : bytes32(0);
     }
 
-    function nonces(IERC20 token, address owner)
-        internal
-        view
-        returns (uint256)
-    {
-        (bool success, bytes memory data) = address(token).staticcall{
-            gas: 5000
-        }(abi.encodeWithSelector(0x7ecebe00, owner));
-        return
-            success && data.length == 32
-                ? abi.decode(data, (uint256))
-                : uint256(-1); // Use max uint256 to signal failure to retrieve nonce (probably not supported)
+    function nonces(IERC20 token, address owner) internal view returns (uint256) {
+        (bool success, bytes memory data) = address(token).staticcall{gas: 5000}(
+            abi.encodeWithSelector(0x7ecebe00, owner)
+        );
+        // Use max uint256 to signal failure to retrieve nonce (probably not supported)
+        return success && data.length == 32 ? abi.decode(data, (uint256)) : uint256(-1);
     }
 }
 
@@ -144,10 +114,7 @@ interface IMasterChef {
             uint256
         );
 
-    function userInfo(uint256 nr, address who)
-        external
-        view
-        returns (uint256, uint256);
+    function userInfo(uint256 nr, address who) external view returns (uint256, uint256);
 
     function pendingTokens(uint256 pid, address who)
         external
@@ -196,11 +163,7 @@ contract BoringCryptoTokenScanner {
         string symbol;
     }
 
-    function getTokenInfo(address[] calldata addresses)
-        public
-        view
-        returns (TokenInfo[] memory)
-    {
+    function getTokenInfo(address[] calldata addresses) public view returns (TokenInfo[] memory) {
         TokenInfo[] memory infos = new TokenInfo[](addresses.length);
 
         for (uint256 i = 0; i < addresses.length; i++) {
@@ -215,11 +178,7 @@ contract BoringCryptoTokenScanner {
         return infos;
     }
 
-    function findBalances(address who, address[] calldata addresses)
-        public
-        view
-        returns (Balance[] memory)
-    {
+    function findBalances(address who, address[] calldata addresses) public view returns (Balance[] memory) {
         uint256 balanceCount;
 
         for (uint256 i = 0; i < addresses.length; i++) {
@@ -280,11 +239,7 @@ contract BoringCryptoTokenScanner {
         address feeToSetter;
     }
 
-    function getFactoryInfo(IFactory[] calldata addresses)
-        public
-        view
-        returns (Factory[] memory)
-    {
+    function getFactoryInfo(IFactory[] calldata addresses) public view returns (Factory[] memory) {
         Factory[] memory factories = new Factory[](addresses.length);
 
         for (uint256 i = 0; i < addresses.length; i++) {
@@ -372,11 +327,7 @@ contract BoringCryptoTokenScanner {
         uint256 balance;
     }
 
-    function getPairsFull(address who, address[] calldata addresses)
-        public
-        view
-        returns (PairFull[] memory)
-    {
+    function getPairsFull(address who, address[] calldata addresses) public view returns (PairFull[] memory) {
         PairFull[] memory pairs = new PairFull[](addresses.length);
         for (uint256 i = 0; i < addresses.length; i++) {
             address token = addresses[i];

@@ -12,10 +12,7 @@ interface IRewarder {
 
     function onJoeReward(address user, uint256 newLpAmount) external;
 
-    function pendingTokens(address user)
-        external
-        view
-        returns (uint256 pending);
+    function pendingTokens(address user) external view returns (uint256 pending);
 }
 
 interface IMasterChefJoeV2 {
@@ -85,10 +82,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
     modifier onlyMCV2 {
-        require(
-            msg.sender == address(MC_V2),
-            "onlyMCV2: only MasterChef V2 can call this function"
-        );
+        require(msg.sender == address(MC_V2), "onlyMCV2: only MasterChef V2 can call this function");
         _;
     }
 
@@ -98,27 +92,15 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
         uint256 _tokenPerBlock,
         IMasterChefJoeV2 _MCV2
     ) public {
-        require(
-            Address.isContract(address(_rewardToken)),
-            "constructor: reward token must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_lpToken)),
-            "constructor: LP token must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_MCV2)),
-            "constructor: MasterChefJoeV2 must be a valid contract"
-        );
+        require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
+        require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
+        require(Address.isContract(address(_MCV2)), "constructor: MasterChefJoeV2 must be a valid contract");
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
         tokenPerBlock = _tokenPerBlock;
         MC_V2 = _MCV2;
-        poolInfo = PoolInfo({
-            lastRewardBlock: block.number,
-            accTokenPerShare: 0
-        });
+        poolInfo = PoolInfo({lastRewardBlock: block.number, accTokenPerShare: 0});
     }
 
     /// @notice Update reward variables of the given poolInfo.
@@ -132,9 +114,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
                 uint256 tokenReward = blocks.mul(tokenPerBlock);
-                pool.accTokenPerShare = pool.accTokenPerShare.add(
-                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
-                );
+                pool.accTokenPerShare = pool.accTokenPerShare.add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
             }
 
             pool.lastRewardBlock = block.number;
@@ -156,20 +136,14 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
     /// @notice Function called by MasterChefJoeV2 whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount)
-        external
-        override
-        onlyMCV2
-    {
+    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCV2 {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
         uint256 pending;
         // if user had deposited
         if (user.amount > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) /
-                ACC_TOKEN_PRECISION)
-            .sub(user.rewardDebt);
+            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
             uint256 balance = rewardToken.balanceOf(address(this));
             if (pending > balance) {
                 rewardToken.safeTransfer(_user, balance);
@@ -179,9 +153,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
         }
 
         user.amount = _lpAmount;
-        user.rewardDebt =
-            user.amount.mul(pool.accTokenPerShare) /
-            ACC_TOKEN_PRECISION;
+        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
 
         emit OnReward(_user, pending);
     }
@@ -189,12 +161,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
     /// @notice View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
-    function pendingTokens(address _user)
-        external
-        view
-        override
-        returns (uint256 pending)
-    {
+    function pendingTokens(address _user) external view override returns (uint256 pending) {
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
 
@@ -204,22 +171,15 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
         if (block.number > poolInfo.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(poolInfo.lastRewardBlock);
             uint256 tokenReward = blocks.mul(tokenPerBlock);
-            accTokenPerShare = accTokenPerShare.add(
-                tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
-            );
+            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply);
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(
-            user.rewardDebt
-        );
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
     }
 
     /// @notice In case rewarder is stopped before emissions finished, this function allows
     /// withdrawal of remaining tokens.
     function emergencyWithdraw() public onlyOwner {
-        rewardToken.safeTransfer(
-            address(msg.sender),
-            rewardToken.balanceOf(address(this))
-        );
+        rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
     }
 }

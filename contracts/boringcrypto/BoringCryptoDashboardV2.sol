@@ -22,14 +22,9 @@ interface IERC20 {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
 
@@ -42,19 +37,11 @@ interface IERC20 {
     function owner() external view returns (address);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 library BoringERC20 {
-    function returnDataToString(bytes memory data)
-        internal
-        pure
-        returns (string memory)
-    {
+    function returnDataToString(bytes memory data) internal pure returns (string memory) {
         if (data.length >= 64) {
             return abi.decode(data, (string));
         } else if (data.length == 32) {
@@ -73,48 +60,31 @@ library BoringERC20 {
     }
 
     function symbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x95d89b41)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
         return success ? returnDataToString(data) : "???";
     }
 
     function name(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x06fdde03)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
         return success ? returnDataToString(data) : "???";
     }
 
     function decimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x313ce567)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
     function DOMAIN_SEPARATOR(IERC20 token) internal view returns (bytes32) {
-        (bool success, bytes memory data) = address(token).staticcall{
-            gas: 10000
-        }(abi.encodeWithSelector(0x3644e515));
-        return
-            success && data.length == 32
-                ? abi.decode(data, (bytes32))
-                : bytes32(0);
+        (bool success, bytes memory data) = address(token).staticcall{gas: 10000}(abi.encodeWithSelector(0x3644e515));
+        return success && data.length == 32 ? abi.decode(data, (bytes32)) : bytes32(0);
     }
 
-    function nonces(IERC20 token, address owner)
-        internal
-        view
-        returns (uint256)
-    {
-        (bool success, bytes memory data) = address(token).staticcall{
-            gas: 5000
-        }(abi.encodeWithSelector(0x7ecebe00, owner));
-        return
-            success && data.length == 32
-                ? abi.decode(data, (uint256))
-                : uint256(-1); // Use max uint256 to signal failure to retrieve nonce (probably not supported)
+    function nonces(IERC20 token, address owner) internal view returns (uint256) {
+        (bool success, bytes memory data) = address(token).staticcall{gas: 5000}(
+            abi.encodeWithSelector(0x7ecebe00, owner)
+        );
+        // Use max uint256 to signal failure to retrieve nonce (probably not supported)
+        return success && data.length == 32 ? abi.decode(data, (uint256)) : uint256(-1);
     }
 }
 
@@ -145,10 +115,7 @@ interface IMasterChef {
             uint256
         );
 
-    function userInfo(uint256 nr, address who)
-        external
-        view
-        returns (uint256, uint256);
+    function userInfo(uint256 nr, address who) external view returns (uint256, uint256);
 
     function pendingTokens(uint256 pid, address who)
         external
@@ -189,11 +156,7 @@ contract BoringCryptoDashboardV2 {
         uint256 balance;
     }
 
-    function getPairsFull(address who, address[] calldata addresses)
-        public
-        view
-        returns (PairFull[] memory)
-    {
+    function getPairsFull(address who, address[] calldata addresses) public view returns (PairFull[] memory) {
         PairFull[] memory pairs = new PairFull[](addresses.length);
         for (uint256 i = 0; i < addresses.length; i++) {
             address token = addresses[i];
@@ -239,11 +202,7 @@ contract BoringCryptoDashboardV2 {
         wavax = _wavax;
     }
 
-    function getPools(uint256[] calldata pids)
-        public
-        view
-        returns (PoolsInfo memory, PoolInfo[] memory)
-    {
+    function getPools(uint256[] calldata pids) public view returns (PoolsInfo memory, PoolInfo[] memory) {
         PoolsInfo memory info;
         info.totalAllocPoint = chef.totalAllocPoint();
         uint256 poolLength = chef.poolLength();
@@ -264,11 +223,7 @@ contract BoringCryptoDashboardV2 {
         return (info, pools);
     }
 
-    function findPools(address who, uint256[] calldata pids)
-        public
-        view
-        returns (PoolInfo[] memory)
-    {
+    function findPools(address who, uint256[] calldata pids) public view returns (PoolInfo[] memory) {
         uint256 count;
 
         for (uint256 i = 0; i < pids.length; i++) {
@@ -285,9 +240,7 @@ contract BoringCryptoDashboardV2 {
             (uint256 balance, ) = chef.userInfo(pids[i], who);
             if (balance > 0) {
                 pools[count].pid = pids[i];
-                (address lpToken, uint256 allocPoint, , ) = chef.poolInfo(
-                    pids[i]
-                );
+                (address lpToken, uint256 allocPoint, , ) = chef.poolInfo(pids[i]);
                 IPair pair = IPair(lpToken);
                 pools[count].lpToken = pair;
                 pools[count].allocPoint = allocPoint;
@@ -306,14 +259,9 @@ contract BoringCryptoDashboardV2 {
         if (token != wavax) {
             IPair pairPangolin;
             IPair pairJoe;
-            pairPangolin = IPair(
-                IFactory(pangolinFactory).getPair(token, wavax)
-            );
+            pairPangolin = IPair(IFactory(pangolinFactory).getPair(token, wavax));
             pairJoe = IPair(IFactory(joeFactory).getPair(token, wavax));
-            if (
-                address(pairPangolin) == address(0) &&
-                address(pairJoe) == address(0)
-            ) {
+            if (address(pairPangolin) == address(0) && address(pairJoe) == address(0)) {
                 return 0;
             }
 
@@ -323,26 +271,17 @@ contract BoringCryptoDashboardV2 {
             uint112 reserve1Joe;
 
             if (address(pairPangolin) != address(0)) {
-                (reserve0Pangolin, reserve1Pangolin, ) = pairPangolin
-                .getReserves();
+                (reserve0Pangolin, reserve1Pangolin, ) = pairPangolin.getReserves();
             }
             if (address(pairJoe) != address(0)) {
                 (reserve0Joe, reserve1Joe, ) = pairJoe.getReserves();
             }
 
-            if (
-                address(pairJoe) == address(0) ||
-                reserve0Pangolin > reserve0Joe ||
-                reserve1Pangolin > reserve1Joe
-            ) {
+            if (address(pairJoe) == address(0) || reserve0Pangolin > reserve0Joe || reserve1Pangolin > reserve1Joe) {
                 if (pairPangolin.token0() == wavax) {
-                    avax_rate = uint256(reserve1Pangolin).mul(1e18).div(
-                        reserve0Pangolin
-                    );
+                    avax_rate = uint256(reserve1Pangolin).mul(1e18).div(reserve0Pangolin);
                 } else {
-                    avax_rate = uint256(reserve0Pangolin).mul(1e18).div(
-                        reserve1Pangolin
-                    );
+                    avax_rate = uint256(reserve0Pangolin).mul(1e18).div(reserve1Pangolin);
                 }
             } else {
                 if (pairJoe.token0() == wavax) {
@@ -370,11 +309,7 @@ contract BoringCryptoDashboardV2 {
         uint256 pending; // Pending JOE
     }
 
-    function pollPools(address who, uint256[] calldata pids)
-        public
-        view
-        returns (UserPoolInfo[] memory)
-    {
+    function pollPools(address who, uint256[] calldata pids) public view returns (UserPoolInfo[] memory) {
         UserPoolInfo[] memory pools = new UserPoolInfo[](pids.length);
 
         for (uint256 i = 0; i < pids.length; i++) {

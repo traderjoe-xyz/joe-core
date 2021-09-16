@@ -12,10 +12,7 @@ interface IRewarder {
 
     function onJoeReward(address user, uint256 newLpAmount) external;
 
-    function pendingTokens(address user)
-        external
-        view
-        returns (uint256 pending);
+    function pendingTokens(address user) external view returns (uint256 pending);
 }
 
 interface IMasterChef {
@@ -25,10 +22,7 @@ interface IMasterChef {
 
     function deposit(uint256 _pid, uint256 _amount) external;
 
-    function poolInfo(uint256 pid)
-        external
-        view
-        returns (IMasterChef.PoolInfo memory);
+    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
 
     function totalAllocPoint() external view returns (uint256);
 }
@@ -106,10 +100,7 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
     event AllocPointUpdated(uint256 oldAllocPoint, uint256 newAllocPoint);
 
     modifier onlyMCV2 {
-        require(
-            msg.sender == address(MCV2),
-            "onlyMCV2: only MasterChef V2 can call this function"
-        );
+        require(msg.sender == address(MCV2), "onlyMCV2: only MasterChef V2 can call this function");
         _;
     }
 
@@ -122,22 +113,10 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
         IMasterChef _MCV1,
         IMasterChefJoeV2 _MCV2
     ) public {
-        require(
-            Address.isContract(address(_rewardToken)),
-            "constructor: reward token must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_lpToken)),
-            "constructor: LP token must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_MCV1)),
-            "constructor: MasterChef must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_MCV2)),
-            "constructor: MasterChefJoeV2 must be a valid contract"
-        );
+        require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
+        require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
+        require(Address.isContract(address(_MCV1)), "constructor: MasterChef must be a valid contract");
+        require(Address.isContract(address(_MCV2)), "constructor: MasterChefJoeV2 must be a valid contract");
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
@@ -145,11 +124,7 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
         MCV1_pid = _MCV1_pid;
         MCV1 = _MCV1;
         MCV2 = _MCV2;
-        poolInfo = PoolInfo({
-            lastRewardTimestamp: block.timestamp,
-            accTokenPerShare: 0,
-            allocPoint: _allocPoint
-        });
+        poolInfo = PoolInfo({lastRewardTimestamp: block.timestamp, accTokenPerShare: 0, allocPoint: _allocPoint});
     }
 
     /// @notice Deposits a dummy token to a MaterChefV1 farm so that this contract can claim reward tokens.
@@ -171,16 +146,9 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
             uint256 lpSupply = lpToken.balanceOf(address(MCV2));
 
             if (lpSupply > 0) {
-                uint256 timeElapsed = block.timestamp.sub(
-                    pool.lastRewardTimestamp
-                );
-                uint256 tokenReward = timeElapsed
-                .mul(tokenPerSec)
-                .mul(pool.allocPoint)
-                .div(MCV1.totalAllocPoint());
-                pool.accTokenPerShare = pool.accTokenPerShare.add(
-                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
-                );
+                uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
+                uint256 tokenReward = timeElapsed.mul(tokenPerSec).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
+                pool.accTokenPerShare = pool.accTokenPerShare.add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
             }
 
             pool.lastRewardTimestamp = block.timestamp;
@@ -218,11 +186,7 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
     /// @notice Function called by MasterChefJoeV2 whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount)
-        external
-        override
-        onlyMCV2
-    {
+    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCV2 {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
@@ -230,9 +194,7 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
         // if user had deposited
         if (user.amount > 0) {
             harvestFromMasterChefV1();
-            pendingBal = (user.amount.mul(pool.accTokenPerShare) /
-                ACC_TOKEN_PRECISION)
-            .sub(user.rewardDebt);
+            pendingBal = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
             uint256 rewardBal = rewardToken.balanceOf(address(this));
             if (pendingBal > rewardBal) {
                 rewardToken.safeTransfer(_user, rewardBal);
@@ -242,9 +204,7 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
         }
 
         user.amount = _lpAmount;
-        user.rewardDebt =
-            user.amount.mul(pool.accTokenPerShare) /
-            ACC_TOKEN_PRECISION;
+        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
 
         emit OnReward(_user, pendingBal);
     }
@@ -252,12 +212,7 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
     /// @notice View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
-    function pendingTokens(address _user)
-        external
-        view
-        override
-        returns (uint256 pending)
-    {
+    function pendingTokens(address _user) external view override returns (uint256 pending) {
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
 
@@ -266,17 +221,10 @@ contract MasterChefRewarderPerSec is IRewarder, Ownable {
 
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 blocks = block.timestamp.sub(pool.lastRewardTimestamp);
-            uint256 tokenReward = blocks
-            .mul(tokenPerSec)
-            .mul(pool.allocPoint)
-            .div(MCV1.totalAllocPoint());
-            accTokenPerShare = accTokenPerShare.add(
-                tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
-            );
+            uint256 tokenReward = blocks.mul(tokenPerSec).mul(pool.allocPoint).div(MCV1.totalAllocPoint());
+            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply);
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(
-            user.rewardDebt
-        );
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
     }
 }

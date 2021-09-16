@@ -25,21 +25,14 @@ interface IERC20 {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
 
     function owner() external view returns (address);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 interface IMasterChef {
@@ -71,10 +64,7 @@ interface IMasterChef {
             uint256
         );
 
-    function userInfo(uint256 nr, address who)
-        external
-        view
-        returns (uint256, uint256);
+    function userInfo(uint256 nr, address who) external view returns (uint256, uint256);
 
     function pendingTokens(uint256 pid, address who)
         external
@@ -107,10 +97,7 @@ interface IFactory {
 
     function allPairs(uint256 i) external view returns (IPair);
 
-    function getPair(IERC20 token0, IERC20 token1)
-        external
-        view
-        returns (IPair);
+    function getPair(IERC20 token0, IERC20 token1) external view returns (IPair);
 
     function feeTo() external view returns (address);
 
@@ -145,11 +132,7 @@ contract Ownable {
 }
 
 library BoringERC20 {
-    function returnDataToString(bytes memory data)
-        internal
-        pure
-        returns (string memory)
-    {
+    function returnDataToString(bytes memory data) internal pure returns (string memory) {
         if (data.length >= 64) {
             return abi.decode(data, (string));
         } else if (data.length == 32) {
@@ -168,69 +151,44 @@ library BoringERC20 {
     }
 
     function symbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x95d89b41)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
         return success ? returnDataToString(data) : "???";
     }
 
     function name(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x06fdde03)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
         return success ? returnDataToString(data) : "???";
     }
 
     function decimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x313ce567)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
     function DOMAIN_SEPARATOR(IERC20 token) internal view returns (bytes32) {
-        (bool success, bytes memory data) = address(token).staticcall{
-            gas: 10000
-        }(abi.encodeWithSelector(0x3644e515));
-        return
-            success && data.length == 32
-                ? abi.decode(data, (bytes32))
-                : bytes32(0);
+        (bool success, bytes memory data) = address(token).staticcall{gas: 10000}(abi.encodeWithSelector(0x3644e515));
+        return success && data.length == 32 ? abi.decode(data, (bytes32)) : bytes32(0);
     }
 
-    function nonces(IERC20 token, address owner)
-        internal
-        view
-        returns (uint256)
-    {
-        (bool success, bytes memory data) = address(token).staticcall{
-            gas: 5000
-        }(abi.encodeWithSelector(0x7ecebe00, owner));
-        return
-            success && data.length == 32
-                ? abi.decode(data, (uint256))
-                : uint256(-1); // Use max uint256 to signal failure to retrieve nonce (probably not supported)
+    function nonces(IERC20 token, address owner) internal view returns (uint256) {
+        (bool success, bytes memory data) = address(token).staticcall{gas: 5000}(
+            abi.encodeWithSelector(0x7ecebe00, owner)
+        );
+        return success && data.length == 32 ? abi.decode(data, (uint256)) : uint256(-1); // Use max uint256 to signal failure to retrieve nonce (probably not supported)
     }
 }
 
 library BoringPair {
     function factory(IPair pair) internal view returns (IFactory) {
-        (bool success, bytes memory data) = address(pair).staticcall(
-            abi.encodeWithSelector(0xc45a0155)
-        );
-        return
-            success && data.length == 32
-                ? abi.decode(data, (IFactory))
-                : IFactory(0);
+        (bool success, bytes memory data) = address(pair).staticcall(abi.encodeWithSelector(0xc45a0155));
+        return success && data.length == 32 ? abi.decode(data, (IFactory)) : IFactory(0);
     }
 }
 
 interface IStrategy {
     function skim(uint256 amount) external;
 
-    function harvest(uint256 balance, address sender)
-        external
-        returns (int256 amountAdded);
+    function harvest(uint256 balance, address sender) external returns (int256 amountAdded);
 
     function withdraw(uint256 amount) external returns (uint256 actualAmount);
 
@@ -238,18 +196,8 @@ interface IStrategy {
 }
 
 interface IBentoBox {
-    event LogDeploy(
-        address indexed masterContract,
-        bytes data,
-        address indexed cloneAddress
-    );
-    event LogDeposit(
-        address indexed token,
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        uint256 share
-    );
+    event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
+    event LogDeposit(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     event LogFlashLoan(
         address indexed borrower,
         address indexed token,
@@ -258,42 +206,18 @@ interface IBentoBox {
         address indexed receiver
     );
     event LogRegisterProtocol(address indexed protocol);
-    event LogSetMasterContractApproval(
-        address indexed masterContract,
-        address indexed user,
-        bool approved
-    );
+    event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool approved);
     event LogStrategyDivest(address indexed token, uint256 amount);
     event LogStrategyInvest(address indexed token, uint256 amount);
     event LogStrategyLoss(address indexed token, uint256 amount);
     event LogStrategyProfit(address indexed token, uint256 amount);
     event LogStrategyQueued(address indexed token, address indexed strategy);
     event LogStrategySet(address indexed token, address indexed strategy);
-    event LogStrategyTargetPercentage(
-        address indexed token,
-        uint256 targetPercentage
-    );
-    event LogTransfer(
-        address indexed token,
-        address indexed from,
-        address indexed to,
-        uint256 share
-    );
-    event LogWhiteListMasterContract(
-        address indexed masterContract,
-        bool approved
-    );
-    event LogWithdraw(
-        address indexed token,
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        uint256 share
-    );
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event LogStrategyTargetPercentage(address indexed token, uint256 targetPercentage);
+    event LogTransfer(address indexed token, address indexed from, address indexed to, uint256 share);
+    event LogWhiteListMasterContract(address indexed masterContract, bool approved);
+    event LogWithdraw(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     function balanceOf(IERC20, address) external view returns (uint256);
 
@@ -324,10 +248,7 @@ interface IBentoBox {
         uint256 maxChangeAmount
     ) external;
 
-    function masterContractApproved(address, address)
-        external
-        view
-        returns (bool);
+    function masterContractApproved(address, address) external view returns (bool);
 
     function masterContractOf(address) external view returns (address);
 
@@ -363,8 +284,7 @@ interface IBentoBox {
 
     function setStrategy(IERC20 token, IStrategy newStrategy) external;
 
-    function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_)
-        external;
+    function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_) external;
 
     function strategy(IERC20) external view returns (IStrategy);
 
@@ -389,10 +309,7 @@ interface IBentoBox {
         bool roundUp
     ) external view returns (uint256 share);
 
-    function totals(IERC20)
-        external
-        view
-        returns (uint128 elastic, uint128 base);
+    function totals(IERC20) external view returns (uint128 elastic, uint128 base);
 
     function transfer(
         IERC20 token,
@@ -414,8 +331,7 @@ interface IBentoBox {
         bool renounce
     ) external;
 
-    function whitelistMasterContract(address masterContract, bool approved)
-        external;
+    function whitelistMasterContract(address masterContract, bool approved) external;
 
     function whitelistedMasterContracts(address) external view returns (bool);
 
@@ -440,14 +356,9 @@ struct AccrueInfo {
 }
 
 interface IOracle {
-    function get(bytes calldata data)
-        external
-        returns (bool success, uint256 rate);
+    function get(bytes calldata data) external returns (bool success, uint256 rate);
 
-    function peek(bytes calldata data)
-        external
-        view
-        returns (bool success, uint256 rate);
+    function peek(bytes calldata data) external view returns (bool success, uint256 rate);
 
     function peekSpot(bytes calldata data) external view returns (uint256 rate);
 
@@ -485,9 +396,7 @@ interface IKashiPair {
 
     function bentoBox() external view returns (IBentoBox);
 
-    function borrow(address to, uint256 amount)
-        external
-        returns (uint256 part, uint256 share);
+    function borrow(address to, uint256 amount) external returns (uint256 part, uint256 share);
 
     function claimOwnership() external;
 
@@ -548,9 +457,7 @@ interface IKashiPair {
         bytes32 s
     ) external;
 
-    function removeAsset(address to, uint256 fraction)
-        external
-        returns (uint256 share);
+    function removeAsset(address to, uint256 fraction) external returns (uint256 share);
 
     function removeCollateral(address to, uint256 share) external;
 
@@ -661,10 +568,7 @@ contract BoringHelperV1 is Ownable {
         if (joeFactory != IFactory(0)) {
             pairJoe = IPair(joeFactory.getPair(token, WAVAX));
         }
-        if (
-            address(pairPangolin) == address(0) &&
-            address(pairJoe) == address(0)
-        ) {
+        if (address(pairPangolin) == address(0) && address(pairJoe) == address(0)) {
             return 0;
         }
 
@@ -672,19 +576,14 @@ contract BoringHelperV1 is Ownable {
         uint112 reserve1;
         IERC20 token0;
         if (address(pairPangolin) != address(0)) {
-            (
-                uint112 reserve0Pangolin,
-                uint112 reserve1Pangolin,
-
-            ) = pairPangolin.getReserves();
+            (uint112 reserve0Pangolin, uint112 reserve1Pangolin, ) = pairPangolin.getReserves();
             reserve0 += reserve0Pangolin;
             reserve1 += reserve1Pangolin;
             token0 = pairPangolin.token0();
         }
 
         if (address(pairJoe) != address(0)) {
-            (uint112 reserve0Joe, uint112 reserve1Joe, ) = pairJoe
-            .getReserves();
+            (uint112 reserve0Joe, uint112 reserve1Joe, ) = pairJoe.getReserves();
             reserve0 += reserve0Joe;
             reserve1 += reserve1Joe;
             if (token0 == IERC20(0)) {
@@ -786,11 +685,7 @@ contract BoringHelperV1 is Ownable {
         bytes32 DOMAIN_SEPARATOR;
     }
 
-    function getTokenInfo(address[] calldata addresses)
-        public
-        view
-        returns (TokenInfo[] memory)
-    {
+    function getTokenInfo(address[] calldata addresses) public view returns (TokenInfo[] memory) {
         TokenInfo[] memory infos = new TokenInfo[](addresses.length);
 
         for (uint256 i = 0; i < addresses.length; i++) {
@@ -806,11 +701,7 @@ contract BoringHelperV1 is Ownable {
         return infos;
     }
 
-    function findBalances(address who, address[] calldata addresses)
-        public
-        view
-        returns (Balance[] memory)
-    {
+    function findBalances(address who, address[] calldata addresses) public view returns (Balance[] memory) {
         Balance[] memory balances = new Balance[](addresses.length);
 
         uint256 len = addresses.length;
@@ -823,11 +714,7 @@ contract BoringHelperV1 is Ownable {
         return balances;
     }
 
-    function getBalances(address who, IERC20[] calldata addresses)
-        public
-        view
-        returns (BalanceFull[] memory)
-    {
+    function getBalances(address who, IERC20[] calldata addresses) public view returns (BalanceFull[] memory) {
         BalanceFull[] memory balances = new BalanceFull[](addresses.length);
 
         for (uint256 i = 0; i < addresses.length; i++) {
@@ -875,11 +762,7 @@ contract BoringHelperV1 is Ownable {
         uint256 balance;
     }
 
-    function pollPairs(address who, IPair[] calldata addresses)
-        public
-        view
-        returns (PairPoll[] memory)
-    {
+    function pollPairs(address who, IPair[] calldata addresses) public view returns (PairPoll[] memory) {
         PairPoll[] memory pairs = new PairPoll[](addresses.length);
         for (uint256 i = 0; i < addresses.length; i++) {
             IPair token = addresses[i];
@@ -911,11 +794,7 @@ contract BoringHelperV1 is Ownable {
         uint8 decimals;
     }
 
-    function getPools(uint256[] calldata pids)
-        public
-        view
-        returns (PoolsInfo memory, PoolInfo[] memory)
-    {
+    function getPools(uint256[] calldata pids) public view returns (PoolsInfo memory, PoolInfo[] memory) {
         PoolsInfo memory info;
         info.totalAllocPoint = chef.totalAllocPoint();
         uint256 poolLength = chef.poolLength();
@@ -949,11 +828,7 @@ contract BoringHelperV1 is Ownable {
         uint256 balance;
     }
 
-    function findPools(address who, uint256[] calldata pids)
-        public
-        view
-        returns (PoolFound[] memory)
-    {
+    function findPools(address who, uint256[] calldata pids) public view returns (PoolFound[] memory) {
         PoolFound[] memory pools = new PoolFound[](pids.length);
 
         for (uint256 i = 0; i < pids.length; i++) {
@@ -977,11 +852,7 @@ contract BoringHelperV1 is Ownable {
         uint256 pending; // Pending SUSHI
     }
 
-    function pollPools(address who, uint256[] calldata pids)
-        public
-        view
-        returns (UserPoolInfo[] memory)
-    {
+    function pollPools(address who, uint256[] calldata pids) public view returns (UserPoolInfo[] memory) {
         UserPoolInfo[] memory pools = new UserPoolInfo[](pids.length);
 
         for (uint256 i = 0; i < pids.length; i++) {
