@@ -13,6 +13,8 @@ interface IRewarder {
     function onJoeReward(address user, uint256 newLpAmount) external;
 
     function pendingTokens(address user) external view returns (uint256 pending);
+
+    function rewardToken() external view returns (IERC20);
 }
 
 interface IMasterChefJoeV2 {
@@ -50,7 +52,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public immutable rewardToken;
+    IERC20 public immutable override rewardToken;
     IERC20 public immutable lpToken;
     IMasterChefJoeV2 public immutable MC_V2;
 
