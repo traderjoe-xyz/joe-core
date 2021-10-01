@@ -3,9 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./boringcrypto/BoringBatchable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interfaces/IERC20.sol";
 
 interface IMasterChef {
     struct UserInfo {
@@ -130,9 +132,10 @@ library BoringERC20 {
 /// The idea for this MasterChefJoeV3 (MCJV3) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChefJoeV2 (MCJV2) contract.
 /// The allocation point for this pool on MCJV3 is the total allocation point for all pools that receive double incentives.
-contract MasterChefJoeV3 is Ownable, BoringBatchable {
+contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using BoringERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @notice Info of each MCJV3 user.
     /// `amount` LP token amount the user has provided.
@@ -161,6 +164,8 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
     uint256 public immutable MASTER_PID;
     /// @notice Info of each MCJV3 pool.
     PoolInfo[] public poolInfo;
+    // Set of all LP tokens that have been added as pools
+    EnumerableSet.AddressSet private lpTokens;
     /// @notice Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
@@ -193,7 +198,7 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
     /// Any balance of transaction sender in `dummyToken` is transferred.
     /// The allocation point for the pool on MCJV2 is the total allocation point for all pools that receive double incentives.
     /// @param dummyToken The address of the ERC-20 token to deposit into MCJV2.
-    function init(IERC20 dummyToken) external {
+    function init(IERC20 dummyToken) external onlyOwner {
         uint256 balance = dummyToken.balanceOf(msg.sender);
         require(balance != 0, "MasterChefV2: Balance must exceed 0");
         dummyToken.safeTransferFrom(msg.sender, address(this), balance);
@@ -217,6 +222,10 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
         IERC20 _lpToken,
         IRewarder _rewarder
     ) public onlyOwner {
+        require(!lpTokens.contains(address(_lpToken)), "add: LP already added");
+        // Sanity check to ensure _lpToken is an ERC20 token
+        _lpToken.balanceOf(address(this));
+
         uint256 lastRewardTimestamp = block.timestamp;
         totalAllocPoint = totalAllocPoint.add(allocPoint);
 
@@ -229,6 +238,7 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
                 rewarder: _rewarder
             })
         );
+        lpTokens.add(address(_lpToken));
         emit Add(poolInfo.length.sub(1), allocPoint, _lpToken, _rewarder);
     }
 
@@ -276,10 +286,10 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
-            uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint) / totalAllocPoint;
-            accJoePerShare = accJoePerShare.add(joeReward.mul(ACC_JOE_PRECISION) / lpSupply);
+            uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
+            accJoePerShare = accJoePerShare.add(joeReward.mul(ACC_JOE_PRECISION).div(lpSupply));
         }
-        pendingJoe = uint256(user.amount.mul(accJoePerShare) / ACC_JOE_PRECISION).sub(user.rewardDebt);
+        pendingJoe = user.amount.mul(accJoePerShare).div(ACC_JOE_PRECISION).sub(user.rewardDebt);
 
         // If it's a double reward farm, we return info about the bonus token
         if (address(pool.rewarder) != address(0)) {
@@ -300,12 +310,12 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
 
     /// @notice Calculates and returns the `amount` of JOE per block.
     function joePerSec() public view returns (uint256 amount) {
-        uint256 lpPercent = 1000 -
-            MASTER_CHEF_V2.devPercent() -
-            MASTER_CHEF_V2.treasuryPercent() -
-            MASTER_CHEF_V2.investorPercent();
-        uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent) / 1000;
-        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint) / MASTER_CHEF_V2.totalAllocPoint();
+        uint256 total = 1000;
+        uint256 lpPercent = total.sub(
+            MASTER_CHEF_V2.devPercent().sub(MASTER_CHEF_V2.treasuryPercent().sub(MASTER_CHEF_V2.investorPercent()))
+        );
+        uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
+        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
     }
 
     /// @notice Update reward variables of the given pool.
@@ -316,8 +326,8 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
             uint256 lpSupply = pool.lpToken.balanceOf(address(this));
             if (lpSupply > 0) {
                 uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
-                uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint) / totalAllocPoint;
-                pool.accJoePerShare = pool.accJoePerShare.add((joeReward.mul(ACC_JOE_PRECISION) / lpSupply));
+                uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
+                pool.accJoePerShare = pool.accJoePerShare.add((joeReward.mul(ACC_JOE_PRECISION).div(lpSupply)));
             }
             pool.lastRewardTimestamp = block.timestamp;
             poolInfo[pid] = pool;
@@ -328,7 +338,8 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
     /// @notice Deposit LP tokens to MCJV3 for JOE allocation.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
-    function deposit(uint256 pid, uint256 amount) public {
+    function deposit(uint256 pid, uint256 amount) public nonReentrant {
+        harvestFromMasterChef();
         updatePool(pid);
         PoolInfo memory pool = poolInfo[pid];
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -340,9 +351,13 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
             emit Harvest(msg.sender, pid, pending);
         }
 
+        uint256 balanceBefore = pool.lpToken.balanceOf(address(this));
+        pool.lpToken.safeTransferFrom(msg.sender, address(this), amount);
+        uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(balanceBefore);
+
         // Effects
-        user.amount = user.amount.add(amount);
-        user.rewardDebt = user.rewardDebt.add(amount.mul(pool.accJoePerShare) / ACC_JOE_PRECISION);
+        user.amount = user.amount.add(receivedAmount);
+        user.rewardDebt = receivedAmount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;
@@ -350,15 +365,14 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
             _rewarder.onJoeReward(msg.sender, user.amount);
         }
 
-        pool.lpToken.safeTransferFrom(msg.sender, address(this), amount);
-
         emit Deposit(msg.sender, pid, amount);
     }
 
     /// @notice Withdraw LP tokens from MCJV3.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
-    function withdraw(uint256 pid, uint256 amount) public {
+    function withdraw(uint256 pid, uint256 amount) public nonReentrant {
+        harvestFromMasterChef();
         updatePool(pid);
         PoolInfo memory pool = poolInfo[pid];
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -371,8 +385,8 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
         }
 
         // Effects
-        user.rewardDebt = user.rewardDebt.sub(amount.mul(pool.accJoePerShare) / ACC_JOE_PRECISION);
         user.amount = user.amount.sub(amount);
+        user.rewardDebt = amount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;
@@ -392,7 +406,7 @@ contract MasterChefJoeV3 is Ownable, BoringBatchable {
 
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
-    function emergencyWithdraw(uint256 pid) public {
+    function emergencyWithdraw(uint256 pid) public nonReentrant {
         PoolInfo memory pool = poolInfo[pid];
         UserInfo storage user = userInfo[pid][msg.sender];
         uint256 amount = user.amount;
