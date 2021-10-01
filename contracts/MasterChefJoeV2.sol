@@ -141,7 +141,10 @@ contract MasterChefJoeV2 is Ownable {
         IRewarder _rewarder
     ) public onlyOwner {
         require(Address.isContract(address(_lpToken)), "add: LP token must be a valid contract");
-        require(Address.isContract(address(_rewarder)) || address(_rewarder) == address(0), "add: rewarder must be contract or zero");
+        require(
+            Address.isContract(address(_rewarder)) || address(_rewarder) == address(0),
+            "add: rewarder must be contract or zero"
+        );
         require(!lpTokens.contains(address(_lpToken)), "add: LP already added");
         massUpdatePools();
         uint256 lastRewardTimestamp = block.timestamp > startTimestamp ? block.timestamp : startTimestamp;
@@ -166,7 +169,10 @@ contract MasterChefJoeV2 is Ownable {
         IRewarder _rewarder,
         bool overwrite
     ) public onlyOwner {
-        require(Address.isContract(address(_rewarder)) || address(_rewarder) == address(0), "set: rewarder must be contract or zero");
+        require(
+            Address.isContract(address(_rewarder)) || address(_rewarder) == address(0),
+            "set: rewarder must be contract or zero"
+        );
         massUpdatePools();
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint;
@@ -194,7 +200,9 @@ contract MasterChefJoeV2 is Ownable {
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 lpPercent = 1000 - devPercent - treasuryPercent - investorPercent;
-            uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint).mul(lpPercent).div(1000);
+            uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint).mul(lpPercent).div(
+                1000
+            );
             accJoePerShare = accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
         }
         pendingJoe = user.amount.mul(accJoePerShare).div(1e12).sub(user.rewardDebt);
@@ -207,7 +215,11 @@ contract MasterChefJoeV2 is Ownable {
     }
 
     // Get bonus token info from the rewarder contract for a given pool, if it is a double reward farm
-    function rewarderBonusTokenInfo(uint256 _pid) public view returns (address bonusTokenAddress, string memory bonusTokenSymbol) {
+    function rewarderBonusTokenInfo(uint256 _pid)
+        public
+        view
+        returns (address bonusTokenAddress, string memory bonusTokenSymbol)
+    {
         PoolInfo storage pool = poolInfo[_pid];
         if (address(pool.rewarder) != address(0)) {
             bonusTokenAddress = address(pool.rewarder.rewardToken());
@@ -335,7 +347,10 @@ contract MasterChefJoeV2 is Ownable {
 
     function setTreasuryPercent(uint256 _newTreasuryPercent) public onlyOwner {
         require(0 <= _newTreasuryPercent && _newTreasuryPercent <= 1000, "setTreasuryPercent: invalid percent value");
-        require(devPercent + _newTreasuryPercent + investorPercent <= 1000, "setTreasuryPercent: total percent over max");
+        require(
+            devPercent + _newTreasuryPercent + investorPercent <= 1000,
+            "setTreasuryPercent: total percent over max"
+        );
         treasuryPercent = _newTreasuryPercent;
     }
 
@@ -347,7 +362,10 @@ contract MasterChefJoeV2 is Ownable {
 
     function setInvestorPercent(uint256 _newInvestorPercent) public onlyOwner {
         require(0 <= _newInvestorPercent && _newInvestorPercent <= 1000, "setInvestorPercent: invalid percent value");
-        require(devPercent + _newInvestorPercent + treasuryPercent <= 1000, "setInvestorPercent: total percent over max");
+        require(
+            devPercent + _newInvestorPercent + treasuryPercent <= 1000,
+            "setInvestorPercent: total percent over max"
+        );
         investorPercent = _newInvestorPercent;
     }
 

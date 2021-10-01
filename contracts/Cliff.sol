@@ -40,17 +40,12 @@ contract Cliff {
         uint256 _startTimestamp,
         uint256 _cliffInMonths
     ) public {
-        require(
-            _beneficiary != address(0),
-            "Cliff: Beneficiary cannot be empty"
-        );
+        require(_beneficiary != address(0), "Cliff: Beneficiary cannot be empty");
 
         token = IERC20(_token);
         beneficiary = _beneficiary;
         cliffInMonths = _cliffInMonths;
-        startTimestamp = _startTimestamp == 0
-            ? blockTimestamp()
-            : _startTimestamp;
+        startTimestamp = _startTimestamp == 0 ? blockTimestamp() : _startTimestamp;
     }
 
     /**

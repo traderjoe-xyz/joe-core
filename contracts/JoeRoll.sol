@@ -62,12 +62,7 @@ contract JoeRoll is Ownable {
         );
 
         // Add liquidity to the new router
-        (uint256 pooledAmountA, uint256 pooledAmountB) = addLiquidity(
-            tokenA,
-            tokenB,
-            amountA,
-            amountB
-        );
+        (uint256 pooledAmountA, uint256 pooledAmountB) = addLiquidity(tokenA, tokenB, amountA, amountB);
 
         // Send remaining tokens to msg.sender
         if (amountA > pooledAmountA) {
@@ -99,23 +94,14 @@ contract JoeRoll is Ownable {
         pair.transferFrom(msg.sender, address(pair), liquidity);
         (uint256 amount0, uint256 amount1) = pair.burn(address(this));
         (address token0, ) = JoeLibrary.sortTokens(tokenA, tokenB);
-        (amountA, amountB) = tokenA == token0
-            ? (amount0, amount1)
-            : (amount1, amount0);
+        (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, "JoeRoll: INSUFFICIENT_A_AMOUNT");
         require(amountB >= amountBMin, "JoeRoll: INSUFFICIENT_B_AMOUNT");
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairForOldRouter(address tokenA, address tokenB)
-        internal
-        view
-        returns (address pair)
-    {
-        (address token0, address token1) = JoeLibrary.sortTokens(
-            tokenA,
-            tokenB
-        );
+    function pairForOldRouter(address tokenA, address tokenB) internal view returns (address pair) {
+        (address token0, address token1) = JoeLibrary.sortTokens(tokenA, tokenB);
         pair = address(
             uint256(
                 keccak256(
@@ -136,12 +122,7 @@ contract JoeRoll is Ownable {
         uint256 amountADesired,
         uint256 amountBDesired
     ) internal returns (uint256 amountA, uint256 amountB) {
-        (amountA, amountB) = _addLiquidity(
-            tokenA,
-            tokenB,
-            amountADesired,
-            amountBDesired
-        );
+        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired);
         address pair = JoeLibrary.pairFor(router.factory(), tokenA, tokenB);
         IERC20(tokenA).safeTransfer(pair, amountA);
         IERC20(tokenB).safeTransfer(pair, amountB);
@@ -159,27 +140,15 @@ contract JoeRoll is Ownable {
         if (factory.getPair(tokenA, tokenB) == address(0)) {
             factory.createPair(tokenA, tokenB);
         }
-        (uint256 reserveA, uint256 reserveB) = JoeLibrary.getReserves(
-            address(factory),
-            tokenA,
-            tokenB
-        );
+        (uint256 reserveA, uint256 reserveB) = JoeLibrary.getReserves(address(factory), tokenA, tokenB);
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
-            uint256 amountBOptimal = JoeLibrary.quote(
-                amountADesired,
-                reserveA,
-                reserveB
-            );
+            uint256 amountBOptimal = JoeLibrary.quote(amountADesired, reserveA, reserveB);
             if (amountBOptimal <= amountBDesired) {
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
-                uint256 amountAOptimal = JoeLibrary.quote(
-                    amountBDesired,
-                    reserveB,
-                    reserveA
-                );
+                uint256 amountAOptimal = JoeLibrary.quote(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }

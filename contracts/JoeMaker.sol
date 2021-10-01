@@ -72,10 +72,7 @@ contract JoeMaker is BoringOwnable {
     // C1 - C24: OK
     function setBridge(address token, address bridge) external onlyOwner {
         // Checks
-        require(
-            token != joe && token != wavax && token != bridge,
-            "JoeMaker: Invalid bridge"
-        );
+        require(token != joe && token != wavax && token != bridge, "JoeMaker: Invalid bridge");
 
         // Effects
         _bridges[token] = bridge;
@@ -104,10 +101,7 @@ contract JoeMaker is BoringOwnable {
     // F1 - F10: OK, see convert
     // C1 - C24: OK
     // C3: Loop is under control of the caller
-    function convertMultiple(
-        address[] calldata token0,
-        address[] calldata token1
-    ) external onlyEOA() {
+    function convertMultiple(address[] calldata token0, address[] calldata token1) external onlyEOA() {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
@@ -124,23 +118,13 @@ contract JoeMaker is BoringOwnable {
         require(address(pair) != address(0), "JoeMaker: Invalid pair");
         // balanceOf: S1 - S4: OK
         // transfer: X1 - X5: OK
-        IERC20(address(pair)).safeTransfer(
-            address(pair),
-            pair.balanceOf(address(this))
-        );
+        IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
         // X1 - X5: OK
         (uint256 amount0, uint256 amount1) = pair.burn(address(this));
         if (token0 != pair.token0()) {
             (amount0, amount1) = (amount1, amount0);
         }
-        emit LogConvert(
-            msg.sender,
-            token0,
-            token1,
-            amount0,
-            amount1,
-            _convertStep(token0, token1, amount0, amount1)
-        );
+        emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1));
     }
 
     // F1 - F10: OK
@@ -175,36 +159,20 @@ contract JoeMaker is BoringOwnable {
             joeOut = _toJOE(token0, amount0).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            joeOut = _toJOE(
-                wavax,
-                _swap(token1, wavax, amount1, address(this)).add(amount0)
-            );
+            joeOut = _toJOE(wavax, _swap(token1, wavax, amount1, address(this)).add(amount0));
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            joeOut = _toJOE(
-                wavax,
-                _swap(token0, wavax, amount0, address(this)).add(amount1)
-            );
+            joeOut = _toJOE(wavax, _swap(token0, wavax, amount0, address(this)).add(amount1));
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
             address bridge1 = bridgeFor(token1);
             if (bridge0 == token1) {
                 // eg. MIC - USDT - and bridgeFor(MIC) = USDT
-                joeOut = _convertStep(
-                    bridge0,
-                    token1,
-                    _swap(token0, bridge0, amount0, address(this)),
-                    amount1
-                );
+                joeOut = _convertStep(bridge0, token1, _swap(token0, bridge0, amount0, address(this)), amount1);
             } else if (bridge1 == token0) {
                 // eg. WBTC - DSD - and bridgeFor(DSD) = WBTC
-                joeOut = _convertStep(
-                    token0,
-                    bridge1,
-                    amount0,
-                    _swap(token1, bridge1, amount1, address(this))
-                );
+                joeOut = _convertStep(token0, bridge1, amount0, _swap(token1, bridge1, amount1, address(this)));
             } else {
                 joeOut = _convertStep(
                     bridge0,
@@ -235,16 +203,12 @@ contract JoeMaker is BoringOwnable {
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
-            amountOut =
-                amountIn.mul(997).mul(reserve1) /
-                reserve0.mul(1000).add(amountInWithFee);
+            amountOut = amountIn.mul(997).mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
             IERC20(fromToken).safeTransfer(address(pair), amountIn);
             pair.swap(0, amountOut, to, new bytes(0));
             // TODO: Add maximum slippage?
         } else {
-            amountOut =
-                amountIn.mul(997).mul(reserve0) /
-                reserve1.mul(1000).add(amountInWithFee);
+            amountOut = amountIn.mul(997).mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
             IERC20(fromToken).safeTransfer(address(pair), amountIn);
             pair.swap(amountOut, 0, to, new bytes(0));
             // TODO: Add maximum slippage?
@@ -253,10 +217,7 @@ contract JoeMaker is BoringOwnable {
 
     // F1 - F10: OK
     // C1 - C24: OK
-    function _toJOE(address token, uint256 amountIn)
-        internal
-        returns (uint256 amountOut)
-    {
+    function _toJOE(address token, uint256 amountIn) internal returns (uint256 amountOut) {
         // X1 - X5: OK
         amountOut = _swap(token, joe, amountIn, bar);
     }
