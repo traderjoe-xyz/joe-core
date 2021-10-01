@@ -357,7 +357,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
 
         // Effects
         user.amount = user.amount.add(receivedAmount);
-        user.rewardDebt = receivedAmount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
+        user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;
@@ -386,7 +386,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
 
         // Effects
         user.amount = user.amount.sub(amount);
-        user.rewardDebt = amount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
+        user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;
