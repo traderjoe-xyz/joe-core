@@ -79,12 +79,7 @@ contract Zap is OwnableUpgradeable {
                 address other = _from == token0 ? token1 : token0;
                 _approveTokenIfNeeded(other);
                 uint256 sellAmount = amount.div(2);
-                uint256 otherAmount = _swap(
-                    _from,
-                    sellAmount,
-                    other,
-                    address(this)
-                );
+                uint256 otherAmount = _swap(_from, sellAmount, other, address(this));
                 ROUTER.addLiquidity(
                     _from,
                     other,
@@ -96,11 +91,7 @@ contract Zap is OwnableUpgradeable {
                     block.timestamp
                 );
             } else {
-                uint256 avaxAmount = _swapTokenForAVAX(
-                    _from,
-                    amount,
-                    address(this)
-                );
+                uint256 avaxAmount = _swapTokenForAVAX(_from, amount, address(this));
                 _swapAVAXToLP(_to, avaxAmount, msg.sender);
             }
         } else {
@@ -132,15 +123,7 @@ contract Zap is OwnableUpgradeable {
                     block.timestamp
                 );
             } else {
-                ROUTER.removeLiquidity(
-                    token0,
-                    token1,
-                    amount,
-                    0,
-                    0,
-                    msg.sender,
-                    block.timestamp
-                );
+                ROUTER.removeLiquidity(token0, token1, amount, 0, 0, msg.sender, block.timestamp);
             }
         }
     }
@@ -168,11 +151,7 @@ contract Zap is OwnableUpgradeable {
             if (token0 == WAVAX || token1 == WAVAX) {
                 address token = token0 == WAVAX ? token1 : token0;
                 uint256 swapValue = amount.div(2);
-                uint256 tokenAmount = _swapAVAXForToken(
-                    token,
-                    swapValue,
-                    address(this)
-                );
+                uint256 tokenAmount = _swapAVAXForToken(token, swapValue, address(this));
 
                 _approveTokenIfNeeded(token);
                 ROUTER.addLiquidityAVAX{value: amount.sub(swapValue)}(
@@ -185,29 +164,12 @@ contract Zap is OwnableUpgradeable {
                 );
             } else {
                 uint256 swapValue = amount.div(2);
-                uint256 token0Amount = _swapAVAXForToken(
-                    token0,
-                    swapValue,
-                    address(this)
-                );
-                uint256 token1Amount = _swapAVAXForToken(
-                    token1,
-                    amount.sub(swapValue),
-                    address(this)
-                );
+                uint256 token0Amount = _swapAVAXForToken(token0, swapValue, address(this));
+                uint256 token1Amount = _swapAVAXForToken(token1, amount.sub(swapValue), address(this));
 
                 _approveTokenIfNeeded(token0);
                 _approveTokenIfNeeded(token1);
-                ROUTER.addLiquidity(
-                    token0,
-                    token1,
-                    token0Amount,
-                    token1Amount,
-                    0,
-                    0,
-                    receiver,
-                    block.timestamp
-                );
+                ROUTER.addLiquidity(token0, token1, token0Amount, token1Amount, 0, 0, receiver, block.timestamp);
             }
         }
     }
@@ -230,12 +192,7 @@ contract Zap is OwnableUpgradeable {
             path[1] = token;
         }
 
-        uint256[] memory amounts = ROUTER.swapExactAVAXForTokens{value: value}(
-            0,
-            path,
-            receiver,
-            block.timestamp
-        );
+        uint256[] memory amounts = ROUTER.swapExactAVAXForTokens{value: value}(0, path, receiver, block.timestamp);
         return amounts[amounts.length - 1];
     }
 
@@ -256,13 +213,7 @@ contract Zap is OwnableUpgradeable {
             path[1] = WAVAX;
         }
 
-        uint256[] memory amounts = ROUTER.swapExactTokensForAVAX(
-            amount,
-            0,
-            path,
-            receiver,
-            block.timestamp
-        );
+        uint256[] memory amounts = ROUTER.swapExactTokensForAVAX(amount, 0, path, receiver, block.timestamp);
         return amounts[amounts.length - 1];
     }
 
@@ -284,18 +235,12 @@ contract Zap is OwnableUpgradeable {
             path[0] = _from;
             path[1] = intermediate;
             path[2] = _to;
-        } else if (
-            intermediate != address(0) &&
-            (_from == intermediate || _to == intermediate)
-        ) {
+        } else if (intermediate != address(0) && (_from == intermediate || _to == intermediate)) {
             // [VAI, BUSD] or [BUSD, VAI]
             path = new address[](2);
             path[0] = _from;
             path[1] = _to;
-        } else if (
-            intermediate != address(0) &&
-            routePairAddresses[_from] == routePairAddresses[_to]
-        ) {
+        } else if (intermediate != address(0) && routePairAddresses[_from] == routePairAddresses[_to]) {
             // [VAI, DAI] or [VAI, USDC]
             path = new address[](3);
             path[0] = _from;
@@ -314,19 +259,14 @@ contract Zap is OwnableUpgradeable {
             path[2] = WAVAX;
             path[3] = routePairAddresses[_to];
             path[4] = _to;
-        } else if (
-            intermediate != address(0) &&
-            routePairAddresses[_from] != address(0)
-        ) {
+        } else if (intermediate != address(0) && routePairAddresses[_from] != address(0)) {
             // [VAI, BUSD, WAVAX, BUNNY]
             path = new address[](4);
             path[0] = _from;
             path[1] = intermediate;
             path[2] = WAVAX;
             path[3] = _to;
-        } else if (
-            intermediate != address(0) && routePairAddresses[_to] != address(0)
-        ) {
+        } else if (intermediate != address(0) && routePairAddresses[_to] != address(0)) {
             // [BUNNY, WAVAX, BUSD, VAI]
             path = new address[](4);
             path[0] = _from;
@@ -346,22 +286,13 @@ contract Zap is OwnableUpgradeable {
             path[2] = _to;
         }
 
-        uint256[] memory amounts = ROUTER.swapExactTokensForTokens(
-            amount,
-            0,
-            path,
-            receiver,
-            block.timestamp
-        );
+        uint256[] memory amounts = ROUTER.swapExactTokensForTokens(amount, 0, path, receiver, block.timestamp);
         return amounts[amounts.length - 1];
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function setRoutePairAddress(address asset, address route)
-        external
-        onlyOwner
-    {
+    function setRoutePairAddress(address asset, address route) external onlyOwner {
         routePairAddresses[asset] = route;
     }
 

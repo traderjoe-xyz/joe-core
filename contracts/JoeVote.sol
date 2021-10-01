@@ -6,10 +6,7 @@ import "./interfaces/IPair.sol";
 import "./interfaces/IBar.sol";
 
 interface IMasterChef {
-    function userInfo(uint256 pid, address owner)
-        external
-        view
-        returns (uint256, uint256);
+    function userInfo(uint256 pid, address owner) external view returns (uint256, uint256);
 }
 
 contract JoeVote {

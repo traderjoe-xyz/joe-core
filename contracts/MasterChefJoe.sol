@@ -77,11 +77,7 @@ contract MasterChefJoe is Ownable {
     event Set(uint256 indexed pid, uint256 allocPoint);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(
-        address indexed user,
-        uint256 indexed pid,
-        uint256 amount
-    );
+    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event SetDevAddress(address indexed oldAddress, address indexed newAddress);
     event UpdateEmissionRate(address indexed user, uint256 _joePerSec);
 
@@ -94,18 +90,9 @@ contract MasterChefJoe is Ownable {
         uint256 _devPercent,
         uint256 _treasuryPercent
     ) public {
-        require(
-            0 <= _devPercent && _devPercent <= 1000,
-            "constructor: invalid dev percent value"
-        );
-        require(
-            0 <= _treasuryPercent && _treasuryPercent <= 1000,
-            "constructor: invalid treasury percent value"
-        );
-        require(
-            _devPercent + _treasuryPercent <= 1000,
-            "constructor: total percent over max"
-        );
+        require(0 <= _devPercent && _devPercent <= 1000, "constructor: invalid dev percent value");
+        require(0 <= _treasuryPercent && _treasuryPercent <= 1000, "constructor: invalid treasury percent value");
+        require(_devPercent + _treasuryPercent <= 1000, "constructor: total percent over max");
         joe = _joe;
         devaddr = _devaddr;
         treasuryaddr = _treasuryaddr;
@@ -124,9 +111,7 @@ contract MasterChefJoe is Ownable {
     function add(uint256 _allocPoint, IERC20 _lpToken) public onlyOwner {
         require(!isPool[_lpToken], "add: LP already added");
         massUpdatePools();
-        uint256 lastRewardTimestamp = block.timestamp > startTimestamp
-            ? block.timestamp
-            : startTimestamp;
+        uint256 lastRewardTimestamp = block.timestamp > startTimestamp ? block.timestamp : startTimestamp;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(
             PoolInfo({
@@ -143,19 +128,13 @@ contract MasterChefJoe is Ownable {
     // Update the given pool's JOE allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
         massUpdatePools();
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(
-            _allocPoint
-        );
+        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint;
         emit Set(_pid, _allocPoint);
     }
 
     // View function to see pending JOEs on frontend.
-    function pendingJoe(uint256 _pid, address _user)
-        external
-        view
-        returns (uint256)
-    {
+    function pendingJoe(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accJoePerShare = pool.accJoePerShare;
@@ -168,9 +147,7 @@ contract MasterChefJoe is Ownable {
             .div(totalAllocPoint)
             .mul(1000 - devPercent - treasuryPercent)
             .div(1000);
-            accJoePerShare = accJoePerShare.add(
-                joeReward.mul(1e12).div(lpSupply)
-            );
+            accJoePerShare = accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
         }
         return user.amount.mul(accJoePerShare).div(1e12).sub(user.rewardDebt);
     }
@@ -195,16 +172,12 @@ contract MasterChefJoe is Ownable {
             return;
         }
         uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
-        uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(
-            totalAllocPoint
-        );
+        uint256 joeReward = multiplier.mul(joePerSec).mul(pool.allocPoint).div(totalAllocPoint);
         uint256 lpPercent = 1000 - devPercent - treasuryPercent;
         joe.mint(devaddr, joeReward.mul(devPercent).div(1000));
         joe.mint(treasuryaddr, joeReward.mul(treasuryPercent).div(1000));
         joe.mint(address(this), joeReward.mul(lpPercent).div(1000));
-        pool.accJoePerShare = pool.accJoePerShare.add(
-            joeReward.mul(1e12).div(lpSupply).mul(lpPercent).div(1000)
-        );
+        pool.accJoePerShare = pool.accJoePerShare.add(joeReward.mul(1e12).div(lpSupply).mul(lpPercent).div(1000));
         pool.lastRewardTimestamp = block.timestamp;
     }
 
@@ -214,18 +187,10 @@ contract MasterChefJoe is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = user
-            .amount
-            .mul(pool.accJoePerShare)
-            .div(1e12)
-            .sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
             safeJoeTransfer(msg.sender, pending);
         }
-        pool.lpToken.safeTransferFrom(
-            address(msg.sender),
-            address(this),
-            _amount
-        );
+        pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
@@ -238,9 +203,7 @@ contract MasterChefJoe is Ownable {
         require(user.amount >= _amount, "withdraw: not good");
 
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(
-            user.rewardDebt
-        );
+        uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
         safeJoeTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
@@ -276,26 +239,14 @@ contract MasterChefJoe is Ownable {
     }
 
     function setDevPercent(uint256 _newDevPercent) public onlyOwner {
-        require(
-            0 <= _newDevPercent && _newDevPercent <= 1000,
-            "setDevPercent: invalid percent value"
-        );
-        require(
-            treasuryPercent + _newDevPercent <= 1000,
-            "setDevPercent: total percent over max"
-        );
+        require(0 <= _newDevPercent && _newDevPercent <= 1000, "setDevPercent: invalid percent value");
+        require(treasuryPercent + _newDevPercent <= 1000, "setDevPercent: total percent over max");
         devPercent = _newDevPercent;
     }
 
     function setTreasuryPercent(uint256 _newTreasuryPercent) public onlyOwner {
-        require(
-            0 <= _newTreasuryPercent && _newTreasuryPercent <= 1000,
-            "setTreasuryPercent: invalid percent value"
-        );
-        require(
-            devPercent + _newTreasuryPercent <= 1000,
-            "setTreasuryPercent: total percent over max"
-        );
+        require(0 <= _newTreasuryPercent && _newTreasuryPercent <= 1000, "setTreasuryPercent: invalid percent value");
+        require(devPercent + _newTreasuryPercent <= 1000, "setTreasuryPercent: total percent over max");
         treasuryPercent = _newTreasuryPercent;
     }
 
