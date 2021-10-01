@@ -22,4 +22,10 @@ interface IMasterChef {
     function totalAllocPoint() external view returns (uint256);
 
     function deposit(uint256 _pid, uint256 _amount) external;
+
+    function devPercent() external view returns (uint256);
+
+    function treasuryPercent() external view returns (uint256);
+
+    function investorPercent() external view returns (uint256);
 }

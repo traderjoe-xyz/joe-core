@@ -167,13 +167,13 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
 
-        uint256 accTokenPerShare = poolInfo.accTokenPerShare;
+        uint256 accTokenPerShare = pool.accTokenPerShare;
         uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
 
-        if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
-            uint256 timeElapsed = block.timestamp.sub(poolInfo.lastRewardTimestamp);
+        if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
+            uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 tokenReward = timeElapsed.mul(tokenPerSec);
-            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply);
+            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
 
         pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
