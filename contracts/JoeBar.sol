@@ -44,9 +44,7 @@ contract JoeBar is ERC20("JoeBar", "xJOE") {
         // Gets the amount of xJoe in existence
         uint256 totalShares = totalSupply();
         // Calculates the amount of Joe the xJoe is worth
-        uint256 what = _share.mul(joe.balanceOf(address(this))).div(
-            totalShares
-        );
+        uint256 what = _share.mul(joe.balanceOf(address(this))).div(totalShares);
         _burn(msg.sender, _share);
         joe.transfer(msg.sender, what);
     }
