@@ -170,7 +170,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
-    uint256 private constant ACC_JOE_PRECISION = 1e12;
+    uint256 private constant ACC_TOKEN_PRECISION = 1e18;
 
     event Add(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event Set(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
@@ -208,7 +208,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     }
 
     /// @notice Returns the number of MCJV3 pools.
-    function poolLength() public view returns (uint256 pools) {
+    function poolLength() external view returns (uint256 pools) {
         pools = poolInfo.length;
     }
 
@@ -221,7 +221,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
         uint256 allocPoint,
         IERC20 _lpToken,
         IRewarder _rewarder
-    ) public onlyOwner {
+    ) external onlyOwner {
         require(!lpTokens.contains(address(_lpToken)), "add: LP already added");
         // Sanity check to ensure _lpToken is an ERC20 token
         _lpToken.balanceOf(address(this));
@@ -252,7 +252,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
         uint256 _allocPoint,
         IRewarder _rewarder,
         bool overwrite
-    ) public onlyOwner {
+    ) external onlyOwner {
         PoolInfo memory pool = poolInfo[_pid];
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
@@ -287,9 +287,9 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
-            accJoePerShare = accJoePerShare.add(joeReward.mul(ACC_JOE_PRECISION).div(lpSupply));
+            accJoePerShare = accJoePerShare.add(joeReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
-        pendingJoe = user.amount.mul(accJoePerShare).div(ACC_JOE_PRECISION).sub(user.rewardDebt);
+        pendingJoe = user.amount.mul(accJoePerShare).div(ACC_TOKEN_PRECISION).sub(user.rewardDebt);
 
         // If it's a double reward farm, we return info about the bonus token
         if (address(pool.rewarder) != address(0)) {
@@ -327,7 +327,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
             if (lpSupply > 0) {
                 uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
                 uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
-                pool.accJoePerShare = pool.accJoePerShare.add((joeReward.mul(ACC_JOE_PRECISION).div(lpSupply)));
+                pool.accJoePerShare = pool.accJoePerShare.add((joeReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)));
             }
             pool.lastRewardTimestamp = block.timestamp;
             poolInfo[pid] = pool;
@@ -338,7 +338,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     /// @notice Deposit LP tokens to MCJV3 for JOE allocation.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
-    function deposit(uint256 pid, uint256 amount) public nonReentrant {
+    function deposit(uint256 pid, uint256 amount) external nonReentrant {
         harvestFromMasterChef();
         updatePool(pid);
         PoolInfo memory pool = poolInfo[pid];
@@ -346,7 +346,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
 
         if (user.amount > 0) {
             // Harvest JOE
-            uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION).sub(user.rewardDebt);
             JOE.safeTransfer(msg.sender, pending);
             emit Harvest(msg.sender, pid, pending);
         }
@@ -357,7 +357,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
 
         // Effects
         user.amount = user.amount.add(receivedAmount);
-        user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
+        user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;
@@ -371,7 +371,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     /// @notice Withdraw LP tokens from MCJV3.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
-    function withdraw(uint256 pid, uint256 amount) public nonReentrant {
+    function withdraw(uint256 pid, uint256 amount) external nonReentrant {
         harvestFromMasterChef();
         updatePool(pid);
         PoolInfo memory pool = poolInfo[pid];
@@ -379,14 +379,14 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
 
         if (user.amount > 0) {
             // Harvest JOE
-            uint256 pending = user.amount.mul(pool.accJoePerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION).sub(user.rewardDebt);
             JOE.safeTransfer(msg.sender, pending);
             emit Harvest(msg.sender, pid, pending);
         }
 
         // Effects
         user.amount = user.amount.sub(amount);
-        user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(ACC_JOE_PRECISION);
+        user.rewardDebt = user.amount.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;
@@ -406,7 +406,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
 
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
-    function emergencyWithdraw(uint256 pid) public nonReentrant {
+    function emergencyWithdraw(uint256 pid) external nonReentrant {
         PoolInfo memory pool = poolInfo[pid];
         UserInfo storage user = userInfo[pid][msg.sender];
         uint256 amount = user.amount;
