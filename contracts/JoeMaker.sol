@@ -2,9 +2,11 @@
 
 // P1 - P3: OK
 pragma solidity 0.6.12;
+
 import "./libraries/SafeMath.sol";
 import "./libraries/SafeERC20.sol";
 
+import "./traderjoe/interfaces/IERC20.sol";
 import "./traderjoe/interfaces/IJoeERC20.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
@@ -119,11 +121,20 @@ contract JoeMaker is BoringOwnable {
         // balanceOf: S1 - S4: OK
         // transfer: X1 - X5: OK
         IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
+
         // X1 - X5: OK
-        (uint256 amount0, uint256 amount1) = pair.burn(address(this));
+        pair.burn(address(this));
+
+        // Get the amount after burning it.
+        uint256 amount0 = IERC20Joe(token0).balanceOf(address(this));
+        uint256 amount1 = IERC20Joe(token1).balanceOf(address(this));
+
+
         if (token0 != pair.token0()) {
             (amount0, amount1) = (amount1, amount0);
+            (token0, token1) = (token1, token0);
         }
+
         emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1));
     }
 
@@ -146,7 +157,9 @@ contract JoeMaker is BoringOwnable {
                 joeOut = _toJOE(wavax, amount);
             } else {
                 address bridge = bridgeFor(token0);
-                amount = _swap(token0, bridge, amount, address(this));
+                _swap(token0, bridge, amount, address(this));
+                amount = IERC20(bridge).balanceOf(address(this));
+
                 joeOut = _convertStep(bridge, bridge, amount, 0);
             }
         } else if (token0 == joe) {
@@ -159,26 +172,38 @@ contract JoeMaker is BoringOwnable {
             joeOut = _toJOE(token0, amount0).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            joeOut = _toJOE(wavax, _swap(token1, wavax, amount1, address(this)).add(amount0));
+            _swap(token1, wavax, amount1, address(this));
+            uint256 amount = IERC20(wavax).balanceOf(address(this));
+            joeOut = _toJOE(wavax, amount);
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            joeOut = _toJOE(wavax, _swap(token0, wavax, amount0, address(this)).add(amount1));
+            _swap(token0, wavax, amount0, address(this));
+            uint256 amount = IERC20(wavax).balanceOf(address(this));
+            joeOut = _toJOE(wavax, amount);
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
             address bridge1 = bridgeFor(token1);
             if (bridge0 == token1) {
                 // eg. MIC - USDT - and bridgeFor(MIC) = USDT
-                joeOut = _convertStep(bridge0, token1, _swap(token0, bridge0, amount0, address(this)), amount1);
+                _swap(token0, bridge0, amount0, address(this));
+                amount0 = IERC20(bridge0).balanceOf(address(this)).sub(amount1);
+                joeOut = _convertStep(bridge0, token1, amount0, amount1);
             } else if (bridge1 == token0) {
                 // eg. WBTC - DSD - and bridgeFor(DSD) = WBTC
-                joeOut = _convertStep(token0, bridge1, amount0, _swap(token1, bridge1, amount1, address(this)));
+                _swap(token1, bridge1, amount1, address(this));
+                amount1 = IERC20(bridge1).balanceOf(address(this)).sub(amount0);
+                joeOut = _convertStep(token0, bridge1, amount0, amount1);
             } else {
+                _swap(token0, bridge0, amount0, address(this));
+                _swap(token1, bridge1, amount1, address(this));
+                amount0 = IERC20(bridge0).balanceOf(address(this));
+                amount1 = IERC20(bridge1).balanceOf(address(this));
                 joeOut = _convertStep(
                     bridge0,
                     bridge1, // eg. USDT - DSD - and bridgeFor(DSD) = WBTC
-                    _swap(token0, bridge0, amount0, address(this)),
-                    _swap(token1, bridge1, amount1, address(this))
+                    amount0,
+                    amount1
                 );
             }
         }
@@ -200,7 +225,7 @@ contract JoeMaker is BoringOwnable {
 
         // Interactions
         // X1 - X5: OK
-        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
             amountOut = amountIn.mul(997).mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
