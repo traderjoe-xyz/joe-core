@@ -160,9 +160,7 @@ contract JoeMaker is BoringOwnable {
                 joeOut = _toJOE(wavax, amount);
             } else {
                 address bridge = bridgeFor(token0);
-                _swap(token0, bridge, amount, address(this));
-                amount = IERC20(bridge).balanceOf(address(this));
-
+                amount = _swap(token0, bridge, amount, address(this));
                 joeOut = _convertStep(bridge, bridge, amount, 0);
             }
         } else if (token0 == joe) {
@@ -175,41 +173,26 @@ contract JoeMaker is BoringOwnable {
             joeOut = _toJOE(token0, amount0).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            _swap(token1, wavax, amount1, address(this));
-            uint256 amount = IERC20(wavax).balanceOf(address(this));
-            joeOut = _toJOE(wavax, amount);
+            joeOut = _toJOE(wavax, _swap(token1, wavax, amount1, address(this)).add(amount0));
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            _swap(token0, wavax, amount0, address(this));
-            uint256 amount = IERC20(wavax).balanceOf(address(this));
-            joeOut = _toJOE(wavax, amount);
+            joeOut = _toJOE(wavax, _swap(token0, wavax, amount0, address(this)).add(amount1));
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
             address bridge1 = bridgeFor(token1);
             if (bridge0 == token1) {
                 // eg. MIC - USDT - and bridgeFor(MIC) = USDT
-                _swap(token0, bridge0, amount0, address(this));
-                // as bridge0 == token1, amount1 will be the total amount of token0 and token1.
-                amount1 = IERC20(token1).balanceOf(address(this));
-                joeOut = _convertStep(bridge0, token1, 0, amount1);
+                joeOut = _convertStep(bridge0, token1, _swap(token0, bridge0, amount0, address(this)), amount1);
             } else if (bridge1 == token0) {
                 // eg. WBTC - DSD - and bridgeFor(DSD) = WBTC
-                _swap(token1, bridge1, amount1, address(this));
-                // as bridge1 == token0, amount0 will be the total amount of token0 and token1.
-                amount0 = IERC20(token0).balanceOf(address(this));
-                joeOut = _convertStep(token0, bridge1, amount0, 0);
+                joeOut = _convertStep(token0, bridge1, amount0, _swap(token1, bridge1, amount1, address(this)));
             } else {
-                // eg. USDT - DSD - and bridgeFor(DSD) = WBTC
-                _swap(token0, bridge0, amount0, address(this));
-                _swap(token1, bridge1, amount1, address(this));
-                amount0 = IERC20(bridge0).balanceOf(address(this));
-                amount1 = IERC20(bridge1).balanceOf(address(this));
                 joeOut = _convertStep(
                     bridge0,
-                    bridge1,
-                    amount0,
-                    amount1
+                    bridge1, // eg. USDT - DSD - and bridgeFor(DSD) = WBTC
+                    _swap(token0, bridge0, amount0, address(this)),
+                    _swap(token1, bridge1, amount1, address(this))
                 );
             }
         }
@@ -232,6 +215,7 @@ contract JoeMaker is BoringOwnable {
         // Interactions
         // X1 - X5: OK
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+        
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
 
         // Added in case fromToken is a reflect token.
@@ -240,6 +224,8 @@ contract JoeMaker is BoringOwnable {
         } else {
             amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve1;
         }
+
+        uint256 oldAmountOut = IERC20(toToken).balanceOf(address(this));
 
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
@@ -250,6 +236,9 @@ contract JoeMaker is BoringOwnable {
             amountOut = amountInWithFee.mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
             pair.swap(amountOut, 0, to, new bytes(0));
             // TODO: Add maximum slippage?
+        }
+        if (to == address(this)) {
+            amountOut = IERC20(toToken).balanceOf(address(this)) - oldAmountOut;
         }
     }
 
