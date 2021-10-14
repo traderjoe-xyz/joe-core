@@ -13,6 +13,7 @@ import "./traderjoe/interfaces/IJoeFactory.sol";
 
 import "./boringcrypto/BoringOwnable.sol";
 
+import "hardhat/console.sol";
 // JoeMaker is MasterJoe's left hand and kinda a wizard. He can cook up Joe from pretty much anything!
 // This contract handles "serving up" rewards for xJoe holders by trading tokens collected from fees for Joe.
 
@@ -123,13 +124,15 @@ contract JoeMaker is BoringOwnable {
         IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
 
         // X1 - X5: OK
+        // We don't take amount0 and amount1 from here, as it won't take into account reflect tokens.
         pair.burn(address(this));
 
-        // Get the amount after burning it.
+        // We get the amount0 and amount1 by their respective balance of JoeMaker.
         uint256 amount0 = IERC20Joe(token0).balanceOf(address(this));
         uint256 amount1 = IERC20Joe(token1).balanceOf(address(this));
 
 
+        // we invert token0 and token1 as well as we'll need them to get their respective balance.
         if (token0 != pair.token0()) {
             (amount0, amount1) = (amount1, amount0);
             (token0, token1) = (token1, token0);
@@ -187,21 +190,24 @@ contract JoeMaker is BoringOwnable {
             if (bridge0 == token1) {
                 // eg. MIC - USDT - and bridgeFor(MIC) = USDT
                 _swap(token0, bridge0, amount0, address(this));
-                amount0 = IERC20(bridge0).balanceOf(address(this)).sub(amount1);
-                joeOut = _convertStep(bridge0, token1, amount0, amount1);
+                // as bridge0 == token1, amount1 will be the total amount of token0 and token1.
+                amount1 = IERC20(token1).balanceOf(address(this));
+                joeOut = _convertStep(bridge0, token1, 0, amount1);
             } else if (bridge1 == token0) {
                 // eg. WBTC - DSD - and bridgeFor(DSD) = WBTC
                 _swap(token1, bridge1, amount1, address(this));
-                amount1 = IERC20(bridge1).balanceOf(address(this)).sub(amount0);
-                joeOut = _convertStep(token0, bridge1, amount0, amount1);
+                // as bridge1 == token0, amount0 will be the total amount of token0 and token1.
+                amount0 = IERC20(token0).balanceOf(address(this));
+                joeOut = _convertStep(token0, bridge1, amount0, 0);
             } else {
+                // eg. USDT - DSD - and bridgeFor(DSD) = WBTC
                 _swap(token0, bridge0, amount0, address(this));
                 _swap(token1, bridge1, amount1, address(this));
                 amount0 = IERC20(bridge0).balanceOf(address(this));
                 amount1 = IERC20(bridge1).balanceOf(address(this));
                 joeOut = _convertStep(
                     bridge0,
-                    bridge1, // eg. USDT - DSD - and bridgeFor(DSD) = WBTC
+                    bridge1,
                     amount0,
                     amount1
                 );
@@ -226,15 +232,22 @@ contract JoeMaker is BoringOwnable {
         // Interactions
         // X1 - X5: OK
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+        IERC20(fromToken).safeTransfer(address(pair), amountIn);
+
+        // Added in case fromToken is a reflect token.
+        if (fromToken == pair.token0()) {
+            amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve0;
+        } else {
+            amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve1;
+        }
+
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
-            amountOut = amountIn.mul(997).mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
-            IERC20(fromToken).safeTransfer(address(pair), amountIn);
+            amountOut = amountInWithFee.mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
             pair.swap(0, amountOut, to, new bytes(0));
             // TODO: Add maximum slippage?
         } else {
-            amountOut = amountIn.mul(997).mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
-            IERC20(fromToken).safeTransfer(address(pair), amountIn);
+            amountOut = amountInWithFee.mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
             pair.swap(amountOut, 0, to, new bytes(0));
             // TODO: Add maximum slippage?
         }
