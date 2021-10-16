@@ -13,7 +13,6 @@ import "./traderjoe/interfaces/IJoeFactory.sol";
 
 import "./boringcrypto/BoringOwnable.sol";
 
-import "hardhat/console.sol";
 // JoeMaker is MasterJoe's left hand and kinda a wizard. He can cook up Joe from pretty much anything!
 // This contract handles "serving up" rewards for xJoe holders by trading tokens collected from fees for Joe.
 
@@ -215,7 +214,7 @@ contract JoeMaker is BoringOwnable {
         // Interactions
         // X1 - X5: OK
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
-        
+
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
 
         // Added in case fromToken is a reflect token.
