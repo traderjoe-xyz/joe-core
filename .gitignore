@@ -14,4 +14,4 @@ MurlocToken*.*
 FishToken*.*
 deployments/localhost/
 contracts/.deps/
-
+.idea
