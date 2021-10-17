@@ -2,9 +2,11 @@
 
 // P1 - P3: OK
 pragma solidity 0.6.12;
+
 import "./libraries/SafeMath.sol";
 import "./libraries/SafeERC20.sol";
 
+import "./traderjoe/interfaces/IERC20.sol";
 import "./traderjoe/interfaces/IJoeERC20.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
@@ -119,11 +121,22 @@ contract JoeMaker is BoringOwnable {
         // balanceOf: S1 - S4: OK
         // transfer: X1 - X5: OK
         IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
+
         // X1 - X5: OK
-        (uint256 amount0, uint256 amount1) = pair.burn(address(this));
+        // We don't take amount0 and amount1 from here, as it won't take into account reflect tokens.
+        pair.burn(address(this));
+
+        // We get the amount0 and amount1 by their respective balance of JoeMaker.
+        uint256 amount0 = IERC20Joe(token0).balanceOf(address(this));
+        uint256 amount1 = IERC20Joe(token1).balanceOf(address(this));
+
+
+        // we invert token0 and token1 as well as we'll need them to get their respective balance.
         if (token0 != pair.token0()) {
             (amount0, amount1) = (amount1, amount0);
+            (token0, token1) = (token1, token0);
         }
+
         emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1));
     }
 
@@ -200,18 +213,31 @@ contract JoeMaker is BoringOwnable {
 
         // Interactions
         // X1 - X5: OK
-        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+
+        IERC20(fromToken).safeTransfer(address(pair), amountIn);
+
+        // Added in case fromToken is a reflect token.
+        if (fromToken == pair.token0()) {
+            amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve0;
+        } else {
+            amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve1;
+        }
+
+        uint256 previousBalance = IERC20(toToken).balanceOf(address(this));
+
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
-            amountOut = amountIn.mul(997).mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
-            IERC20(fromToken).safeTransfer(address(pair), amountIn);
+            amountOut = amountInWithFee.mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
             pair.swap(0, amountOut, to, new bytes(0));
             // TODO: Add maximum slippage?
         } else {
-            amountOut = amountIn.mul(997).mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
-            IERC20(fromToken).safeTransfer(address(pair), amountIn);
+            amountOut = amountInWithFee.mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
             pair.swap(amountOut, 0, to, new bytes(0));
             // TODO: Add maximum slippage?
+        }
+        if (to == address(this)) {
+            amountOut = IERC20(toToken).balanceOf(address(this)) - previousBalance;
         }
     }
 
