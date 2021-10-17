@@ -29,7 +29,7 @@ contract Zap is Ownable {
     IJoeRouter02 private router;
     IJoeFactory private factory;
 
-    /* ========== INITIALIZER ========== */
+    /* ========== CONSTRUCTOR ========== */
 
     constructor(address _wavax, address _router, address _factory) public {
         require(owner() != address(0), "ZapETH: owner must be set");
