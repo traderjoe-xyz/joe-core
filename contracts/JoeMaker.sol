@@ -224,7 +224,7 @@ contract JoeMaker is BoringOwnable {
             amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve1;
         }
 
-        uint256 oldAmountOut = IERC20(toToken).balanceOf(address(this));
+        uint256 previousBalance = IERC20(toToken).balanceOf(address(this));
 
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
@@ -237,7 +237,7 @@ contract JoeMaker is BoringOwnable {
             // TODO: Add maximum slippage?
         }
         if (to == address(this)) {
-            amountOut = IERC20(toToken).balanceOf(address(this)) - oldAmountOut;
+            amountOut = IERC20(toToken).balanceOf(address(this)) - previousBalance;
         }
     }
 
