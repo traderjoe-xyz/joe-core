@@ -54,7 +54,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
 
     IERC20 public immutable override rewardToken;
     IERC20 public immutable lpToken;
-    IMasterChefJoeV2 public immutable MC_V2;
+    bool public immutable isNative;
+    IMasterChefJoeV2 public immutable MCV2;
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
@@ -84,7 +85,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
     modifier onlyMCV2 {
-        require(msg.sender == address(MC_V2), "onlyMCV2: only MasterChef V2 can call this function");
+        require(msg.sender == address(MCV2), "onlyMCV2: only MasterChef V2 can call this function");
         _;
     }
 
@@ -92,7 +93,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         IERC20 _rewardToken,
         IERC20 _lpToken,
         uint256 _tokenPerSec,
-        IMasterChefJoeV2 _MCV2
+        IMasterChefJoeV2 _MCV2,
+        bool _isNative
     ) public {
         require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
         require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
@@ -101,7 +103,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         rewardToken = _rewardToken;
         lpToken = _lpToken;
         tokenPerSec = _tokenPerSec;
-        MC_V2 = _MCV2;
+        MCV2 = _MCV2;
+        isNative = _isNative;
         poolInfo = PoolInfo({lastRewardTimestamp: block.timestamp, accTokenPerShare: 0});
     }
 
@@ -111,7 +114,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         pool = poolInfo;
 
         if (block.timestamp > pool.lastRewardTimestamp) {
-            uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
+            uint256 lpSupply = lpToken.balanceOf(address(MCV2));
 
             if (lpSupply > 0) {
                 uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
@@ -142,20 +145,32 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
-        uint256 pending;
-        // if user had deposited
-        if (user.amount > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
-            uint256 balance = rewardToken.balanceOf(address(this));
-            if (pending > balance) {
-                rewardToken.safeTransfer(_user, balance);
-            } else {
-                rewardToken.safeTransfer(_user, pending);
-            }
-        }
+        uint256 pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+        uint256 prevAmount = user.amount;
 
+        // Effects before interactions to prevent re-entrancy
         user.amount = _lpAmount;
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+
+        if (prevAmount > 0) {
+            if (isNative) {
+                uint256 balance = address(this).balance;
+                if (pending > balance) {
+                    (bool success, ) = _user.call.value(balance)("");
+                    require(success, "Transfer failed");
+                } else {
+                    (bool success, ) = _user.call.value(pending)("");
+                    require(success, "Transfer failed");
+                }
+            } else {
+                uint256 balance = rewardToken.balanceOf(address(this));
+                if (pending > balance) {
+                    rewardToken.safeTransfer(_user, balance);
+                } else {
+                    rewardToken.safeTransfer(_user, pending);
+                }
+            }
+        }
 
         emit OnReward(_user, pending);
     }
@@ -168,7 +183,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         UserInfo storage user = userInfo[_user];
 
         uint256 accTokenPerShare = pool.accTokenPerShare;
-        uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
+        uint256 lpSupply = lpToken.balanceOf(address(MCV2));
 
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
@@ -182,6 +197,14 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     /// @notice In case rewarder is stopped before emissions finished, this function allows
     /// withdrawal of remaining tokens.
     function emergencyWithdraw() public onlyOwner {
-        rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
+        if (isNative) {
+            (bool success, ) = msg.sender.call.value(address(this).balance)("");
+            require(success, "Transfer failed");
+        } else {
+            rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
+        }
     }
+
+    /// @notice payable function needed to receive AVAX
+    receive() external payable {}
 }
