@@ -1132,7 +1132,7 @@ contract Zap is Ownable {
         address pairAddress,
         uint256 minToken0Amount,
         uint256 minToken1Amount
-    ) external returns (uint256 liquidity) {
+    ) private returns (uint256 liquidity) {
         uint256 token0Amount;
         uint256 token1Amount;
 
