@@ -976,15 +976,15 @@ describe("MasterChefJoeV2", function () {
 
     it("should check rewarder's arguments are contracts", async function () {
       await expect(
-        this.SimpleRewarderPerSec.deploy(ADDRESS_ZERO, this.lp.address, this.partnerRewardPerSec, this.chef.address)
+        this.SimpleRewarderPerSec.deploy(ADDRESS_ZERO, this.lp.address, this.partnerRewardPerSec, this.chef.address, false)
       ).to.be.revertedWith("constructor: reward token must be a valid contract")
 
       await expect(
-        this.SimpleRewarderPerSec.deploy(this.partnerToken.address, ADDRESS_ZERO, this.partnerRewardPerSec, this.chef.address)
+        this.SimpleRewarderPerSec.deploy(this.partnerToken.address, ADDRESS_ZERO, this.partnerRewardPerSec, this.chef.address, false)
       ).to.be.revertedWith("constructor: LP token must be a valid contract")
 
       await expect(
-        this.SimpleRewarderPerSec.deploy(this.partnerToken.address, this.lp.address, this.partnerRewardPerSec, ADDRESS_ZERO)
+        this.SimpleRewarderPerSec.deploy(this.partnerToken.address, this.lp.address, this.partnerRewardPerSec, ADDRESS_ZERO, false)
       ).to.be.revertedWith("constructor: MasterChefJoeV2 must be a valid contract")
     })
 
@@ -1007,7 +1007,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed()
 
@@ -1042,7 +1043,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed()
 
@@ -1056,17 +1058,39 @@ describe("MasterChefJoeV2", function () {
     })
 
     it("should allow emergency withdraw from rewarder contract", async function () {
+      // ERC-20
       this.rewarder = await this.SimpleRewarderPerSec.deploy(
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed()
 
       await this.partnerToken.mint(this.rewarder.address, "1000000")
       await this.rewarder.emergencyWithdraw()
       expect(await this.partnerToken.balanceOf(this.alice.address)).to.equal("1000000")
+
+      // AVAX
+      this.rewarderAVAX = await this.SimpleRewarderPerSec.deploy(
+        this.partnerToken.address, // Use any token address
+        this.lp.address,
+        this.partnerRewardPerSec,
+        this.chef.address,
+        true
+      )
+      await this.rewarderAVAX.deployed()
+
+      const rewardAmount = ethers.utils.parseEther("10")
+      const tx = { to: this.rewarderAVAX.address, value: rewardAmount }
+      await this.bob.sendTransaction(tx)
+      const bal = await ethers.provider.getBalance(this.rewarderAVAX.address)
+      expect(bal).to.equal(rewardAmount)
+      const aliceBalBefore = await this.alice.getBalance()
+      await this.rewarderAVAX.emergencyWithdraw()
+      const aliceBalAfter = await this.alice.getBalance()
+      expect(aliceBalAfter.sub(aliceBalBefore)).to.lt(rewardAmount)
     })
 
     it("should reward partner token accurately after rewarder runs out of tokens and is topped up again", async function () {
@@ -1088,7 +1112,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1120,6 +1145,63 @@ describe("MasterChefJoeV2", function () {
       expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760, 800)
     })
 
+    it("should AVAX accurately after rewarder runs out of AVAX and is topped up again", async function () {
+      const bobBalBefore = await this.bob.getBalance()
+      const startTime = (await latest()).add(60)
+      this.chef = await this.MCV2.deploy(
+        this.joe.address,
+        this.dev.address,
+        this.treasury.address,
+        this.investor.address,
+        this.joePerSec,
+        startTime,
+        this.devPercent,
+        this.treasuryPercent,
+        this.investorPercent
+      )
+      await this.chef.deployed() // t-59
+
+      this.rewarderAVAX = await this.SimpleRewarderPerSec.deploy(
+        this.partnerToken.address, // Use any token
+        this.lp.address,
+        ethers.utils.parseEther("10"),
+        this.chef.address,
+        true
+      )
+      await this.rewarderAVAX.deployed() // t-58
+
+      await this.alice.sendTransaction({ to: this.rewarderAVAX.address, value: ethers.utils.parseEther("20") }) // t-57
+
+      await this.joe.transferOwnership(this.chef.address) // t-56
+
+      await this.chef.add("100", this.lp.address, this.rewarderAVAX.address) // t-55
+
+      await this.lp.connect(this.bob).approve(this.chef.address, "1000") // t-54
+      await this.chef.connect(this.bob).deposit(0, "100") // t-53
+      await advanceTimeAndBlock(4) // t-49
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-48
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 20 Ether
+      const bobBalAfter = await this.bob.getBalance()
+      expect(bobBalAfter.sub(bobBalBefore)).to.gt(ethers.utils.parseEther("19"))
+      expect(bobBalAfter.sub(bobBalBefore)).to.lt(ethers.utils.parseEther("20"))
+      await advanceTimeAndBlock(5) // t-43
+
+      await this.alice.sendTransaction({ to: this.rewarderAVAX.address, value: ethers.utils.parseEther("1000") }) // 42
+      await advanceTimeAndBlock(10) // t-32
+
+      await this.chef.connect(this.bob).deposit(0, "0") // t-31
+
+      // Bob should have:
+      //   - 0 JoeToken
+      //   - 20 + 17*10 = 190 (+40) PartnerToken
+      const bobBalFinal = await this.bob.getBalance()
+      expect(bobBalFinal.sub(bobBalAfter)).to.gt(ethers.utils.parseEther("160"))
+      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("170"))
+    })
+
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
@@ -1139,7 +1221,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1181,7 +1264,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1282,7 +1366,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1352,7 +1437,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1418,7 +1504,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1556,7 +1643,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
@@ -1641,7 +1729,8 @@ describe("MasterChefJoeV2", function () {
         this.partnerToken.address,
         this.lp.address,
         this.partnerRewardPerSec,
-        this.chef.address
+        this.chef.address,
+        false
       )
       await this.rewarder.deployed() // t-58
 
