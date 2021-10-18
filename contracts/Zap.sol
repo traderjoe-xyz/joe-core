@@ -32,8 +32,6 @@ contract Zap is Ownable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _wavax, address _router, address _factory) public {
-        require(owner() != address(0), "ZapETH: owner must be set");
-
         wavax = _wavax;
         router = IJoeRouter02(_router);
         factory = IJoeFactory(_factory);
@@ -44,57 +42,20 @@ contract Zap is Ownable {
     /* ========== External Functions ========== */
 
     function zapInToken(
-        address _from,
+        address fromToken,
         uint256 amount,
         address pairAddress,
         uint256 minToken0Amount,
         uint256 minToken1Amount
     ) external {
-        uint256 token0Amount;
-        uint256 token1Amount;
-
-        IERC20 fromToken = IERC20(_from);
-        uint256 previousBalance = fromToken.balanceOf(address(this));
-
-        IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
-
-        amount = fromToken.balanceOf(address(this)).sub(previousBalance);
-
-        IJoePair pair = IJoePair(pairAddress);
-        address token0 = pair.token0();
-        address token1 = pair.token1();
-
-        _approveTokenIfNeeded(token0);
-        _approveTokenIfNeeded(token1);
-
-        if (_from == token0 || _from == token1) {
-            if (_from != token0) {
-                (token0, token1) = (token1, token0);
-            }
-
-            token0Amount = amount.div(2);
-            token1Amount = _swap(token0, token1, token0Amount, address(this));
-        } else {
-            (token0Amount, token1Amount) = _swapExactTokenToWavaxToTokens(_from, amount, token0, token1);
-        }
-
-        router.addLiquidity(
-            token0,
-            token1,
-            token0Amount,
-            token1Amount,
-            minToken0Amount,
-            minToken1Amount,
-            msg.sender,
-            block.timestamp
-        );
+        this._zapInToken(_msgSender(), fromToken, amount, pairAddress, minToken0Amount, minToken1Amount);
     }
 
     function zapInAvax(address pairAddress, uint256 minToken0Amount, uint256 minToken1Amount) external payable {
         uint256 avaxAmount = msg.value;
         IWAVAX(wavax).deposit{value : avaxAmount}();
-        assert(IWAVAX(wavax).transfer(msg.sender, avaxAmount));
-        this.zapInToken(wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
+        assert(IWAVAX(wavax).transfer(_msgSender(), avaxAmount));
+        this._zapInToken(_msgSender(), wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
     }
 
     function zapOutToken(
@@ -103,7 +64,7 @@ contract Zap is Ownable {
         address token,
         uint256 minAmount
     ) external {
-        (address token0Address, address token1Address, uint256 amount0, uint256 amount1) = _removeLiquidity(pairAddress, amount);
+        (address token0Address, address token1Address, uint256 amount0, uint256 amount1) = _removeLiquidity(_msgSender(), pairAddress, amount);
 
         _approveTokenIfNeeded(token0Address);
         _approveTokenIfNeeded(token1Address);
@@ -113,19 +74,67 @@ contract Zap is Ownable {
 
         if (token == wavax) {
             IWAVAX(wavax).withdraw(tokenAmount);
-            TransferHelper.safeTransferAVAX(msg.sender, tokenAmount);
+            TransferHelper.safeTransferAVAX(_msgSender(), tokenAmount);
         } else {
-            IERC20(token).safeTransferFrom(address(this), msg.sender, tokenAmount);
+            IERC20(token).safeTransferFrom(address(this), _msgSender(), tokenAmount);
         }
     }
 
     /* ========== Private Functions ========== */
 
+    function _zapInToken(
+        address user,
+        address fromToken,
+        uint256 amount,
+        address pairAddress,
+        uint256 minToken0Amount,
+        uint256 minToken1Amount
+    ) external {
+        uint256 token0Amount;
+        uint256 token1Amount;
+
+        IERC20 IERC20FromToken = IERC20(fromToken);
+        uint256 previousBalance = IERC20FromToken.balanceOf(address(this));
+
+        IERC20FromToken.safeTransferFrom(user, address(this), amount);
+
+        amount = IERC20FromToken.balanceOf(address(this)).sub(previousBalance);
+
+        IJoePair pair = IJoePair(pairAddress);
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+
+        _approveTokenIfNeeded(token0);
+        _approveTokenIfNeeded(token1);
+
+        if (fromToken == token0 || fromToken == token1) {
+            if (fromToken != token0) {
+                (token0, token1) = (token1, token0);
+            }
+
+            token0Amount = amount.div(2);
+            token1Amount = _swap(token0, token1, token0Amount, address(this));
+        } else {
+            (token0Amount, token1Amount) = _swapExactTokenToWavaxToTokens(fromToken, amount, token0, token1);
+        }
+
+        router.addLiquidity(
+            token0,
+            token1,
+            token0Amount,
+            token1Amount,
+            minToken0Amount,
+            minToken1Amount,
+            block.timestamp
+        );
+    }
+
     function _removeLiquidity(
+        address user,
         address pairAddress,
         uint256 amount
     ) private returns (address token0Address, address token1Address, uint256 amount0, uint256 amount1){
-        IERC20(pairAddress).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(pairAddress).safeTransferFrom(user, address(this), amount);
         _approveTokenIfNeeded(pairAddress);
 
         IJoePair pair = IJoePair(pairAddress);
@@ -177,13 +186,13 @@ contract Zap is Ownable {
         }
     }
 
-    function _swapExactTokenToWavaxToTokens(address _from, uint256 amount, address token0, address token1) private returns (uint256 token0Amount, uint256 token1Amount){
+    function _swapExactTokenToWavaxToTokens(address fromToken, uint256 amount, address token0, address token1) private returns (uint256 token0Amount, uint256 token1Amount){
         uint256 wavaxAmount;
         _approveTokenIfNeeded(wavax);
 
-        if (_from != wavax) {
-            _checkIfWavaxTokenPairHasEnoughLiquidity(_from);
-            wavaxAmount = _swap(_from, wavax, amount, address(this));
+        if (fromToken != wavax) {
+            _checkIfWavaxTokenPairHasEnoughLiquidity(fromToken);
+            wavaxAmount = _swap(fromToken, wavax, amount, address(this));
         } else {
             wavaxAmount = amount;
         }
