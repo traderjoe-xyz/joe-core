@@ -11,12 +11,13 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./traderjoe/libraries/TransferHelper.sol";
 import "./traderjoe/interfaces/IWAVAX.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeRouter02.sol";
 import "./traderjoe/interfaces/IWAVAX.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
+
+
 
 contract Zap is Ownable {
     using SafeMath for uint256;
@@ -48,14 +49,18 @@ contract Zap is Ownable {
         uint256 minToken0Amount,
         uint256 minToken1Amount
     ) external {
-        this._zapInToken(_msgSender(), fromToken, amount, pairAddress, minToken0Amount, minToken1Amount);
+        uint256 liquidity = _zapInToken(_msgSender(), fromToken, amount, pairAddress, minToken0Amount, minToken1Amount);
+
+        IERC20(pairAddress).safeTransfer(_msgSender(), liquidity);
     }
 
     function zapInAvax(address pairAddress, uint256 minToken0Amount, uint256 minToken1Amount) external payable {
         uint256 avaxAmount = msg.value;
         IWAVAX(wavax).deposit{value : avaxAmount}();
         assert(IWAVAX(wavax).transfer(_msgSender(), avaxAmount));
-        this._zapInToken(_msgSender(), wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
+        uint256 liquidity = _zapInToken(_msgSender(), wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
+
+        IERC20(pairAddress).safeTransfer(_msgSender(), liquidity);
     }
 
     function zapOutToken(
@@ -64,7 +69,9 @@ contract Zap is Ownable {
         address token,
         uint256 minAmount
     ) external {
-        (address token0Address, address token1Address, uint256 amount0, uint256 amount1) = _removeLiquidity(_msgSender(), pairAddress, amount);
+        IERC20(pairAddress).safeTransferFrom(_msgSender(), address(this), amount);
+
+        (address token0Address, address token1Address, uint256 amount0, uint256 amount1) = _removeLiquidity(pairAddress, amount);
 
         _approveTokenIfNeeded(token0Address);
         _approveTokenIfNeeded(token1Address);
@@ -74,31 +81,29 @@ contract Zap is Ownable {
 
         if (token == wavax) {
             IWAVAX(wavax).withdraw(tokenAmount);
-            TransferHelper.safeTransferAVAX(_msgSender(), tokenAmount);
+
+            /// Transfer avaxAmountWithFees $AVAX to the _msgSender().
+            (bool success,) = _msgSender().call{value: tokenAmount}("");
+            require(success, "Transfer failed");
         } else {
-            IERC20(token).safeTransferFrom(address(this), _msgSender(), tokenAmount);
+            IERC20(token).safeTransfer(_msgSender(), tokenAmount);
         }
     }
 
     /* ========== Private Functions ========== */
 
     function _zapInToken(
-        address user,
+        address _from,
         address fromToken,
         uint256 amount,
         address pairAddress,
         uint256 minToken0Amount,
         uint256 minToken1Amount
-    ) external {
+    ) private returns (uint256 liquidity) {
         uint256 token0Amount;
         uint256 token1Amount;
 
-        IERC20 IERC20FromToken = IERC20(fromToken);
-        uint256 previousBalance = IERC20FromToken.balanceOf(address(this));
-
-        IERC20FromToken.safeTransferFrom(user, address(this), amount);
-
-        amount = IERC20FromToken.balanceOf(address(this)).sub(previousBalance);
+        amount = _transfer(_from, fromToken, amount);
 
         IJoePair pair = IJoePair(pairAddress);
         address token0 = pair.token0();
@@ -118,23 +123,31 @@ contract Zap is Ownable {
             (token0Amount, token1Amount) = _swapExactTokenToWavaxToTokens(fromToken, amount, token0, token1);
         }
 
-        router.addLiquidity(
+        (, , liquidity) = router.addLiquidity(
             token0,
             token1,
             token0Amount,
             token1Amount,
             minToken0Amount,
             minToken1Amount,
+            address(this),
             block.timestamp
         );
     }
 
+    function _transfer(address user, address fromToken, uint256 amountToSend) private returns(uint256 amount) {
+        IERC20 IERC20FromToken = IERC20(fromToken);
+        uint256 previousBalance = IERC20FromToken.balanceOf(address(this));
+
+        IERC20FromToken.safeTransferFrom(user, address(this), amountToSend);
+
+        amount = IERC20FromToken.balanceOf(address(this)).sub(previousBalance);
+    }
+
     function _removeLiquidity(
-        address user,
         address pairAddress,
         uint256 amount
     ) private returns (address token0Address, address token1Address, uint256 amount0, uint256 amount1){
-        IERC20(pairAddress).safeTransferFrom(user, address(this), amount);
         _approveTokenIfNeeded(pairAddress);
 
         IJoePair pair = IJoePair(pairAddress);
@@ -208,7 +221,7 @@ contract Zap is Ownable {
 
         if (token1 != wavax) {
             _checkIfWavaxTokenPairHasEnoughLiquidity(token1);
-            token1Amount = _swap(wavax, token1, sellAmount.sub(sellAmount), address(this));
+            token1Amount = _swap(wavax, token1, wavaxAmount.sub(sellAmount), address(this));
         } else {
             token1Amount = sellAmount.sub(sellAmount);
         }
@@ -249,25 +262,25 @@ contract Zap is Ownable {
 
         // Added in case fromToken is a reflect token.
         if (fromToken == pair.token0()) {
-            amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve0;
+            amountIn = IERC20(fromToken).balanceOf(address(pair)).sub(reserve0);
         } else {
-            amountIn = IERC20(fromToken).balanceOf(address(pair)) - reserve1;
+            amountIn = IERC20(fromToken).balanceOf(address(pair)).sub(reserve1);
         }
 
         uint256 previousBalance = IERC20(toToken).balanceOf(address(this));
 
         uint256 amountInWithFee = amountIn.mul(997);
         if (fromToken == pair.token0()) {
-            amountOut = amountInWithFee.mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
+            amountOut = amountInWithFee.mul(reserve1).div(reserve0.mul(1000).add(amountInWithFee));
             pair.swap(0, amountOut, to, new bytes(0));
             // TODO: Add maximum slippage?
         } else {
-            amountOut = amountInWithFee.mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
+            amountOut = amountInWithFee.mul(reserve0).div(reserve1.mul(1000).add(amountInWithFee));
             pair.swap(amountOut, 0, to, new bytes(0));
             // TODO: Add maximum slippage?
         }
         if (to == address(this)) {
-            amountOut = IERC20(toToken).balanceOf(address(this)) - previousBalance;
+            amountOut = IERC20(toToken).balanceOf(address(this)).sub(previousBalance);
         }
     }
 

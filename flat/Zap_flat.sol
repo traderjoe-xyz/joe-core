@@ -217,8 +217,6 @@ library SafeMath {
 
 // File: node_modules\@openzeppelin\contracts\token\ERC20\IERC20.sol
 
-pragma solidity >=0.6.0 <0.8.0;
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
@@ -293,12 +291,7 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-// File: node_modules\@openzeppelin\contracts\math\SafeMath.sol
-
-
-
-
-pragma solidity >=0.6.2 <0.8.0;
+// File: node_modules\@openzeppelin\contracts\utils\Address.sol
 
 /**
  * @dev Collection of functions related to the address type
@@ -375,7 +368,7 @@ library Address {
      * _Available since v3.1._
      */
     function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionCall(target, data, "Address: low-level call failed");
+      return functionCall(target, data, "Address: low-level call failed");
     }
 
     /**
@@ -489,9 +482,6 @@ library Address {
 // File: @openzeppelin\contracts\token\ERC20\SafeERC20.sol
 
 
-pragma solidity >=0.6.0 <0.8.0;
-
-
 
 
 /**
@@ -564,8 +554,6 @@ library SafeERC20 {
 
 // File: node_modules\@openzeppelin\contracts\utils\Context.sol
 
-pragma solidity >=0.6.0 <0.8.0;
-
 /*
  * @dev Provides information about the current execution context, including the
  * sender of the transaction and its data. While these are generally available
@@ -588,8 +576,6 @@ abstract contract Context {
 }
 
 // File: @openzeppelin\contracts\access\Ownable.sol
-
-pragma solidity >=0.6.0 <0.8.0;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -655,52 +641,7 @@ abstract contract Ownable is Context {
     }
 }
 
-// File: contracts\traderjoe\libraries\TransferHelper.sol
-
-pragma solidity >=0.6.0;
-
-// helper methods for interacting with ERC20 tokens and sending AVAX that do not consistently return true/false
-library TransferHelper {
-    function safeApprove(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
-        // bytes4(keccak256(bytes('approve(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "TransferHelper: APPROVE_FAILED");
-    }
-
-    function safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
-        // bytes4(keccak256(bytes('transfer(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "TransferHelper: TRANSFER_FAILED");
-    }
-
-    function safeTransferFrom(
-        address token,
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "TransferHelper: TRANSFER_FROM_FAILED");
-    }
-
-    function safeTransferAVAX(address to, uint256 value) internal {
-        (bool success, ) = to.call{value: value}(new bytes(0));
-        require(success, "TransferHelper: AVAX_TRANSFER_FAILED");
-    }
-}
-
 // File: contracts\traderjoe\interfaces\IWAVAX.sol
-
-pragma solidity >=0.5.0;
 
 interface IWAVAX {
     function deposit() external payable;
@@ -711,8 +652,6 @@ interface IWAVAX {
 }
 
 // File: contracts\traderjoe\interfaces\IJoePair.sol
-
-pragma solidity >=0.5.0;
 
 interface IJoePair {
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -777,13 +716,13 @@ interface IJoePair {
     function token1() external view returns (address);
 
     function getReserves()
-    external
-    view
-    returns (
-        uint112 reserve0,
-        uint112 reserve1,
-        uint32 blockTimestampLast
-    );
+        external
+        view
+        returns (
+            uint112 reserve0,
+            uint112 reserve1,
+            uint32 blockTimestampLast
+        );
 
     function price0CumulativeLast() external view returns (uint256);
 
@@ -811,8 +750,6 @@ interface IJoePair {
 
 // File: contracts\traderjoe\interfaces\IJoeRouter01.sol
 
-pragma solidity >=0.6.2;
-
 interface IJoeRouter01 {
     function factory() external pure returns (address);
 
@@ -828,12 +765,12 @@ interface IJoeRouter01 {
         address to,
         uint256 deadline
     )
-    external
-    returns (
-        uint256 amountA,
-        uint256 amountB,
-        uint256 liquidity
-    );
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        );
 
     function addLiquidityAVAX(
         address token,
@@ -843,13 +780,13 @@ interface IJoeRouter01 {
         address to,
         uint256 deadline
     )
-    external
-    payable
-    returns (
-        uint256 amountToken,
-        uint256 amountAVAX,
-        uint256 liquidity
-    );
+        external
+        payable
+        returns (
+            uint256 amountToken,
+            uint256 amountAVAX,
+            uint256 liquidity
+        );
 
     function removeLiquidity(
         address tokenA,
@@ -968,8 +905,6 @@ interface IJoeRouter01 {
 
 // File: contracts\traderjoe\interfaces\IJoeRouter02.sol
 
-pragma solidity >=0.6.2;
-
 
 interface IJoeRouter02 is IJoeRouter01 {
     function removeLiquidityAVAXSupportingFeeOnTransferTokens(
@@ -1020,8 +955,6 @@ interface IJoeRouter02 is IJoeRouter01 {
 
 // File: contracts\traderjoe\interfaces\IJoeFactory.sol
 
-pragma solidity >=0.5.0;
-
 interface IJoeFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
 
@@ -1048,14 +981,11 @@ interface IJoeFactory {
 
 // File: contracts\Zap.sol
 
-pragma solidity =0.6.12;
-
 /*
  * Trader Joe
  * MIT License; modified from PancakeBunny
  *
  */
-
 
 contract Zap is Ownable {
     using SafeMath for uint256;
@@ -1080,6 +1010,8 @@ contract Zap is Ownable {
 
     /* ========== External Functions ========== */
 
+    //TODO there are lost funds transfered to the contract
+
     function zapInToken(
         address fromToken,
         uint256 amount,
@@ -1087,18 +1019,18 @@ contract Zap is Ownable {
         uint256 minToken0Amount,
         uint256 minToken1Amount
     ) external {
-        uint256 liquidity = this._zapInToken(_msgSender(), fromToken, amount, pairAddress, minToken0Amount, minToken1Amount);
+        uint256 liquidity = _zapInToken(_msgSender(), fromToken, amount, pairAddress, minToken0Amount, minToken1Amount);
 
-        TransferHelper.safeTransfer(_msgSender(), pairAddress, liquidity);
+        IERC20(pairAddress).safeTransfer(_msgSender(), liquidity);
     }
 
     function zapInAvax(address pairAddress, uint256 minToken0Amount, uint256 minToken1Amount) external payable {
         uint256 avaxAmount = msg.value;
         IWAVAX(wavax).deposit{value : avaxAmount}();
         assert(IWAVAX(wavax).transfer(_msgSender(), avaxAmount));
-        uint256 liquidity = this._zapInToken(_msgSender(), wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
+        uint256 liquidity = _zapInToken(_msgSender(), wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
 
-        TransferHelper.safeTransfer(_msgSender(), pairAddress, liquidity);
+        IERC20(pairAddress).safeTransfer(_msgSender(), liquidity);
     }
 
     function zapOutToken(
@@ -1107,7 +1039,9 @@ contract Zap is Ownable {
         address token,
         uint256 minAmount
     ) external {
-        (address token0Address, address token1Address, uint256 amount0, uint256 amount1) = _removeLiquidity(_msgSender(), pairAddress, amount);
+        IERC20(pairAddress).safeTransferFrom(_msgSender(), address(this), amount);
+
+        (address token0Address, address token1Address, uint256 amount0, uint256 amount1) = _removeLiquidity(pairAddress, amount);
 
         _approveTokenIfNeeded(token0Address);
         _approveTokenIfNeeded(token1Address);
@@ -1117,9 +1051,12 @@ contract Zap is Ownable {
 
         if (token == wavax) {
             IWAVAX(wavax).withdraw(tokenAmount);
-            TransferHelper.safeTransferAVAX(_msgSender(), tokenAmount);
+
+            /// Transfer avaxAmountWithFees $AVAX to the _msgSender().
+            (bool success,) = _msgSender().call{value: tokenAmount}("");
+            require(success, "Transfer failed");
         } else {
-            IERC20(token).safeTransferFrom(address(this), _msgSender(), tokenAmount);
+            IERC20(token).safeTransfer(_msgSender(), tokenAmount);
         }
     }
 
@@ -1178,11 +1115,9 @@ contract Zap is Ownable {
     }
 
     function _removeLiquidity(
-        address user,
         address pairAddress,
         uint256 amount
     ) private returns (address token0Address, address token1Address, uint256 amount0, uint256 amount1){
-        IERC20(pairAddress).safeTransferFrom(user, address(this), amount);
         _approveTokenIfNeeded(pairAddress);
 
         IJoePair pair = IJoePair(pairAddress);
@@ -1256,7 +1191,7 @@ contract Zap is Ownable {
 
         if (token1 != wavax) {
             _checkIfWavaxTokenPairHasEnoughLiquidity(token1);
-            token1Amount = _swap(wavax, token1, sellAmount.sub(sellAmount), address(this));
+            token1Amount = _swap(wavax, token1, wavaxAmount.sub(sellAmount), address(this));
         } else {
             token1Amount = sellAmount.sub(sellAmount);
         }
