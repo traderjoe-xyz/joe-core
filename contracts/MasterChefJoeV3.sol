@@ -225,6 +225,10 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
         require(!lpTokens.contains(address(_lpToken)), "add: LP already added");
         // Sanity check to ensure _lpToken is an ERC20 token
         _lpToken.balanceOf(address(this));
+        // Sanity check if we add a rewarder
+        if (address(_rewarder) != 0) {
+            _rewarder.onJoeReward(address(0), 0);
+        }
 
         uint256 lastRewardTimestamp = block.timestamp;
         totalAllocPoint = totalAllocPoint.add(allocPoint);
@@ -257,6 +261,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
         if (overwrite) {
+            _rewarder.onJoeReward(address(0), 0); // sanity check
             pool.rewarder = _rewarder;
         }
         poolInfo[_pid] = pool;
@@ -365,7 +370,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
             _rewarder.onJoeReward(msg.sender, user.amount);
         }
 
-        emit Deposit(msg.sender, pid, amount);
+        emit Deposit(msg.sender, pid, );
     }
 
     /// @notice Withdraw LP tokens from MCJV3.
