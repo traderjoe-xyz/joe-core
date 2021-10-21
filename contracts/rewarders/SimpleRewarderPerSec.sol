@@ -85,7 +85,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
     modifier onlyMCJ {
-        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe  can call this function");
+        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe can call this function");
         _;
     }
 

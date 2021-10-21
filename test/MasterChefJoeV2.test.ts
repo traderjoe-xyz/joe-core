@@ -985,7 +985,7 @@ describe("MasterChefJoeV2", function () {
 
       await expect(
         this.SimpleRewarderPerSec.deploy(this.partnerToken.address, this.lp.address, this.partnerRewardPerSec, ADDRESS_ZERO, false)
-      ).to.be.revertedWith("constructor: MasterChefJoeV2 must be a valid contract")
+      ).to.be.revertedWith("constructor: MasterChefJoe must be a valid contract")
     })
 
     it("should check rewarder added and set properly", async function () {
@@ -1236,7 +1236,7 @@ describe("MasterChefJoeV2", function () {
       await this.chef.connect(this.bob).deposit(0, "100") // t-53
       await advanceTimeAndBlock(42) // t-11
 
-      await expect(this.rewarder.onJoeReward(this.bob.address, "100")).to.be.revertedWith("onlyMCV2: only MasterChef V2 can call this function") // t-10
+      await expect(this.rewarder.onJoeReward(this.bob.address, "100")).to.be.revertedWith("onlyMCJ: only MasterChefJoe can call this function") // t-10
       await this.chef.connect(this.bob).deposit(0, "0") // t-9
       // Bob should have:
       //   - 0 JoeToken
