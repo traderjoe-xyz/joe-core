@@ -17,8 +17,6 @@ import "./traderjoe/interfaces/IJoeRouter02.sol";
 import "./traderjoe/interfaces/IWAVAX.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
 
-
-
 contract Zap is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -32,7 +30,11 @@ contract Zap is Ownable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _wavax, address _router, address _factory) public {
+    constructor(
+        address _wavax,
+        address _router,
+        address _factory
+    ) public {
         wavax = _wavax;
         router = IJoeRouter02(_router);
         factory = IJoeFactory(_factory);
@@ -54,9 +56,13 @@ contract Zap is Ownable {
         IERC20(pairAddress).safeTransfer(_msgSender(), liquidity);
     }
 
-    function zapInAvax(address pairAddress, uint256 minToken0Amount, uint256 minToken1Amount) external payable {
+    function zapInAvax(
+        address pairAddress,
+        uint256 minToken0Amount,
+        uint256 minToken1Amount
+    ) external payable {
         uint256 avaxAmount = msg.value;
-        IWAVAX(wavax).deposit{value : avaxAmount}();
+        IWAVAX(wavax).deposit{value: avaxAmount}();
         assert(IWAVAX(wavax).transfer(_msgSender(), avaxAmount));
         uint256 liquidity = _zapInToken(_msgSender(), wavax, avaxAmount, pairAddress, minToken0Amount, minToken1Amount);
 
@@ -121,7 +127,12 @@ contract Zap is Ownable {
         );
     }
 
-    function _transferFrom(address from, address to, address token, uint256 _amount) private returns(uint256 amount) {
+    function _transferFrom(
+        address from,
+        address to,
+        address token,
+        uint256 _amount
+    ) private returns (uint256 amount) {
         IERC20 IERC20FromToken = IERC20(token);
         uint256 balanceBefore = IERC20FromToken.balanceOf(to);
 
@@ -134,7 +145,7 @@ contract Zap is Ownable {
         amount = IERC20FromToken.balanceOf(to).sub(balanceBefore);
     }
 
-    function getTokensAndApprove(address pairAddress) private returns(address token0, address token1) {
+    function getTokensAndApprove(address pairAddress) private returns (address token0, address token1) {
         IJoePair pair = IJoePair(pairAddress);
 
         token0 = pair.token0();
@@ -144,10 +155,15 @@ contract Zap is Ownable {
         _approveTokenIfNeeded(token1);
     }
 
-    function _removeLiquidity(
-        address pairAddress,
-        uint256 amount
-    ) private returns (address token0Address, address token1Address, uint256 amount0, uint256 amount1){
+    function _removeLiquidity(address pairAddress, uint256 amount)
+        private
+        returns (
+            address token0Address,
+            address token1Address,
+            uint256 amount0,
+            uint256 amount1
+        )
+    {
         _approveTokenIfNeeded(pairAddress);
 
         IJoePair pair = IJoePair(pairAddress);
@@ -161,21 +177,20 @@ contract Zap is Ownable {
         uint256 balanceBefore0 = token0.balanceOf(address(this));
         uint256 balanceBefore1 = token1.balanceOf(address(this));
 
-        router.removeLiquidity(
-            token0Address,
-            token1Address,
-            amount,
-            0,
-            0,
-            address(this),
-            block.timestamp
-        );
+        router.removeLiquidity(token0Address, token1Address, amount, 0, 0, address(this), block.timestamp);
 
         amount0 = token0.balanceOf(address(this)).sub(balanceBefore0);
         amount1 = token1.balanceOf(address(this)).sub(balanceBefore1);
     }
 
-    function _swapExactTokensToWavaxToToken(address token0, address token1, uint256 amount0, uint256 amount1, address tokenOut, address to) private returns (uint256 tokenAmount){
+    function _swapExactTokensToWavaxToToken(
+        address token0,
+        address token1,
+        uint256 amount0,
+        uint256 amount1,
+        address tokenOut,
+        address to
+    ) private returns (uint256 tokenAmount) {
         _approveTokenIfNeeded(wavax);
         uint256 wavaxAmount;
 
@@ -199,12 +214,17 @@ contract Zap is Ownable {
         } else {
             IWAVAX(wavax).withdraw(wavaxAmount);
 
-            (bool success,) = to.call{value: wavaxAmount}("");
+            (bool success, ) = to.call{value: wavaxAmount}("");
             require(success, "Transfer failed");
         }
     }
 
-    function _swapExactTokenToWavaxToTokens(address fromToken, uint256 amount, address token0, address token1) private returns (uint256 token0Amount, uint256 token1Amount){
+    function _swapExactTokenToWavaxToTokens(
+        address fromToken,
+        uint256 amount,
+        address token0,
+        address token1
+    ) private returns (uint256 token0Amount, uint256 token1Amount) {
         uint256 wavaxAmount;
 
         if (fromToken != wavax) {
@@ -241,7 +261,7 @@ contract Zap is Ownable {
         IJoePair pair = IJoePair(factory.getPair(wavax, token));
         require(address(pair) != address(0), "Zap: Pair doesn't exist");
 
-        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         // Pair needs to have more than 50 000 avax in reserve.
         require((pair.token0() == wavax ? reserve0 : reserve1) > 50000e18, "Zap: Not enough liquidity");
     }
@@ -255,7 +275,7 @@ contract Zap is Ownable {
         IJoePair pair = IJoePair(factory.getPair(fromToken, toToken));
         require(address(pair) != address(0), "Zap: Pair doesn't exist");
 
-        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
         uint256 balanceBefore = IERC20(toToken).balanceOf(to);
 

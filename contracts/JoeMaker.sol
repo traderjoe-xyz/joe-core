@@ -110,7 +110,6 @@ contract JoeMaker is BoringOwnable {
         uint256 amount0 = IERC20(token0).balanceOf(address(this));
         uint256 amount1 = IERC20(token1).balanceOf(address(this));
 
-
         // we invert token0 and token1 as well as we'll need them to get their respective balance.
         if (token0 != pair.token0()) {
             (amount0, amount1) = (amount1, amount0);
@@ -187,7 +186,7 @@ contract JoeMaker is BoringOwnable {
 
         // Interactions
         // X1 - X5: OK
-        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
 
