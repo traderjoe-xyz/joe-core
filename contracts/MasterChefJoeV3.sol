@@ -226,7 +226,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
         // Sanity check to ensure _lpToken is an ERC20 token
         _lpToken.balanceOf(address(this));
         // Sanity check if we add a rewarder
-        if (address(_rewarder) != 0) {
+        if (address(_rewarder) != address(0)) {
             _rewarder.onJoeReward(address(0), 0);
         }
 
@@ -370,7 +370,7 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
             _rewarder.onJoeReward(msg.sender, user.amount);
         }
 
-        emit Deposit(msg.sender, pid, );
+        emit Deposit(msg.sender, pid, receivedAmount);
     }
 
     /// @notice Withdraw LP tokens from MCJV3.

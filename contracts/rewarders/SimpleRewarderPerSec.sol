@@ -17,7 +17,7 @@ interface IRewarder {
     function rewardToken() external view returns (IERC20);
 }
 
-interface IMasterChefJoeV2 {
+interface IMasterChefJoe {
     using SafeERC20 for IERC20;
 
     struct UserInfo {
@@ -40,7 +40,7 @@ interface IMasterChefJoeV2 {
 }
 
 /**
- * This is a sample contract to be used in the MasterChefJoeV2 contract for partners to reward
+ * This is a sample contract to be used in the MasterChefJoe contract for partners to reward
  * stakers with their native token alongside JOE.
  *
  * It assumes no minting rights, so requires a set amount of YOUR_TOKEN to be transferred to this contract prior.
@@ -55,9 +55,9 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     IERC20 public immutable override rewardToken;
     IERC20 public immutable lpToken;
     bool public immutable isNative;
-    IMasterChefJoeV2 public immutable MCV2;
+    IMasterChefJoe public immutable MCJ;
 
-    /// @notice Info of each MCV2 user.
+    /// @notice Info of each MCJ user.
     /// `amount` LP token amount the user has provided.
     /// `rewardDebt` The amount of YOUR_TOKEN entitled to the user.
     struct UserInfo {
@@ -65,7 +65,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         uint256 rewardDebt;
     }
 
-    /// @notice Info of each MCV2 poolInfo.
+    /// @notice Info of each MCJ poolInfo.
     /// `accTokenPerShare` Amount of YOUR_TOKEN each LP token is worth.
     /// `lastRewardTimestamp` The last timestamp YOUR_TOKEN was rewarded to the poolInfo.
     struct PoolInfo {
@@ -84,8 +84,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
-    modifier onlyMCV2 {
-        require(msg.sender == address(MCV2), "onlyMCV2: only MasterChef V2 can call this function");
+    modifier onlyMCJ {
+        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe  can call this function");
         _;
     }
 
@@ -93,17 +93,17 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         IERC20 _rewardToken,
         IERC20 _lpToken,
         uint256 _tokenPerSec,
-        IMasterChefJoeV2 _MCV2,
+        IMasterChefJoe _MCJ,
         bool _isNative
     ) public {
         require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
         require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
-        require(Address.isContract(address(_MCV2)), "constructor: MasterChefJoeV2 must be a valid contract");
+        require(Address.isContract(address(_MCJ)), "constructor: MasterChefJoe must be a valid contract");
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
         tokenPerSec = _tokenPerSec;
-        MCV2 = _MCV2;
+        MCJ = _MCJ;
         isNative = _isNative;
         poolInfo = PoolInfo({lastRewardTimestamp: block.timestamp, accTokenPerShare: 0});
     }
@@ -114,7 +114,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         pool = poolInfo;
 
         if (block.timestamp > pool.lastRewardTimestamp) {
-            uint256 lpSupply = lpToken.balanceOf(address(MCV2));
+            uint256 lpSupply = lpToken.balanceOf(address(MCJ));
 
             if (lpSupply > 0) {
                 uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
@@ -138,10 +138,10 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         emit RewardRateUpdated(oldRate, _tokenPerSec);
     }
 
-    /// @notice Function called by MasterChefJoeV2 whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
+    /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCV2 {
+    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
@@ -183,7 +183,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         UserInfo storage user = userInfo[_user];
 
         uint256 accTokenPerShare = pool.accTokenPerShare;
-        uint256 lpSupply = lpToken.balanceOf(address(MCV2));
+        uint256 lpSupply = lpToken.balanceOf(address(MCJ));
 
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
@@ -202,6 +202,15 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
             require(success, "Transfer failed");
         } else {
             rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
+        }
+    }
+
+    /// @notice View function to see balance of reward token.
+    function balance() external view returns (uint256) {
+        if (isNative) {
+            return address(this).balance;
+        } else {
+            return rewardToken.balanceOf(address(this));
         }
     }
 

@@ -420,10 +420,7 @@ contract BoringOwnableData {
 }
 
 contract BoringOwnable is BoringOwnableData {
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /// @notice `owner` defaults to msg.sender on construction.
     constructor() public {
@@ -443,10 +440,7 @@ contract BoringOwnable is BoringOwnableData {
     ) public onlyOwner {
         if (direct) {
             // Checks
-            require(
-                newOwner != address(0) || renounce,
-                "Ownable: zero address"
-            );
+            require(newOwner != address(0) || renounce, "Ownable: zero address");
 
             // Effects
             emit OwnershipTransferred(owner, newOwner);
@@ -463,10 +457,7 @@ contract BoringOwnable is BoringOwnableData {
         address _pendingOwner = pendingOwner;
 
         // Checks
-        require(
-            msg.sender == _pendingOwner,
-            "Ownable: caller != pending owner"
-        );
+        require(msg.sender == _pendingOwner, "Ownable: caller != pending owner");
 
         // Effects
         emit OwnershipTransferred(owner, _pendingOwner);
@@ -490,19 +481,12 @@ interface IERC20 {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     // EIP 2612
     function permit(
@@ -523,23 +507,17 @@ pragma solidity 0.6.12;
 
 library SafeERC20 {
     function safeSymbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x95d89b41)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
         return success && data.length > 0 ? abi.decode(data, (string)) : "???";
     }
 
     function safeName(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x06fdde03)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
         return success && data.length > 0 ? abi.decode(data, (string)) : "???";
     }
 
     function safeDecimals(IERC20 token) public view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeWithSelector(0x313ce567)
-        );
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
@@ -548,13 +526,8 @@ library SafeERC20 {
         address to,
         uint256 amount
     ) internal {
-        (bool success, bytes memory data) = address(token).call(
-            abi.encodeWithSelector(0xa9059cbb, to, amount)
-        );
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "SafeERC20: Transfer failed"
-        );
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "SafeERC20: Transfer failed");
     }
 
     function safeTransferFrom(
@@ -565,10 +538,7 @@ library SafeERC20 {
         (bool success, bytes memory data) = address(token).call(
             abi.encodeWithSelector(0x23b872dd, from, address(this), amount)
         );
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "SafeERC20: TransferFrom failed"
-        );
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "SafeERC20: TransferFrom failed");
     }
 }
 
@@ -586,13 +556,12 @@ interface IRewarder {
 
     function onJoeReward(address user, uint256 newLpAmount) external;
 
-    function pendingTokens(address user)
-        external
-        view
-        returns (uint256 pending);
+    function pendingTokens(address user) external view returns (uint256 pending);
+
+    function rewardToken() external view returns (IERC20);
 }
 
-interface IMasterChefJoeV2 {
+interface IMasterChefJoe {
     using SafeERC20 for IERC20;
 
     struct UserInfo {
@@ -615,7 +584,7 @@ interface IMasterChefJoeV2 {
 }
 
 /**
- * This is a sample contract to be used in the MasterChefJoeV2 contract for partners to reward
+ * This is a sample contract to be used in the MasterChefJoe contract for partners to reward
  * stakers with their native token alongside JOE.
  *
  * It assumes no minting rights, so requires a set amount of YOUR_TOKEN to be transferred to this contract prior.
@@ -627,11 +596,12 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public immutable rewardToken;
+    IERC20 public immutable override rewardToken;
     IERC20 public immutable lpToken;
-    IMasterChefJoeV2 public immutable MC_V2;
+    bool public immutable isNative;
+    IMasterChefJoe public immutable MCJ;
 
-    /// @notice Info of each MCV2 user.
+    /// @notice Info of each MCJ user.
     /// `amount` LP token amount the user has provided.
     /// `rewardDebt` The amount of YOUR_TOKEN entitled to the user.
     struct UserInfo {
@@ -639,7 +609,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         uint256 rewardDebt;
     }
 
-    /// @notice Info of each MCV2 poolInfo.
+    /// @notice Info of each MCJ poolInfo.
     /// `accTokenPerShare` Amount of YOUR_TOKEN each LP token is worth.
     /// `lastRewardTimestamp` The last timestamp YOUR_TOKEN was rewarded to the poolInfo.
     struct PoolInfo {
@@ -658,11 +628,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
-    modifier onlyMCV2 {
-        require(
-            msg.sender == address(MC_V2),
-            "onlyMCV2: only MasterChef V2 can call this function"
-        );
+    modifier onlyMCJ {
+        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe  can call this function");
         _;
     }
 
@@ -670,29 +637,19 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         IERC20 _rewardToken,
         IERC20 _lpToken,
         uint256 _tokenPerSec,
-        IMasterChefJoeV2 _MCV2
+        IMasterChefJoe _MCJ,
+        bool _isNative
     ) public {
-        require(
-            Address.isContract(address(_rewardToken)),
-            "constructor: reward token must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_lpToken)),
-            "constructor: LP token must be a valid contract"
-        );
-        require(
-            Address.isContract(address(_MCV2)),
-            "constructor: MasterChefJoeV2 must be a valid contract"
-        );
+        require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
+        require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
+        require(Address.isContract(address(_MCJ)), "constructor: MasterChefJoe must be a valid contract");
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
         tokenPerSec = _tokenPerSec;
-        MC_V2 = _MCV2;
-        poolInfo = PoolInfo({
-            lastRewardTimestamp: block.timestamp,
-            accTokenPerShare: 0
-        });
+        MCJ = _MCJ;
+        isNative = _isNative;
+        poolInfo = PoolInfo({lastRewardTimestamp: block.timestamp, accTokenPerShare: 0});
     }
 
     /// @notice Update reward variables of the given poolInfo.
@@ -701,16 +658,12 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         pool = poolInfo;
 
         if (block.timestamp > pool.lastRewardTimestamp) {
-            uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
+            uint256 lpSupply = lpToken.balanceOf(address(MCJ));
 
             if (lpSupply > 0) {
-                uint256 timeElapsed = block.timestamp.sub(
-                    pool.lastRewardTimestamp
-                );
+                uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
                 uint256 tokenReward = timeElapsed.mul(tokenPerSec);
-                pool.accTokenPerShare = pool.accTokenPerShare.add(
-                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
-                );
+                pool.accTokenPerShare = pool.accTokenPerShare.add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
             }
 
             pool.lastRewardTimestamp = block.timestamp;
@@ -729,35 +682,39 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
         emit RewardRateUpdated(oldRate, _tokenPerSec);
     }
 
-    /// @notice Function called by MasterChefJoeV2 whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
+    /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount)
-        external
-        override
-        onlyMCV2
-    {
+    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
-        uint256 pending;
-        // if user had deposited
-        if (user.amount > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) /
-                ACC_TOKEN_PRECISION)
-            .sub(user.rewardDebt);
-            uint256 balance = rewardToken.balanceOf(address(this));
-            if (pending > balance) {
-                rewardToken.safeTransfer(_user, balance);
+        uint256 pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+        uint256 prevAmount = user.amount;
+
+        // Effects before interactions to prevent re-entrancy
+        user.amount = _lpAmount;
+        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+
+        if (prevAmount > 0) {
+            if (isNative) {
+                uint256 balance = address(this).balance;
+                if (pending > balance) {
+                    (bool success, ) = _user.call.value(balance)("");
+                    require(success, "Transfer failed");
+                } else {
+                    (bool success, ) = _user.call.value(pending)("");
+                    require(success, "Transfer failed");
+                }
             } else {
-                rewardToken.safeTransfer(_user, pending);
+                uint256 balance = rewardToken.balanceOf(address(this));
+                if (pending > balance) {
+                    rewardToken.safeTransfer(_user, balance);
+                } else {
+                    rewardToken.safeTransfer(_user, pending);
+                }
             }
         }
-
-        user.amount = _lpAmount;
-        user.rewardDebt =
-            user.amount.mul(pool.accTokenPerShare) /
-            ACC_TOKEN_PRECISION;
 
         emit OnReward(_user, pending);
     }
@@ -765,39 +722,42 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     /// @notice View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
-    function pendingTokens(address _user)
-        external
-        view
-        override
-        returns (uint256 pending)
-    {
+    function pendingTokens(address _user) external view override returns (uint256 pending) {
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
 
-        uint256 accTokenPerShare = poolInfo.accTokenPerShare;
-        uint256 lpSupply = lpToken.balanceOf(address(MC_V2));
+        uint256 accTokenPerShare = pool.accTokenPerShare;
+        uint256 lpSupply = lpToken.balanceOf(address(MCJ));
 
-        if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
-            uint256 timeElapsed = block.timestamp.sub(
-                poolInfo.lastRewardTimestamp
-            );
+        if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
+            uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 tokenReward = timeElapsed.mul(tokenPerSec);
-            accTokenPerShare = accTokenPerShare.add(
-                tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
-            );
+            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(
-            user.rewardDebt
-        );
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
     }
 
     /// @notice In case rewarder is stopped before emissions finished, this function allows
     /// withdrawal of remaining tokens.
     function emergencyWithdraw() public onlyOwner {
-        rewardToken.safeTransfer(
-            address(msg.sender),
-            rewardToken.balanceOf(address(this))
-        );
+        if (isNative) {
+            (bool success, ) = msg.sender.call.value(address(this).balance)("");
+            require(success, "Transfer failed");
+        } else {
+            rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
+        }
     }
+
+    /// @notice View function to see balance of reward token.
+    function balance() external view returns (uint256) {
+        if (isNative) {
+            return address(this).balance;
+        } else {
+            return rewardToken.balanceOf(address(this));
+        }
+    }
+
+    /// @notice payable function needed to receive AVAX
+    receive() external payable {}
 }
