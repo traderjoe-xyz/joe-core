@@ -212,6 +212,7 @@ contract Zap is Ownable {
             _checkPairLiquidity(tokenOut);
             tokenAmount = _swap(wavax, tokenOut, wavaxAmount, to);
         } else {
+            tokenAmount = wavaxAmount;
             IWAVAX(wavax).withdraw(wavaxAmount);
 
             (bool success, ) = to.call{value: wavaxAmount}("");
