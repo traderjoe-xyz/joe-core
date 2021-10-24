@@ -1,117 +1,76 @@
-// File: @openzeppelin/contracts/utils/Context.sol
-
 // SPDX-License-Identifier: MIT
+pragma solidity 0.6.12;
 
-pragma solidity >=0.6.0 <0.8.0;
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
 
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with GSN meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
-    }
+    function balanceOf(address account) external view returns (uint256);
 
-    function _msgData() internal view virtual returns (bytes memory) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
-    }
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    // EIP 2612
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 }
 
-// File: @openzeppelin/contracts/access/Ownable.sol
 
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma experimental ABIEncoderV2;
 
-/**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
- */
-abstract contract Ownable is Context {
-    address private _owner;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor () internal {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
+
+
+
+
+interface IMasterChef {
+    struct UserInfo {
+        uint256 amount; // How many LP tokens the user has provided.
+        uint256 rewardDebt; // Reward debt. See explanation below.
     }
 
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function owner() public view virtual returns (address) {
-        return _owner;
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        uint256 allocPoint; // How many allocation points assigned to this pool. JOE to distribute per block.
+        uint256 lastRewardTimestamp; // Last block number that JOE distribution occurs.
+        uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
     }
 
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
+    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
 
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
-     *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
-     */
-    function renounceOwnership() public virtual onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
+    function totalAllocPoint() external view returns (uint256);
 
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
-     */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
-    }
+    function joePerSec() external view returns (uint256);
+
+    function deposit(uint256 _pid, uint256 _amount) external;
+
+    function devPercent() external view returns (uint256);
+
+    function treasuryPercent() external view returns (uint256);
+
+    function investorPercent() external view returns (uint256);
 }
 
-// File: @openzeppelin/contracts/math/SafeMath.sol
+interface IRewarder {
+    function onJoeReward(address user, uint256 newLpAmount) external;
 
+    function pendingTokens(address user) external view returns (uint256 pending);
 
-pragma solidity >=0.6.0 <0.8.0;
+    function rewardToken() external view returns (IERC20);
+}
 
-/**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
 library SafeMath {
     /**
      * @dev Returns the addition of two unsigned integers, with an overflow flag.
@@ -310,35 +269,221 @@ library SafeMath {
     }
 }
 
-// File: @openzeppelin/contracts/utils/EnumerableSet.sol
+library BoringERC20 {
+    bytes4 private constant SIG_SYMBOL = 0x95d89b41; // symbol()
+    bytes4 private constant SIG_NAME = 0x06fdde03; // name()
+    bytes4 private constant SIG_DECIMALS = 0x313ce567; // decimals()
+    bytes4 private constant SIG_TRANSFER = 0xa9059cbb; // transfer(address,uint256)
+    bytes4 private constant SIG_TRANSFER_FROM = 0x23b872dd; // transferFrom(address,address,uint256)
+
+    function returnDataToString(bytes memory data) internal pure returns (string memory) {
+        if (data.length >= 64) {
+            return abi.decode(data, (string));
+        } else if (data.length == 32) {
+            uint8 i = 0;
+            while (i < 32 && data[i] != 0) {
+                i++;
+            }
+            bytes memory bytesArray = new bytes(i);
+            for (i = 0; i < 32 && data[i] != 0; i++) {
+                bytesArray[i] = data[i];
+            }
+            return string(bytesArray);
+        } else {
+            return "???";
+        }
+    }
+
+    /// @notice Provides a safe ERC20.symbol version which returns '???' as fallback string.
+    /// @param token The address of the ERC-20 token contract.
+    /// @return (string) Token symbol.
+    function safeSymbol(IERC20 token) internal view returns (string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_SYMBOL));
+        return success ? returnDataToString(data) : "???";
+    }
+
+    /// @notice Provides a safe ERC20.name version which returns '???' as fallback string.
+    /// @param token The address of the ERC-20 token contract.
+    /// @return (string) Token name.
+    function safeName(IERC20 token) internal view returns (string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_NAME));
+        return success ? returnDataToString(data) : "???";
+    }
+
+    /// @notice Provides a safe ERC20.decimals version which returns '18' as fallback value.
+    /// @param token The address of the ERC-20 token contract.
+    /// @return (uint8) Token decimals.
+    function safeDecimals(IERC20 token) internal view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_DECIMALS));
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
+    }
+
+    /// @notice Provides a safe ERC20.transfer version for different ERC-20 implementations.
+    /// Reverts on a failed transfer.
+    /// @param token The address of the ERC-20 token.
+    /// @param to Transfer tokens to.
+    /// @param amount The token amount.
+    function safeTransfer(
+        IERC20 token,
+        address to,
+        uint256 amount
+    ) internal {
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(SIG_TRANSFER, to, amount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
+    }
+
+    /// @notice Provides a safe ERC20.transferFrom version for different ERC-20 implementations.
+    /// Reverts on a failed transfer.
+    /// @param token The address of the ERC-20 token.
+    /// @param from Transfer tokens from.
+    /// @param to Transfer tokens to.
+    /// @param amount The token amount.
+    function safeTransferFrom(
+        IERC20 token,
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(SIG_TRANSFER_FROM, from, to, amount)
+        );
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
+    }
+}
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with GSN meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address payable) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes memory) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+// File: @openzeppelin/contracts/access/Ownable.sol
 
 
 pragma solidity >=0.6.0 <0.8.0;
 
 /**
- * @dev Library for managing
- * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
- * types.
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
  *
- * Sets have the following properties:
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
  *
- * - Elements are added, removed, and checked for existence in constant time
- * (O(1)).
- * - Elements are enumerated in O(n). No guarantees are made on the ordering.
- *
- * ```
- * contract Example {
- *     // Add the library methods
- *     using EnumerableSet for EnumerableSet.AddressSet;
- *
- *     // Declare a set state variable
- *     EnumerableSet.AddressSet private mySet;
- * }
- * ```
- *
- * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)
- * and `uint256` (`UintSet`) are supported.
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
  */
+abstract contract Ownable is Context {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    constructor () internal {
+        address msgSender = _msgSender();
+        _owner = msgSender;
+        emit OwnershipTransferred(address(0), msgSender);
+    }
+
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public virtual onlyOwner {
+        emit OwnershipTransferred(_owner, address(0));
+        _owner = address(0);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+}
+
+abstract contract ReentrancyGuard {
+    // Booleans are more expensive than uint256 or any type that takes up a full
+    // word because each write operation emits an extra SLOAD to first read the
+    // slot's contents, replace the bits taken up by the boolean, and then write
+    // back. This is the compiler's defense against contract upgrades and
+    // pointer aliasing, and it cannot be disabled.
+
+    // The values being non-zero value makes deployment a bit more expensive,
+    // but in exchange the refund on every call to nonReentrant will be lower in
+    // amount. Since refunds are capped to a percentage of the total
+    // transaction's gas, it is best to keep them low in cases like this one, to
+    // increase the likelihood of the full refund coming into effect.
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor () internal {
+        _status = _NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and make it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _status = _ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _status = _NOT_ENTERED;
+    }
+}
+
 library EnumerableSet {
     // To implement this library for multiple types with as little code
     // repetition as possible, we write it in terms of a generic Set type with
@@ -609,227 +754,6 @@ library EnumerableSet {
     }
 }
 
-// File: @openzeppelin/contracts/utils/ReentrancyGuard.sol
-
-
-pragma solidity >=0.6.0 <0.8.0;
-
-/**
- * @dev Contract module that helps prevent reentrant calls to a function.
- *
- * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
- * available, which can be applied to functions to make sure there are no nested
- * (reentrant) calls to them.
- *
- * Note that because there is a single `nonReentrant` guard, functions marked as
- * `nonReentrant` may not call one another. This can be worked around by making
- * those functions `private`, and then adding `external` `nonReentrant` entry
- * points to them.
- *
- * TIP: If you would like to learn more about reentrancy and alternative ways
- * to protect against it, check out our blog post
- * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
- */
-abstract contract ReentrancyGuard {
-    // Booleans are more expensive than uint256 or any type that takes up a full
-    // word because each write operation emits an extra SLOAD to first read the
-    // slot's contents, replace the bits taken up by the boolean, and then write
-    // back. This is the compiler's defense against contract upgrades and
-    // pointer aliasing, and it cannot be disabled.
-
-    // The values being non-zero value makes deployment a bit more expensive,
-    // but in exchange the refund on every call to nonReentrant will be lower in
-    // amount. Since refunds are capped to a percentage of the total
-    // transaction's gas, it is best to keep them low in cases like this one, to
-    // increase the likelihood of the full refund coming into effect.
-    uint256 private constant _NOT_ENTERED = 1;
-    uint256 private constant _ENTERED = 2;
-
-    uint256 private _status;
-
-    constructor () internal {
-        _status = _NOT_ENTERED;
-    }
-
-    /**
-     * @dev Prevents a contract from calling itself, directly or indirectly.
-     * Calling a `nonReentrant` function from another `nonReentrant`
-     * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and make it call a
-     * `private` function that does the actual work.
-     */
-    modifier nonReentrant() {
-        // On the first call to nonReentrant, _notEntered will be true
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
-
-        // Any calls to nonReentrant after this point will fail
-        _status = _ENTERED;
-
-        _;
-
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
-        _status = _NOT_ENTERED;
-    }
-}
-
-// File: contracts/interfaces/IERC20.sol
-
-pragma solidity 0.6.12;
-
-interface IERC20 {
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-
-    // EIP 2612
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-}
-
-// File: contracts/MasterChefJoeV3.sol
-
-
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
-
-
-
-
-
-
-interface IMasterChef {
-    struct UserInfo {
-        uint256 amount; // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-    }
-
-    struct PoolInfo {
-        IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. JOE to distribute per block.
-        uint256 lastRewardTimestamp; // Last block number that JOE distribution occurs.
-        uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
-    }
-
-    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
-
-    function totalAllocPoint() external view returns (uint256);
-
-    function joePerSec() external view returns (uint256);
-
-    function deposit(uint256 _pid, uint256 _amount) external;
-
-    function devPercent() external view returns (uint256);
-
-    function treasuryPercent() external view returns (uint256);
-
-    function investorPercent() external view returns (uint256);
-}
-
-interface IRewarder {
-    function onJoeReward(address user, uint256 newLpAmount) external;
-
-    function pendingTokens(address user) external view returns (uint256 pending);
-
-    function rewardToken() external view returns (IERC20);
-}
-
-library BoringERC20 {
-    bytes4 private constant SIG_SYMBOL = 0x95d89b41; // symbol()
-    bytes4 private constant SIG_NAME = 0x06fdde03; // name()
-    bytes4 private constant SIG_DECIMALS = 0x313ce567; // decimals()
-    bytes4 private constant SIG_TRANSFER = 0xa9059cbb; // transfer(address,uint256)
-    bytes4 private constant SIG_TRANSFER_FROM = 0x23b872dd; // transferFrom(address,address,uint256)
-
-    function returnDataToString(bytes memory data) internal pure returns (string memory) {
-        if (data.length >= 64) {
-            return abi.decode(data, (string));
-        } else if (data.length == 32) {
-            uint8 i = 0;
-            while (i < 32 && data[i] != 0) {
-                i++;
-            }
-            bytes memory bytesArray = new bytes(i);
-            for (i = 0; i < 32 && data[i] != 0; i++) {
-                bytesArray[i] = data[i];
-            }
-            return string(bytesArray);
-        } else {
-            return "???";
-        }
-    }
-
-    /// @notice Provides a safe ERC20.symbol version which returns '???' as fallback string.
-    /// @param token The address of the ERC-20 token contract.
-    /// @return (string) Token symbol.
-    function safeSymbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_SYMBOL));
-        return success ? returnDataToString(data) : "???";
-    }
-
-    /// @notice Provides a safe ERC20.name version which returns '???' as fallback string.
-    /// @param token The address of the ERC-20 token contract.
-    /// @return (string) Token name.
-    function safeName(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_NAME));
-        return success ? returnDataToString(data) : "???";
-    }
-
-    /// @notice Provides a safe ERC20.decimals version which returns '18' as fallback value.
-    /// @param token The address of the ERC-20 token contract.
-    /// @return (uint8) Token decimals.
-    function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_DECIMALS));
-        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
-    }
-
-    /// @notice Provides a safe ERC20.transfer version for different ERC-20 implementations.
-    /// Reverts on a failed transfer.
-    /// @param token The address of the ERC-20 token.
-    /// @param to Transfer tokens to.
-    /// @param amount The token amount.
-    function safeTransfer(
-        IERC20 token,
-        address to,
-        uint256 amount
-    ) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(SIG_TRANSFER, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
-    }
-
-    /// @notice Provides a safe ERC20.transferFrom version for different ERC-20 implementations.
-    /// Reverts on a failed transfer.
-    /// @param token The address of the ERC-20 token.
-    /// @param from Transfer tokens from.
-    /// @param to Transfer tokens to.
-    /// @param amount The token amount.
-    function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
-        (bool success, bytes memory data) = address(token).call(
-            abi.encodeWithSelector(SIG_TRANSFER_FROM, from, to, amount)
-        );
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
-    }
-}
-
 /// @notice The (older) MasterChefJoeV2 contract gives out a constant number of JOE tokens per block.
 /// It is the only address with minting rights for JOE.
 /// The idea for this MasterChefJoeV3 (MCJV3) contract is therefore to be the owner of a dummy token
@@ -1019,8 +943,8 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     /// @notice Calculates and returns the `amount` of JOE per block.
     function joePerSec() public view returns (uint256 amount) {
         uint256 total = 1000;
-        uint256 lpPercent = total.sub(
-            MASTER_CHEF_V2.devPercent().sub(MASTER_CHEF_V2.treasuryPercent().sub(MASTER_CHEF_V2.investorPercent()))
+        uint256 lpPercent = total.sub(MASTER_CHEF_V2.devPercent()).sub(MASTER_CHEF_V2.treasuryPercent()).sub(
+            MASTER_CHEF_V2.investorPercent()
         );
         uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
         amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
