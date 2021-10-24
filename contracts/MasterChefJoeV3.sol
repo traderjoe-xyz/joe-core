@@ -316,10 +316,9 @@ contract MasterChefJoeV3 is Ownable, ReentrancyGuard {
     /// @notice Calculates and returns the `amount` of JOE per block.
     function joePerSec() public view returns (uint256 amount) {
         uint256 total = 1000;
-        uint256 lpPercent = 
-            total.sub(MASTER_CHEF_V2.devPercent())
-                 .sub(MASTER_CHEF_V2.treasuryPercent())
-                 .sub(MASTER_CHEF_V2.investorPercent())
+        uint256 lpPercent = total.sub(MASTER_CHEF_V2.devPercent()).sub(MASTER_CHEF_V2.treasuryPercent()).sub(
+            MASTER_CHEF_V2.investorPercent()
+        );
         uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
         amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
     }
