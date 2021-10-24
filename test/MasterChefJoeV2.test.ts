@@ -1199,7 +1199,7 @@ describe("MasterChefJoeV2", function () {
       //   - 20 + 17*10 = 190 (+40) PartnerToken
       const bobBalFinal = await this.bob.getBalance()
       expect(bobBalFinal.sub(bobBalAfter)).to.gt(ethers.utils.parseEther("160"))
-      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("170"))
+      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("180"))
     })
 
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
