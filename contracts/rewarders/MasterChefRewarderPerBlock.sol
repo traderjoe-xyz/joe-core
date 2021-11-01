@@ -93,7 +93,7 @@ contract MasterChefRewarderPerBlock is IRewarder, Ownable {
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
     event AllocPointUpdated(uint256 oldAllocPoint, uint256 newAllocPoint);
 
-    modifier onlyMCV2 {
+    modifier onlyMCV2() {
         require(msg.sender == address(MCV2), "onlyMCV2: only MasterChef V2 can call this function");
         _;
     }

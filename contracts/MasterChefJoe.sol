@@ -142,11 +142,11 @@ contract MasterChefJoe is Ownable {
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 joeReward = multiplier
-            .mul(joePerSec)
-            .mul(pool.allocPoint)
-            .div(totalAllocPoint)
-            .mul(1000 - devPercent - treasuryPercent)
-            .div(1000);
+                .mul(joePerSec)
+                .mul(pool.allocPoint)
+                .div(totalAllocPoint)
+                .mul(1000 - devPercent - treasuryPercent)
+                .div(1000);
             accJoePerShare = accJoePerShare.add(joeReward.mul(1e12).div(lpSupply));
         }
         return user.amount.mul(accJoePerShare).div(1e12).sub(user.rewardDebt);
