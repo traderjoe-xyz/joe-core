@@ -1,7 +1,7 @@
 // @ts-ignore
-import {ethers, network} from "hardhat"
-import {expect} from "chai"
-import {getBigNumber} from "./utilities";
+import { ethers, network } from "hardhat"
+import { expect } from "chai"
+import { getBigNumber } from "./utilities"
 
 const JOE_ADDRESS = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd"
 const WAVAX_ADDRESS = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
@@ -28,234 +28,227 @@ const ZAP_ADDRESS = "0x2C7B8e971c704371772eDaf16e0dB381A8D02027"
 const BAR_ADDRESS = "0x57319d41F71E81F3c65F2a47CA4e001EbAFd4F33"
 
 describe("joeMakerV2", function () {
-    before(async function () {
-        // ABIs
-        this.joeMakerV2CF = await ethers.getContractFactory("JoeMakerV2")
-        this.ERC20CF = await ethers.getContractFactory("JoeERC20")
-        this.ZapCF = await ethers.getContractFactory("Zap")
-        this.PairCF = await ethers.getContractFactory("JoePair")
-        this.RouterCF = await ethers.getContractFactory("JoeRouter02")
+  before(async function () {
+    // ABIs
+    this.joeMakerV2CF = await ethers.getContractFactory("JoeMakerV2")
+    this.ERC20CF = await ethers.getContractFactory("JoeERC20")
+    this.ZapCF = await ethers.getContractFactory("Zap")
+    this.PairCF = await ethers.getContractFactory("JoePair")
+    this.RouterCF = await ethers.getContractFactory("JoeRouter02")
 
-        // Account
-        this.signers = await ethers.getSigners();
-        this.alice = this.signers[0];
+    // Account
+    this.signers = await ethers.getSigners()
+    this.alice = this.signers[0]
 
-        // Contracts
-        this.factory = await ethers.getContractAt("JoeFactory", FACTORY_ADDRESS)
-        this.zap = await this.ZapCF.attach(ZAP_ADDRESS, this.alice)
-        this.router = await this.RouterCF.attach(ROUTER_ADDRESS, this.alice)
+    // Contracts
+    this.factory = await ethers.getContractAt("JoeFactory", FACTORY_ADDRESS)
+    this.zap = await this.ZapCF.attach(ZAP_ADDRESS, this.alice)
+    this.router = await this.RouterCF.attach(ROUTER_ADDRESS, this.alice)
 
-        // Tokens
-        this.weth = await ethers.getContractAt("IWAVAX", WAVAX_ADDRESS, this.alice)
-        this.joe = await this.ERC20CF.attach(JOE_ADDRESS)
-        this.usdt = await this.ERC20CF.attach(USDT_ADDRESS)
-        this.usdc = await this.ERC20CF.attach(USDC_ADDRESS)
-        this.dai = await this.ERC20CF.attach(DAI_ADDRESS)
-        this.link = await this.ERC20CF.attach(LINK_ADDRESS)
-        this.wbtc = await this.ERC20CF.attach(WBTC_ADDRESS)
-        this.tractor = await this.ERC20CF.attach(TRACTOR_ADDRESS)
+    // Tokens
+    this.weth = await ethers.getContractAt("IWAVAX", WAVAX_ADDRESS, this.alice)
+    this.joe = await this.ERC20CF.attach(JOE_ADDRESS)
+    this.usdt = await this.ERC20CF.attach(USDT_ADDRESS)
+    this.usdc = await this.ERC20CF.attach(USDC_ADDRESS)
+    this.dai = await this.ERC20CF.attach(DAI_ADDRESS)
+    this.link = await this.ERC20CF.attach(LINK_ADDRESS)
+    this.wbtc = await this.ERC20CF.attach(WBTC_ADDRESS)
+    this.tractor = await this.ERC20CF.attach(TRACTOR_ADDRESS)
 
-        // Pairs
-        this.joeEth = await this.PairCF.attach(JOEETH_ADDRESS, this.alice)
-        this.linkEth = await this.PairCF.attach(LINKETH_ADDRESS, this.alice)
-        this.daiEth = await this.PairCF.attach(DAIETH_ADDRESS, this.alice)
-        this.usdcEth = await this.PairCF.attach(USDCETH_ADDRESS, this.alice)
-        this.linkUsdc = await this.PairCF.attach(LINKUSDC_ADDRESS, this.alice)
-        this.joeUsdt = await this.PairCF.attach(JOEUSDT_ADDRESS, this.alice)
-        this.usdcDai = await this.PairCF.attach(USDCDAI_ADDRESS, this.alice)
-        this.wbtcUsdc = await this.PairCF.attach(WBTCUSDC_ADDRESS, this.alice)
-        this.tractorEth = await this.PairCF.attach(TRACTORETH_ADDRESS, this.alice)
+    // Pairs
+    this.joeEth = await this.PairCF.attach(JOEETH_ADDRESS, this.alice)
+    this.linkEth = await this.PairCF.attach(LINKETH_ADDRESS, this.alice)
+    this.daiEth = await this.PairCF.attach(DAIETH_ADDRESS, this.alice)
+    this.usdcEth = await this.PairCF.attach(USDCETH_ADDRESS, this.alice)
+    this.linkUsdc = await this.PairCF.attach(LINKUSDC_ADDRESS, this.alice)
+    this.joeUsdt = await this.PairCF.attach(JOEUSDT_ADDRESS, this.alice)
+    this.usdcDai = await this.PairCF.attach(USDCDAI_ADDRESS, this.alice)
+    this.wbtcUsdc = await this.PairCF.attach(WBTCUSDC_ADDRESS, this.alice)
+    this.tractorEth = await this.PairCF.attach(TRACTORETH_ADDRESS, this.alice)
+  })
+
+  beforeEach(async function () {
+    // We reset the state before each tests
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: "https://api.avax.network/ext/bc/C/rpc",
+            blockNumber: 6394745,
+          },
+          live: false,
+          saveDeployments: true,
+          tags: ["test", "local"],
+        },
+      ],
     })
 
-    beforeEach(async function () {
-        // We reset the state before each tests
-        await network.provider.request({
-                method: "hardhat_reset",
-                params: [
-                    {
-                        forking: {
-                            jsonRpcUrl: "https://api.avax.network/ext/bc/C/rpc",
-                            blockNumber: 6394745,
-                        },
-                        live: false,
-                        saveDeployments: true,
-                        tags: ["test", "local"],
-                    }
-                ],
-            }
-        )
+    // We redeploy JoeMakerV2 for each tests too
+    this.joeMakerV2 = await this.joeMakerV2CF.deploy(FACTORY_ADDRESS, BAR_ADDRESS, JOE_ADDRESS, WAVAX_ADDRESS)
+    await this.joeMakerV2.deployed()
+  })
 
-        // We redeploy JoeMakerV2 for each tests too
-        this.joeMakerV2 = await this.joeMakerV2CF.deploy(FACTORY_ADDRESS, BAR_ADDRESS, JOE_ADDRESS, WAVAX_ADDRESS)
-        await this.joeMakerV2.deployed()
+  describe("setBridge", function () {
+    it("does not allow to set bridge for Joe", async function () {
+      await expect(this.joeMakerV2.setBridge(this.joe.address, this.weth.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
     })
 
-    describe("setBridge", function () {
-        it("does not allow to set bridge for Joe", async function () {
-            await expect(this.joeMakerV2.setBridge(this.joe.address, this.weth.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
-        })
-
-        it("does not allow to set bridge for WETH", async function () {
-            await expect(this.joeMakerV2.setBridge(this.weth.address, this.joe.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
-        })
-
-        it("does not allow to set bridge to itself", async function () {
-            await expect(this.joeMakerV2.setBridge(this.dai.address, this.dai.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
-        })
-
-        it("emits correct event on bridge", async function () {
-            await expect(this.joeMakerV2.setBridge(this.dai.address, this.joe.address))
-                .to.emit(this.joeMakerV2, "LogBridgeSet")
-                .withArgs(this.dai.address, this.joe.address)
-        })
+    it("does not allow to set bridge for WETH", async function () {
+      await expect(this.joeMakerV2.setBridge(this.weth.address, this.joe.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
     })
 
-    describe("convert", function () {
-        it("should convert JOE - ETH", async function () {
-            await this.zap.zapIn(this.joeEth.address, {value: "2000000000000000000"})
-            await this.joeEth.transfer(this.joeMakerV2.address, await this.joeEth.balanceOf(this.alice.address))
-            await this.joeMakerV2.convert(this.joe.address, this.weth.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joeEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624860978841228702792")
-        })
-
-        it("should convert USDC - ETH", async function () {
-            await this.zap.zapIn(this.usdcEth.address, {value: "2000000000000000000"})
-            await this.usdcEth.transfer(this.joeMakerV2.address, await this.usdcEth.balanceOf(this.alice.address))
-            await this.joeMakerV2.convert(this.usdc.address, this.weth.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.usdcEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624709410908108101276")
-        })
-
-        it("should convert LINK - ETH", async function () {
-            await this.zap.zapIn(this.linkEth.address, {value: "2000000000000000000"})
-            await this.linkEth.transfer(this.joeMakerV2.address, await this.linkEth.balanceOf(this.alice.address))
-            await this.joeMakerV2.convert(this.link.address, this.weth.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.linkEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624709451838911952369")
-        })
-
-        it("should convert USDT - JOE", async function () {
-            await this.zap.zapIn(this.joeUsdt.address, {value: "2000000000000000000"})
-            await this.joeUsdt.transfer(this.joeMakerV2.address, await this.joeUsdt.balanceOf(this.alice.address))
-            await this.joeMakerV2.convert(this.usdt.address, this.joe.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joeUsdt.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624860644069497935644")
-        })
-
-        it("should convert using standard ETH path", async function () {
-            await this.zap.zapIn(this.daiEth.address, {value: "2000000000000000000"})
-            await this.daiEth.transfer(this.joeMakerV2.address, await this.daiEth.balanceOf(this.alice.address))
-            await this.joeMakerV2.convert(this.dai.address, this.weth.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.daiEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624709488609524599005")
-        })
-
-        it("converts LINK/USDC using more complex path", async function () {
-            await this.zap.zapIn(this.linkUsdc.address, {value: "2000000000000000000"})
-            await this.linkUsdc.transfer(this.joeMakerV2.address, await this.linkUsdc.balanceOf(this.alice.address))
-            await this.joeMakerV2.setBridge(this.usdt.address, this.joe.address)
-            await this.joeMakerV2.setBridge(this.usdc.address, this.usdt.address)
-            await this.joeMakerV2.convert(this.link.address, this.usdc.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.linkUsdc.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624540931902552332917")
-        })
-
-        it("converts DAI/USDC using more complex path", async function () {
-            await this.zap.zapIn(this.usdcDai.address, {value: "2000000000000000000"})
-            await this.usdcDai.transfer(this.joeMakerV2.address, await this.usdcDai.balanceOf(this.alice.address))
-            await this.joeMakerV2.setBridge(this.usdc.address, this.joe.address)
-            await this.joeMakerV2.setBridge(this.dai.address, this.usdc.address)
-            await this.joeMakerV2.convert(this.dai.address, this.usdc.address)
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.usdcDai.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624656456566165626771")
-        })
-
-        it("should convert reflect tokens TRACTOR/AVAX", async function () {
-            const reserves = await this.tractorEth.getReserves()
-            const reserve0 = reserves["_reserve0"]
-            const reserve1 = reserves["_reserve1"]
-
-            // We swap 1 $ETH for $TRACTOR, 2% cause of the reflect token and 0.3% Fees on swap.
-            const amountOutWithFeesAndReflectFees = reserve0.mul(getBigNumber(1)).div(reserve1).mul("98").div("100").mul("997").div("1000")
-
-            await this.router.swapAVAXForExactTokens(
-                amountOutWithFeesAndReflectFees,
-                [this.weth.address, this.tractor.address],
-                this.alice.address,
-                "1111111111111111",
-                {value: "1000000000000000000"}
-            )
-
-            // We get the exact balance.
-            const balance = await this.tractor.balanceOf(this.alice.address)
-
-            this.tractor.approve(this.router.address, "100000000000000000000000000")
-
-            this.router.addLiquidityAVAX(
-                this.tractor.address,
-                balance,
-                "0",
-                "0",
-                this.joeMakerV2.address,
-                "11111111111111111",
-                {value: "1000000000000000000"}
-            );
-
-            await this.joeMakerV2.convert(this.tractor.address, this.weth.address)
-
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.usdcDai.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845618054287432177393232")
-        })
-
-        it("reverts if it loops back", async function () {
-            await this.zap.zapIn(this.usdcDai.address, {value: "2000000000000000000"})
-            await this.usdcDai.transfer(this.joeMakerV2.address, await this.wbtcUsdc.balanceOf(this.alice.address))
-            await this.joeMakerV2.setBridge(this.wbtc.address, this.usdc.address)
-            await this.joeMakerV2.setBridge(this.usdc.address, this.wbtc.address)
-            await expect(this.joeMakerV2.convert(this.dai.address, this.usdc.address)).to.be.reverted
-        })
-
-        it("reverts if caller is not EOA", async function () {
-            const exploiterCF = await ethers.getContractFactory("JoeMakerExploitMock")
-            const exploiter = await exploiterCF.deploy(this.joeMakerV2.address)
-            await exploiter.deployed()
-
-            await this.zap.zapIn(this.joeEth.address, {value: "2000000000000000000"})
-            await this.joeEth.transfer(this.joeMakerV2.address, await this.wbtcUsdc.balanceOf(this.alice.address))
-            await expect(exploiter.convert(this.joe.address, this.weth.address)).to.be.revertedWith("JoeMakerV2: must use EOA")
-        })
-
-        it("reverts if pair does not exist", async function () {
-            await expect(this.joeMakerV2.convert(this.joe.address, this.joeEth.address)).to.be.revertedWith("JoeMakerV2: Invalid pair")
-        })
+    it("does not allow to set bridge to itself", async function () {
+      await expect(this.joeMakerV2.setBridge(this.dai.address, this.dai.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
     })
 
-    describe("convertMultiple", function () {
-        it("should allow to convert multiple", async function () {
-            await this.zap.zapIn(this.daiEth.address, {value: "2000000000000000000"})
-            await this.zap.zapIn(this.joeEth.address, {value: "2000000000000000000"})
-            await this.daiEth.transfer(this.joeMakerV2.address, await this.daiEth.balanceOf(this.alice.address))
-            await this.joeEth.transfer(this.joeMakerV2.address, await this.joeEth.balanceOf(this.alice.address))
-            await this.joeMakerV2.convertMultiple([this.dai.address, this.joe.address], [this.weth.address, this.weth.address])
-            expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.daiEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
-            expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845675227962521286137397")
-        })
+    it("emits correct event on bridge", async function () {
+      await expect(this.joeMakerV2.setBridge(this.dai.address, this.joe.address))
+        .to.emit(this.joeMakerV2, "LogBridgeSet")
+        .withArgs(this.dai.address, this.joe.address)
+    })
+  })
+
+  describe("convert", function () {
+    it("should convert JOE - ETH", async function () {
+      await this.zap.zapIn(this.joeEth.address, { value: "2000000000000000000" })
+      await this.joeEth.transfer(this.joeMakerV2.address, await this.joeEth.balanceOf(this.alice.address))
+      await this.joeMakerV2.convert(this.joe.address, this.weth.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joeEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624860978841228702792")
     })
 
-    after(async function () {
-        await network.provider.request({
-            method: "hardhat_reset",
-            params: [],
-        })
+    it("should convert USDC - ETH", async function () {
+      await this.zap.zapIn(this.usdcEth.address, { value: "2000000000000000000" })
+      await this.usdcEth.transfer(this.joeMakerV2.address, await this.usdcEth.balanceOf(this.alice.address))
+      await this.joeMakerV2.convert(this.usdc.address, this.weth.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.usdcEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624709410908108101276")
     })
+
+    it("should convert LINK - ETH", async function () {
+      await this.zap.zapIn(this.linkEth.address, { value: "2000000000000000000" })
+      await this.linkEth.transfer(this.joeMakerV2.address, await this.linkEth.balanceOf(this.alice.address))
+      await this.joeMakerV2.convert(this.link.address, this.weth.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.linkEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624709451838911952369")
+    })
+
+    it("should convert USDT - JOE", async function () {
+      await this.zap.zapIn(this.joeUsdt.address, { value: "2000000000000000000" })
+      await this.joeUsdt.transfer(this.joeMakerV2.address, await this.joeUsdt.balanceOf(this.alice.address))
+      await this.joeMakerV2.convert(this.usdt.address, this.joe.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joeUsdt.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624860644069497935644")
+    })
+
+    it("should convert using standard ETH path", async function () {
+      await this.zap.zapIn(this.daiEth.address, { value: "2000000000000000000" })
+      await this.daiEth.transfer(this.joeMakerV2.address, await this.daiEth.balanceOf(this.alice.address))
+      await this.joeMakerV2.convert(this.dai.address, this.weth.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.daiEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624709488609524599005")
+    })
+
+    it("converts LINK/USDC using more complex path", async function () {
+      await this.zap.zapIn(this.linkUsdc.address, { value: "2000000000000000000" })
+      await this.linkUsdc.transfer(this.joeMakerV2.address, await this.linkUsdc.balanceOf(this.alice.address))
+      await this.joeMakerV2.setBridge(this.usdt.address, this.joe.address)
+      await this.joeMakerV2.setBridge(this.usdc.address, this.usdt.address)
+      await this.joeMakerV2.convert(this.link.address, this.usdc.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.linkUsdc.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624540931902552332917")
+    })
+
+    it("converts DAI/USDC using more complex path", async function () {
+      await this.zap.zapIn(this.usdcDai.address, { value: "2000000000000000000" })
+      await this.usdcDai.transfer(this.joeMakerV2.address, await this.usdcDai.balanceOf(this.alice.address))
+      await this.joeMakerV2.setBridge(this.usdc.address, this.joe.address)
+      await this.joeMakerV2.setBridge(this.dai.address, this.usdc.address)
+      await this.joeMakerV2.convert(this.dai.address, this.usdc.address)
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.usdcDai.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845624656456566165626771")
+    })
+
+    it("should convert reflect tokens TRACTOR/AVAX", async function () {
+      const reserves = await this.tractorEth.getReserves()
+      const reserve0 = reserves["_reserve0"]
+      const reserve1 = reserves["_reserve1"]
+
+      // We swap 1 $ETH for $TRACTOR, 2% cause of the reflect token and 0.3% Fees on swap.
+      const amountOutWithFeesAndReflectFees = reserve0.mul(getBigNumber(1)).div(reserve1).mul("98").div("100").mul("997").div("1000")
+
+      await this.router.swapAVAXForExactTokens(
+        amountOutWithFeesAndReflectFees,
+        [this.weth.address, this.tractor.address],
+        this.alice.address,
+        "1111111111111111",
+        { value: "1000000000000000000" }
+      )
+
+      // We get the exact balance.
+      const balance = await this.tractor.balanceOf(this.alice.address)
+
+      this.tractor.approve(this.router.address, "100000000000000000000000000")
+
+      this.router.addLiquidityAVAX(this.tractor.address, balance, "0", "0", this.joeMakerV2.address, "11111111111111111", {
+        value: "1000000000000000000",
+      })
+
+      await this.joeMakerV2.convert(this.tractor.address, this.weth.address)
+
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.usdcDai.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845618054287432177393232")
+    })
+
+    it("reverts if it loops back", async function () {
+      await this.zap.zapIn(this.usdcDai.address, { value: "2000000000000000000" })
+      await this.usdcDai.transfer(this.joeMakerV2.address, await this.wbtcUsdc.balanceOf(this.alice.address))
+      await this.joeMakerV2.setBridge(this.wbtc.address, this.usdc.address)
+      await this.joeMakerV2.setBridge(this.usdc.address, this.wbtc.address)
+      await expect(this.joeMakerV2.convert(this.dai.address, this.usdc.address)).to.be.reverted
+    })
+
+    it("reverts if caller is not EOA", async function () {
+      const exploiterCF = await ethers.getContractFactory("JoeMakerExploitMock")
+      const exploiter = await exploiterCF.deploy(this.joeMakerV2.address)
+      await exploiter.deployed()
+
+      await this.zap.zapIn(this.joeEth.address, { value: "2000000000000000000" })
+      await this.joeEth.transfer(this.joeMakerV2.address, await this.wbtcUsdc.balanceOf(this.alice.address))
+      await expect(exploiter.convert(this.joe.address, this.weth.address)).to.be.revertedWith("JoeMakerV2: must use EOA")
+    })
+
+    it("reverts if pair does not exist", async function () {
+      await expect(this.joeMakerV2.convert(this.joe.address, this.joeEth.address)).to.be.revertedWith("JoeMakerV2: Invalid pair")
+    })
+  })
+
+  describe("convertMultiple", function () {
+    it("should allow to convert multiple", async function () {
+      await this.zap.zapIn(this.daiEth.address, { value: "2000000000000000000" })
+      await this.zap.zapIn(this.joeEth.address, { value: "2000000000000000000" })
+      await this.daiEth.transfer(this.joeMakerV2.address, await this.daiEth.balanceOf(this.alice.address))
+      await this.joeEth.transfer(this.joeMakerV2.address, await this.joeEth.balanceOf(this.alice.address))
+      await this.joeMakerV2.convertMultiple([this.dai.address, this.joe.address], [this.weth.address, this.weth.address])
+      expect(await this.joe.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.daiEth.balanceOf(this.joeMakerV2.address)).to.equal(0)
+      expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("67845675227962521286137397")
+    })
+  })
+
+  after(async function () {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    })
+  })
 })

@@ -61,11 +61,11 @@ contract JoeMakerV2 is BoringOwnable {
     // F6: There is an exploit to add lots of JOE to the bar, run convert, then remove the JOE again.
     //     As the size of the JoeBar has grown, this requires large amounts of funds and isn't super profitable anymore
     //     The onlyEOA modifier prevents this being done with a flash loan.
-    function convert(address token0, address token1) external onlyEOA() {
+    function convert(address token0, address token1) external onlyEOA {
         _convert(token0, token1);
     }
 
-    function convertMultiple(address[] calldata token0, address[] calldata token1) external onlyEOA() {
+    function convertMultiple(address[] calldata token0, address[] calldata token1) external onlyEOA {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
