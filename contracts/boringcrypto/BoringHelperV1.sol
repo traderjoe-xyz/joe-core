@@ -577,9 +577,10 @@ contract BoringHelperV1 is Ownable {
 
     function getAvaxPrice() public view returns (uint256) {
         address[3] memory WAVAX_STABLE_PAIRS = [
-            address(0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256), 
-            address(0x87Dee1cC9FFd464B79e058ba20387c1984aed86a), 
-            address(0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1)];
+            address(0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256),
+            address(0x87Dee1cC9FFd464B79e058ba20387c1984aed86a),
+            address(0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1)
+        ];
         uint256 total_weight = 0;
         uint256 sum_price = 0;
 
@@ -612,7 +613,6 @@ contract BoringHelperV1 is Ownable {
         (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
         uint256 reserve = pair.token0() == IERC20(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7) ? reserve0 : reserve1;
         return reserve;
-    
     }
 
     function _getUSDPrice(IPair pair) public view returns (uint256) {
