@@ -3,7 +3,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, dev, treasury, investor } = await getNamedAccounts();
 
-  const PID = 5;
+  const PID = 66;
 
   await deploy("ERC20Mock", {
     from: deployer,
@@ -12,6 +12,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     deterministicDeployment: false,
   });
   const dummyToken = await ethers.getContract("ERC20Mock");
+  await dummyToken.renounceOwnership();
   const joe = await ethers.getContract("JoeToken");
   const MCV2 = await ethers.getContract("MasterChefJoeV2");
 
@@ -30,5 +31,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["MasterChefJoeV3", "chef"];
-// module.exports.dependencies = ["JoeFactory", "JoeRouter02", "JoeToken"];
+module.exports.tags = ["MasterChefJoeV3"];
+module.exports.dependencies = ["JoeFactory", "JoeRouter02", "JoeToken"];

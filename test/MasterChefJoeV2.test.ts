@@ -1141,11 +1141,11 @@ describe("MasterChefJoeV2", function () {
 
       // Bob should have:
       //   - 0 JoeToken
-      //   - 80 + 17*40 = 760 (+40) PartnerToken
-      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760, 800)
+      //   - 80 + 20*40 = 880 (+40) PartnerToken
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760, 920)
     })
 
-    it("should AVAX accurately after rewarder runs out of AVAX and is topped up again", async function () {
+    it("should reward AVAX accurately after rewarder runs out of AVAX and is topped up again", async function () {
       const bobBalBefore = await this.bob.getBalance()
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
@@ -1196,10 +1196,10 @@ describe("MasterChefJoeV2", function () {
 
       // Bob should have:
       //   - 0 JoeToken
-      //   - 20 + 17*10 = 190 (+40) PartnerToken
+      //   - 20 + 20*10 = 190 (+40) PartnerToken
       const bobBalFinal = await this.bob.getBalance()
       expect(bobBalFinal.sub(bobBalAfter)).to.gt(ethers.utils.parseEther("160"))
-      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("180"))
+      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("200"))
     })
 
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {
