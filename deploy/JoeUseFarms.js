@@ -24,7 +24,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     4: "0xE2eCc226Fd2D5CEad96F3f9f00eFaE9fAfe75eB8",
     43113: "0xc79A395cE054B9F3B73b82C4084417CA9291BC87",
     43114: "0xefa94DE7a4656D787667C749f7E1223D71E9FD88",
-    31337: wavaxAddress
+    31337: wavaxAddress,
   };
 
   const joeAddress = (await deployments.get("JoeToken")).address;
@@ -47,7 +47,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 };
 
 module.exports.tags = ["JoeUseFarms"];
-module.exports.dependencies = [
-  "JoeToken",
-  "JoeFactory"
-];
+module.exports.dependencies = ["JoeToken", "JoeFactory"];
