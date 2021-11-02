@@ -6,6 +6,14 @@ pragma experimental ABIEncoderV2;
 
 // Version 22-Mar-2021
 
+interface IMasterChef {
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+    }
+
+    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
+}
+
 interface IERC20 {
     function totalSupply() external view returns (uint256);
 
@@ -37,15 +45,7 @@ interface IPair is IERC20 {
 }
 
 interface IFactory {
-    function allPairsLength() external view returns (uint256);
-
-    function allPairs(uint256 i) external view returns (IPair);
-
     function getPair(IERC20 token0, IERC20 token1) external view returns (IPair);
-
-    function feeTo() external view returns (address);
-
-    function feeToSetter() external view returns (address);
 }
 
 library BoringMath {
@@ -297,12 +297,38 @@ contract JoeUseFarms is Ownable {
         }
         return pairs;
     }
+
     struct LiquidityPositionData {
-        IPair token;
+        IERC20 lpToken;
         uint256 balance; 
     }
 
-    function getLiquidityPositionData(address who) public view returns (LiquidityPositionData[] memory) {
-        IPair token = who
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        uint256 allocPoint; // How many allocation points assigned to this pool. JOEs to distribute per second.
+        uint256 lastRewardTimestamp; // Last timestamp that JOEs distribution occurs.
+        uint256 accJoePerShare; // Accumulated JOEs per share, times 1e12. See below.
+    }
+
+    // Info of each user.
+    struct UserInfo {
+        uint256 amount; // How many LP tokens the user has provided.
+    }
+
+    // Info of each pool.
+    PoolInfo[] public poolInfo;
+
+    function getLiquidityPositionData(address _user) public view returns (LiquidityPositionData[] memory) {
+        uint256 length = poolInfo.length;
+        LiquidityPositionData[] memory lps = [];
+
+        for (uint256 pid = 0; pid < length; ++pid) {
+            PoolInfo storage pool = poolInfo[pid];
+            UserInfo storage user = userInfo[_pid][_user];
+            lps[i].token = pool.lpToken;
+            lps[i].balance = user.amount;
+        }
+       
+        return lps;
     }
 }
