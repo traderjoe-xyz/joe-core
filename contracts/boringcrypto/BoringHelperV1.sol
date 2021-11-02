@@ -520,9 +520,6 @@ contract BoringHelperV1 is Ownable {
     address public maker; // IJoeMaker(0xE11fc0B43ab98Eb91e9836129d1ee7c3Bc95df50);
     IERC20 public joe; // IJoeToken(0x6B3595068778DD592e39A122f4f5a5cF09C90fE2);
     IERC20 public WAVAX; // 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    IERC20 public USDT; // 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-    IERC20 public USDC; // 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
-    IERC20 public DAI; // 0x6b175474e89094c44da98b954eedeac495271d0f
     IFactory public joeFactory; // IFactory(0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac);
     IFactory public pangolinFactory; // IFactory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);
     IERC20 public bar; // 0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272;
@@ -532,9 +529,6 @@ contract BoringHelperV1 is Ownable {
         address maker_,
         IERC20 joe_,
         IERC20 WAVAX_,
-        IERC20 USDT_,
-        IERC20 USDC_,
-        IERC20 DAI_,
         IFactory joeFactory_,
         IFactory pangolinFactory_,
         IERC20 bar_
@@ -543,9 +537,6 @@ contract BoringHelperV1 is Ownable {
         maker = maker_;
         joe = joe_;
         WAVAX = WAVAX;
-        USDT = USDT;
-        USDC = USDC;
-        DAI = DAI;
         joeFactory = joeFactory_;
         pangolinFactory = pangolinFactory_;
         bar = bar_;
@@ -556,9 +547,6 @@ contract BoringHelperV1 is Ownable {
         address maker_,
         IERC20 joe_,
         IERC20 WAVAX_,
-        IERC20 USDT_,
-        IERC20 USDC_,
-        IERC20 DAI_,
         IFactory joeFactory_,
         IFactory pangolinFactory_,
         IERC20 bar_
@@ -567,62 +555,9 @@ contract BoringHelperV1 is Ownable {
         maker = maker_;
         joe = joe_;
         WAVAX = WAVAX_;
-        USDT = USDT_;
-        USDC = USDC_;
-        DAI = DAI_;
         joeFactory = joeFactory_;
         pangolinFactory = pangolinFactory_;
         bar = bar_;
-    }
-
-    function getAvaxPrice() public view returns (uint256) {
-        address[3] memory WAVAX_STABLE_PAIRS = [
-            address(0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256),
-            address(0x87Dee1cC9FFd464B79e058ba20387c1984aed86a),
-            address(0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1)
-        ];
-        uint256 total_weight = 0;
-        uint256 sum_price = 0;
-
-        for (uint256 i = 0; i < WAVAX_STABLE_PAIRS.length; ++i) {
-            address pair_address = WAVAX_STABLE_PAIRS[i];
-            IPair pair = IPair(pair_address);
-            uint256 price = _getAvaxPrice(pair);
-            uint256 weight = _getAvaxReserve(pair);
-
-            total_weight = total_weight.add(weight);
-            sum_price = sum_price.add(price.mul(weight));
-        }
-
-        // div by 0
-        uint256 avax_price = total_weight == 0 ? 0 : sum_price.div(total_weight);
-        return avax_price;
-    }
-
-    function _getAvaxPrice(IPair pair) public view returns (uint256) {
-        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
-
-        if (pair.token0() == WAVAX) {
-            return (uint256(reserve1) * 1e18) / reserve0;
-        } else {
-            return (uint256(reserve0) * 1e18) / reserve1;
-        }
-    }
-
-    function _getAvaxReserve(IPair pair) public view returns (uint256) {
-        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
-        uint256 reserve = pair.token0() == IERC20(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7) ? reserve0 : reserve1;
-        return reserve;
-    }
-
-    function _getUSDPrice(IPair pair) public view returns (uint256) {
-        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
-
-        if (pair.token0() == USDT || pair.token0() == USDC || pair.token0() == DAI) {
-            return (uint256(reserve1) * 1e18) / reserve0;
-        } else {
-            return (uint256(reserve0) * 1e18) / reserve1;
-        }
     }
 
     function getAVAXRate(IERC20 token) public view returns (uint256) {
@@ -818,33 +753,6 @@ contract BoringHelperV1 is Ownable {
             pairs[i].token = token;
             pairs[i].token0 = token.token0();
             pairs[i].token1 = token.token1();
-            pairs[i].totalSupply = token.totalSupply();
-        }
-        return pairs;
-    }
-
-    struct UseFarmPair {
-        IPair token;
-        IERC20 token0;
-        IERC20 token1;
-        uint256 reserveUSD;
-        uint256 totalSupply;
-    }
-
-    function getUseFarmPairs(IPair[] calldata addresses) public view returns (UseFarmPair[] memory) {
-        UseFarmPair[] memory pairs = new UseFarmPair[](addresses.length);
-
-        for (uint256 i = 0; i < addresses.length; i++) {
-            IPair token = addresses[i];
-            pairs[i].token = token;
-            pairs[i].token0 = token.token0();
-            pairs[i].token1 = token.token1();
-            (uint256 reserve0, uint256 reserve1, ) = token.getReserves();
-            uint256 token0AvaxRate = getAVAXRate(pairs[i].token0);
-            uint256 token1AvaxRate = getAVAXRate(pairs[i].token1);
-            uint256 token0ReserveUSD = reserve0 * token0AvaxRate * getAvaxPrice();
-            uint256 token1ReserveUSD = reserve1 * token1AvaxRate * getAvaxPrice();
-            pairs[i].reserveUSD = token0ReserveUSD + token1ReserveUSD;
             pairs[i].totalSupply = token.totalSupply();
         }
         return pairs;
