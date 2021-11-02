@@ -110,12 +110,6 @@ contract JoeMakerV2 is BoringOwnable {
         uint256 amount0 = IERC20(token0).balanceOf(address(this));
         uint256 amount1 = IERC20(token1).balanceOf(address(this));
 
-        // we invert token0 and token1 as well as we'll need them to get their respective balance.
-        if (token0 != pair.token0()) {
-            (amount0, amount1) = (amount1, amount0);
-            (token0, token1) = (token1, token0);
-        }
-
         emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1));
     }
 
