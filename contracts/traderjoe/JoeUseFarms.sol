@@ -1,5 +1,3 @@
-SPDX-License-Identifier: MIT
-
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -315,18 +313,20 @@ contract JoeUseFarms is Ownable {
         uint256 amount; // How many LP tokens the user has provided.
     }
 
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+
     // Info of each pool.
     PoolInfo[] public poolInfo;
 
     function getLiquidityPositionData(address _user) public view returns (LiquidityPositionData[] memory) {
         uint256 length = poolInfo.length;
-        LiquidityPositionData[] memory lps = [];
+        LiquidityPositionData[] memory lps = new LiquidityPositionData[](poolInfo.length);
 
         for (uint256 pid = 0; pid < length; ++pid) {
             PoolInfo storage pool = poolInfo[pid];
-            UserInfo storage user = userInfo[_pid][_user];
-            lps[i].token = pool.lpToken;
-            lps[i].balance = user.amount;
+            UserInfo storage user = userInfo[pid][_user];
+            lps[pid].lpToken = pool.lpToken;
+            lps[pid].balance = user.amount;
         }
        
         return lps;
