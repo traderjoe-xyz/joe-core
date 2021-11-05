@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
 
@@ -48,7 +49,7 @@ interface IMasterChefJoe {
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
  */
-contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
+contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -63,6 +64,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
+        uint256 unpaidRewards;
     }
 
     /// @notice Info of each MCJ poolInfo.
@@ -84,7 +86,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
-    modifier onlyMCJ {
+    modifier onlyMCJ() {
         require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe can call this function");
         _;
     }
@@ -141,38 +143,42 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ {
+    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ nonReentrant {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
-        uint256 pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
-        uint256 prevAmount = user.amount;
+        uint256 pending;
+        if (user.amount > 0) {
+            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
+                user.unpaidRewards
+            );
 
-        // Effects before interactions to prevent re-entrancy
-        user.amount = _lpAmount;
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
-
-        if (prevAmount > 0) {
             if (isNative) {
                 uint256 balance = address(this).balance;
                 if (pending > balance) {
                     (bool success, ) = _user.call.value(balance)("");
                     require(success, "Transfer failed");
+                    user.unpaidRewards = pending - balance;
                 } else {
                     (bool success, ) = _user.call.value(pending)("");
                     require(success, "Transfer failed");
+                    user.unpaidRewards = 0;
                 }
             } else {
                 uint256 balance = rewardToken.balanceOf(address(this));
                 if (pending > balance) {
                     rewardToken.safeTransfer(_user, balance);
+                    user.unpaidRewards = pending - balance;
                 } else {
                     rewardToken.safeTransfer(_user, pending);
+                    user.unpaidRewards = 0;
                 }
             }
         }
 
-        emit OnReward(_user, pending);
+        user.amount = _lpAmount;
+        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+        emit OnReward(_user, pending - user.unpaidRewards);
     }
 
     /// @notice View function to see pending tokens
@@ -191,7 +197,9 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
             accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
+            user.unpaidRewards
+        );
     }
 
     /// @notice In case rewarder is stopped before emissions finished, this function allows
