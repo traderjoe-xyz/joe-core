@@ -95,6 +95,11 @@ contract JoeUseFarmsHelper is BoringOwnable {
         return uint256(1 * (10 ** decimalsNeeded));
     }
 
+    function _pairDecimalsMultiplier(address pairAddress) public pure returns (uint256) {
+        uint256 decimalsNeeded = 18 - IJoePair(pairAddress).decimals();
+        return uint256(1 * (10 ** decimalsNeeded));
+    }
+
     struct FarmPair {
         address lpAddress;
         address token0Address;
@@ -116,7 +121,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
             address lpAddress = address(lpToken);
             uint256 balance = lpToken.balanceOf(chefAddress);
             farmPairs[i].lpAddress = lpAddress;
-            farmPairs[i].masterChefBalance = balance; // NEED TO CHECK DECIMALS
+            farmPairs[i].masterChefBalance = balance.mul(_pairDecimalsMultiplier(lpAddress);
             farmPairs[i].masterChefAddress = chefAddress;
 
             // get pair information
@@ -136,7 +141,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
 
             // calculate total supply
-            farmPairs[i].totalSupply = lpToken.totalSupply(); // NEED TO CHECK DECIMALS
+            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress);
         }
 
         return farmPairs;
