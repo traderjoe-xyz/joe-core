@@ -8,9 +8,6 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const chainId = await getChainId();
 
   let wavaxAddress;
-  let usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-  let usdcAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-  let daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
 
   if (chainId === "31337") {
     wavaxAddress = (await deployments.get("WAVAX9Mock")).address;
@@ -20,31 +17,24 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     throw Error("No WAVAX!");
   }
 
-  const pangolinFactoryAddress = {
-    4: "0xE2eCc226Fd2D5CEad96F3f9f00eFaE9fAfe75eB8",
-    43113: "0xc79A395cE054B9F3B73b82C4084417CA9291BC87",
-    43114: "0xefa94DE7a4656D787667C749f7E1223D71E9FD88",
-    31337: wavaxAddress,
-  };
-
   const joeAddress = (await deployments.get("JoeToken")).address;
   const joeFactoryAddress = (await deployments.get("JoeFactory")).address;
+  const chefAddress = (await deployments.get("MasterChefJoeV2")).address;
+  const chefAddressV3 = (await deployments.get("MasterChefJoeV3")).address;
 
-  await deploy("JoeUseFarms", {
+  await deploy("JoeUseFarmsHelper", {
     from: deployer,
     args: [
       joeAddress,
       wavaxAddress,
-      usdtAddress,
-      usdcAddress,
-      daiAddress,
       joeFactoryAddress,
-      pangolinFactoryAddress[chainId],
+      chefAddress,
+      chefAddressV3
     ],
     log: true,
     deterministicDeployment: false,
   });
 };
 
-module.exports.tags = ["JoeUseFarms"];
-module.exports.dependencies = ["JoeToken", "JoeFactory"];
+module.exports.tags = ["JoeUseFarmsHelper"];
+module.exports.dependencies = ["JoeToken", "JoeFactory", "MasterChefJoeV2", "MasterChefJoeV3", "WAVAX9Mock"];
