@@ -1141,11 +1141,11 @@ describe("MasterChefJoeV2", function () {
 
       // Bob should have:
       //   - 0 JoeToken
-      //   - 80 + 17*40 = 760 (+40) PartnerToken
-      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760, 800)
+      //   - 80 + 20*40 = 880 (+40) PartnerToken
+      expect(await this.partnerToken.balanceOf(this.bob.address)).to.be.within(760, 920)
     })
 
-    it("should AVAX accurately after rewarder runs out of AVAX and is topped up again", async function () {
+    it("should reward AVAX accurately after rewarder runs out of AVAX and is topped up again", async function () {
       const bobBalBefore = await this.bob.getBalance()
       const startTime = (await latest()).add(60)
       this.chef = await this.MCV2.deploy(
@@ -1189,17 +1189,19 @@ describe("MasterChefJoeV2", function () {
       expect(bobBalAfter.sub(bobBalBefore)).to.lt(ethers.utils.parseEther("20"))
       await advanceTimeAndBlock(5) // t-43
 
-      await this.alice.sendTransaction({ to: this.rewarderAVAX.address, value: ethers.utils.parseEther("1000") }) // 42
+      await this.alice.sendTransaction({ to: this.rewarderAVAX.address, value: ethers.utils.parseEther("1000") }) // t-42
       await advanceTimeAndBlock(10) // t-32
 
       await this.chef.connect(this.bob).deposit(0, "0") // t-31
 
       // Bob should have:
       //   - 0 JoeToken
-      //   - 20 + 17*10 = 190 (+40) PartnerToken
+      //   - 20 + 20*10 = 220 (+10) PartnerToken
       const bobBalFinal = await this.bob.getBalance()
-      expect(bobBalFinal.sub(bobBalAfter)).to.gt(ethers.utils.parseEther("160"))
-      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("180"))
+      const b = bobBalFinal.sub(bobBalAfter)
+      console.log(b.toString())
+      expect(bobBalFinal.sub(bobBalAfter)).to.gt(ethers.utils.parseEther("190"))
+      expect(bobBalFinal.sub(bobBalAfter)).to.lt(ethers.utils.parseEther("210"))
     })
 
     it("should only allow MasterChefJoeV2 to call onJoeReward", async function () {

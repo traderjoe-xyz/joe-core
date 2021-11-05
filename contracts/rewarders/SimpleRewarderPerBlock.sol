@@ -83,7 +83,7 @@ contract SimpleRewarderPerBlock is IRewarder, BoringOwnable {
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
-    modifier onlyMCV2 {
+    modifier onlyMCV2() {
         require(msg.sender == address(MC_V2), "onlyMCV2: only MasterChef V2 can call this function");
         _;
     }
