@@ -116,10 +116,6 @@ library BoringMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
         require(b == 0 || (c = a * b) / b == a, "BoringMath: Mul Overflow");
     }
-
-    function div(uint256 a, uint256 b) internal pure returns (uint256 c) {
-        require(b == 0 || (c = a / b) * b == a, "BoringMath: Div Overflow");
-    }
 }
 
 contract Ownable {
