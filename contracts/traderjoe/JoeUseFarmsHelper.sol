@@ -116,7 +116,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
             address lpAddress = address(lpToken);
             uint256 balance = lpToken.balanceOf(chefAddress);
             farmPairs[i].lpAddress = lpAddress;
-            farmPairs[i].masterChefBalance = balance;
+            farmPairs[i].masterChefBalance = balance; // NEED TO CHECK DECIMALS
             farmPairs[i].masterChefAddress = chefAddress;
 
             // get pair information
@@ -131,12 +131,12 @@ contract JoeUseFarmsHelper is BoringOwnable {
             (uint256 reserve0, uint256 reserve1, ) = lpToken.getReserves(); // reserve0, reserve1 are 18 decimals
             uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
             uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-            uint256 token0ReserveUSD = reserve0.mul(token0PriceInAvax).mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
-            uint256 token1ReserveUSD = reserve1.mul(token1PriceInAvax).mul(getAvaxPrice()); // 54
+            uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultipler(token0Address)).mul(token0PriceInAvax).mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
+            uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultipler(token1Address)).mul(token1PriceInAvax).mul(getAvaxPrice()); // 54
             farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
 
             // calculate total supply
-            farmPairs[i].totalSupply = lpToken.totalSupply();
+            farmPairs[i].totalSupply = lpToken.totalSupply(); // NEED TO CHECK DECIMALS
         }
 
         return farmPairs;
