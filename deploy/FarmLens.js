@@ -29,7 +29,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
       wavaxAddress,
       joeFactoryAddress,
       chefAddress,
-      chefAddressV3
+      chefAddressV3,
     ],
     log: true,
     deterministicDeployment: false,
@@ -37,4 +37,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 };
 
 module.exports.tags = ["FarmLens"];
-module.exports.dependencies = ["JoeToken", "JoeFactory", "MasterChefJoeV2", "MasterChefJoeV3", "WAVAX9Mock"];
+module.exports.dependencies = [
+  "JoeToken",
+  "JoeFactory",
+  "MasterChefJoeV2",
+  "MasterChefJoeV3",
+  "WAVAX9Mock",
+];

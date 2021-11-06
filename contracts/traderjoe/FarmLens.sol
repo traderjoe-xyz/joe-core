@@ -20,6 +20,7 @@ interface IMasterChef {
     }
 
     function totalAllocPoint() external view returns (uint256);
+
     function joePerSec() external view returns (uint256);
 }
 
@@ -91,12 +92,12 @@ contract FarmLens is BoringOwnable {
 
     function _tokenDecimalsMultiplier(address tokenAddress) public pure returns (uint256) {
         uint256 decimalsNeeded = 18 - IJoeERC20(tokenAddress).decimals();
-        return uint256(1 * (10 ** decimalsNeeded));
+        return uint256(1 * (10**decimalsNeeded));
     }
 
     function _pairDecimalsMultiplier(address pairAddress) public pure returns (uint256) {
         uint256 decimalsNeeded = 18 - IJoePair(pairAddress).decimals();
-        return uint256(1 * (10 ** decimalsNeeded));
+        return uint256(1 * (10**decimalsNeeded));
     }
 
     struct FarmPair {
@@ -111,7 +112,11 @@ contract FarmLens is BoringOwnable {
         uint256 totalSupply;
     }
 
-    function getFarmPairs(address[] calldata pairAddresses, address chefAddress) public view returns (FarmPair[] memory) {
+    function getFarmPairs(address[] calldata pairAddresses, address chefAddress)
+        public
+        view
+        returns (FarmPair[] memory)
+    {
         FarmPair[] memory farmPairs = new FarmPair[](pairAddresses.length);
 
         for (uint256 i = 0; i < pairAddresses.length; i++) {
@@ -135,8 +140,12 @@ contract FarmLens is BoringOwnable {
             (uint256 reserve0, uint256 reserve1, ) = lpToken.getReserves(); // reserve0, reserve1 are 18 decimals
             uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
             uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-            uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address))).mul(token0PriceInAvax).mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
-            uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address))).mul(token1PriceInAvax).mul(getAvaxPrice()); // 54
+            uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address)))
+                .mul(token0PriceInAvax)
+                .mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
+            uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address)))
+                .mul(token1PriceInAvax)
+                .mul(getAvaxPrice()); // 54
             farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
 
             // calculate total supply
@@ -147,14 +156,14 @@ contract FarmLens is BoringOwnable {
     }
 
     struct AllFarmData {
-        uint256 avaxPriceUSD; 
+        uint256 avaxPriceUSD;
         uint256 joePriceUSD;
         uint256 totalAllocChef;
         uint256 totalAllocChefV3;
         uint256 joePerSecChef;
         uint256 joePerSecChefV3;
         FarmPair[] farmPairs;
-        FarmPair[] farmPairsV3; 
+        FarmPair[] farmPairsV3;
     }
 
     function getAllFarmData(address[] calldata pairAddresses) public view returns (AllFarmData memory) {
