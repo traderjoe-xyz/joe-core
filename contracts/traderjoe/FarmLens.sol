@@ -107,10 +107,8 @@ contract FarmLens is BoringOwnable {
         string token1Symbol;
         address masterChefAddress;
         uint256 masterChefBalance;
-        uint256 masterChefTotalAlloc; 
         uint256 reserveUSD;
         uint256 totalSupply;
-        uint256 joePerSec;
     }
 
     function getFarmPairs(address[] calldata pairAddresses, address chefAddress) public view returns (FarmPair[] memory) {
@@ -124,7 +122,6 @@ contract FarmLens is BoringOwnable {
             farmPairs[i].lpAddress = lpAddress;
             farmPairs[i].masterChefBalance = balance.mul(_pairDecimalsMultiplier(lpAddress));
             farmPairs[i].masterChefAddress = chefAddress;
-            farmPairs[i].masterChefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
 
             // get pair information
             address token0Address = lpToken.token0();
@@ -142,10 +139,8 @@ contract FarmLens is BoringOwnable {
             uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address))).mul(token1PriceInAvax).mul(getAvaxPrice()); // 54
             farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
 
-            // calculate total supply and joePerSec
+            // calculate total supply
             farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress));
-            farmPairs[i].joePerSec = IMasterChef(chefAddress).joePerSec();
-
         }
 
         return farmPairs;
@@ -153,15 +148,27 @@ contract FarmLens is BoringOwnable {
 
     struct AllFarmData {
         uint256 avaxPriceUSD; 
-        uint256 joePriceUSD; 
+        uint256 joePriceUSD;
+        uint256 totalAllocChef;
+        uint256 totalAllocChefV3;
+        uint256 joePerSecChef;
+        uint256 joePerSecChefV3;
         FarmPair[] farmPairs;
         FarmPair[] farmPairsV3; 
     }
 
     function getAllFarmData(address[] calldata pairAddresses) public view returns (AllFarmData memory) {
         AllFarmData memory allFarmData;
+
         allFarmData.avaxPriceUSD = getAvaxPrice();
         allFarmData.joePriceUSD = getPriceInUSD(joe);
+
+        allFarmData.totalAllocChef = IMasterChef(chef).totalAllocPoint();
+        allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
+
+        allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
+        allFarmData.joePerSecChef = IMasterChef(chefv3).joePerSec();
+
         allFarmData.farmPairs = getFarmPairs(pairAddresses, address(chef));
         allFarmData.farmPairsV3 = getFarmPairs(pairAddresses, address(chefv3));
 
