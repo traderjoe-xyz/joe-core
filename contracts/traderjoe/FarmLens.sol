@@ -19,12 +19,11 @@ interface IMasterChef {
         uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
     }
 
-    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
-    function poolLength() external view returns (uint256);
     function totalAllocPoint() external view returns (uint256);
+    function joePerSec() external view returns (uint256);
 }
 
-contract JoeUseFarmsHelper is BoringOwnable {
+contract FarmLens is BoringOwnable {
     using SafeMath for uint256;
 
     address public joe; // 0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd;
@@ -108,21 +107,24 @@ contract JoeUseFarmsHelper is BoringOwnable {
         string token1Symbol;
         address masterChefAddress;
         uint256 masterChefBalance;
+        uint256 masterChefTotalAlloc; 
         uint256 reserveUSD;
         uint256 totalSupply;
+        uint256 joePerSec;
     }
 
     function getFarmPairs(address[] calldata pairAddresses, address chefAddress) public view returns (FarmPair[] memory) {
         FarmPair[] memory farmPairs = new FarmPair[](pairAddresses.length);
 
         for (uint256 i = 0; i < pairAddresses.length; i++) {
-            // get LP Address and masterChefBalance of LP
+            // get LP Address and masterChef data
             IJoePair lpToken = IJoePair(pairAddresses[i]);
             address lpAddress = address(lpToken);
             uint256 balance = lpToken.balanceOf(chefAddress);
             farmPairs[i].lpAddress = lpAddress;
-            farmPairs[i].masterChefBalance = balance.mul(_pairDecimalsMultiplier(lpAddress);
+            farmPairs[i].masterChefBalance = balance.mul(_pairDecimalsMultiplier(lpAddress));
             farmPairs[i].masterChefAddress = chefAddress;
+            farmPairs[i].masterChefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
 
             // get pair information
             address token0Address = lpToken.token0();
@@ -136,14 +138,33 @@ contract JoeUseFarmsHelper is BoringOwnable {
             (uint256 reserve0, uint256 reserve1, ) = lpToken.getReserves(); // reserve0, reserve1 are 18 decimals
             uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
             uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-            uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultipler(token0Address)).mul(token0PriceInAvax).mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
-            uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultipler(token1Address)).mul(token1PriceInAvax).mul(getAvaxPrice()); // 54
+            uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address))).mul(token0PriceInAvax).mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
+            uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address))).mul(token1PriceInAvax).mul(getAvaxPrice()); // 54
             farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
 
-            // calculate total supply
-            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress);
+            // calculate total supply and joePerSec
+            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress));
+            farmPairs[i].joePerSec = IMasterChef(chefAddress).joePerSec();
+
         }
 
         return farmPairs;
+    }
+
+    struct AllFarmData {
+        uint256 avaxPriceUSD; 
+        uint256 joePriceUSD; 
+        FarmPair[] farmPairs;
+        FarmPair[] farmPairsV3; 
+    }
+
+    function getAllFarmData(address[] calldata pairAddresses) public view returns (AllFarmData memory) {
+        AllFarmData memory allFarmData;
+        allFarmData.avaxPriceUSD = getAvaxPrice();
+        allFarmData.joePriceUSD = getPriceInUSD(joe);
+        allFarmData.farmPairs = getFarmPairs(pairAddresses, address(chef));
+        allFarmData.farmPairsV3 = getFarmPairs(pairAddresses, address(chefv3));
+
+        return allFarmData;
     }
 }

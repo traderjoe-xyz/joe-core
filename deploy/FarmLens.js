@@ -22,7 +22,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const chefAddress = (await deployments.get("MasterChefJoeV2")).address;
   const chefAddressV3 = (await deployments.get("MasterChefJoeV3")).address;
 
-  await deploy("JoeUseFarmsHelper", {
+  await deploy("FarmLens", {
     from: deployer,
     args: [
       joeAddress,
@@ -36,5 +36,5 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
 };
 
-module.exports.tags = ["JoeUseFarmsHelper"];
+module.exports.tags = ["FarmLens"];
 module.exports.dependencies = ["JoeToken", "JoeFactory", "MasterChefJoeV2", "MasterChefJoeV3", "WAVAX9Mock"];
