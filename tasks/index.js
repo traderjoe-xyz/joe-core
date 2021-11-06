@@ -50,7 +50,6 @@ subtask(
   .addOptionalParam("output", undefined, undefined, types.string)
   .setAction(async ({ files, output }, { run }) => {
     const dependencyGraph = await run("flat:get-dependency-graph", { files });
-    console.log(dependencyGraph);
 
     let flattened = "";
 
