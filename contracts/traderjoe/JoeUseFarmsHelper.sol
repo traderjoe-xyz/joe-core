@@ -72,7 +72,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
     }
 
     function getPriceInUSD(address tokenAddress) public view returns (uint256) {
-        return (getAvaxPrice().mul(getPriceInAvax(tokenAddress))) / uint256(1e18); // 36 / 18 = 1
+        return getAvaxPrice() / getPriceInAvax(tokenAddress); // 18
     }
 
     // Need to be aware of decimals here, not always 18, it depends on the token
