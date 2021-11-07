@@ -99,11 +99,7 @@ contract FarmLens is BoringOwnable {
         return uint256(1 * (10**decimalsNeeded));
     }
 
-    function getReserveUSD(IJoePair pair)
-        public
-        view
-        returns (uint256) 
-    {
+    function getReserveUSD(IJoePair pair) public view returns (uint256) {
         address token0Address = pair.token0();
         address token1Address = pair.token1();
 
@@ -111,13 +107,13 @@ contract FarmLens is BoringOwnable {
 
         uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-        uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address)))
-            .mul(token0PriceInAvax)
-            .mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
-        uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address)))
-            .mul(token1PriceInAvax)
-            .mul(getAvaxPrice()); // 54
-        
+        uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address))).mul(token0PriceInAvax).mul(
+            getAvaxPrice()
+        ); // 18.mul(18).mul(18) = 54 decimals
+        uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address))).mul(token1PriceInAvax).mul(
+            getAvaxPrice()
+        ); // 54
+
         uint256 reserveUSD = (token0ReserveUSD.add(token1ReserveUSD)) / uint256(1e36);
 
         return reserveUSD; // 18
