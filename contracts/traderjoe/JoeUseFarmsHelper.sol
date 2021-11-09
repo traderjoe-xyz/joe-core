@@ -32,20 +32,20 @@ contract JoeUseFarmsHelper is BoringOwnable {
     address public joe; // 0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd;
     address public wavax; // 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
     IJoeFactory public joeFactory; // IJoeFactory(0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10);
-    IMasterChef public chef; //0xd6a4F121CA35509aF06A0Be99093d08462f53052
+    IMasterChef public chefv2; //0xd6a4F121CA35509aF06A0Be99093d08462f53052
     IMasterChef public chefv3; //0x188bED1968b795d5c9022F6a0bb5931Ac4c18F00
 
     constructor(
         address joe_,
         address wavax_,
         IJoeFactory joeFactory_,
-        IMasterChef chef_,
+        IMasterChef chefv2_,
         IMasterChef chefv3_
     ) public {
         joe = joe_;
         wavax = wavax_;
         joeFactory = IJoeFactory(joeFactory_);
-        chef = chef_;
+        chefv2 = chefv2_;
         chefv3 = chefv3_;
     }
 
@@ -55,30 +55,30 @@ contract JoeUseFarmsHelper is BoringOwnable {
         uint256 priceFromWavaxDai = _getAvaxPrice(IJoePair(address(0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1))); // 18
 
         uint256 sumPrice = priceFromWavaxUsdt.add(priceFromWavaxUsdc).add(priceFromWavaxDai); // 18
-        uint256 avaxPrice = sumPrice / uint256(3); // 18
+        uint256 avaxPrice = sumPrice / 3; // 18
         return avaxPrice; // 18
     }
 
-    function _getAvaxPrice(IJoePair pair) public view returns (uint256) {
+    function _getAvaxPrice(IJoePair pair) private view returns (uint256) {
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
         if (pair.token0() == wavax) {
             reserve1 = reserve1.mul(_tokenDecimalsMultiplier(pair.token1())); // 18
-            return (reserve1.mul(uint256(1e18))) / reserve0; // 18
+            return (reserve1.mul(1e18)) / reserve0; // 18
         } else {
             reserve0 = reserve0.mul(_tokenDecimalsMultiplier(pair.token0())); // 18
-            return (reserve0.mul(uint256(1e18))) / reserve1; // 18
+            return (reserve0.mul(1e18)) / reserve1; // 18
         }
     }
 
     function getPriceInUSD(address tokenAddress) public view returns (uint256) {
-        return getAvaxPrice() / getPriceInAvax(tokenAddress); // 18
+        return (getAvaxPrice().mul(getPriceInAvax(tokenAddress))) / 1e18; // 18
     }
 
     // Need to be aware of decimals here, not always 18, it depends on the token
     function getPriceInAvax(address tokenAddress) public view returns (uint256) {
         if (tokenAddress == wavax) {
-            return uint256(1e18);
+            return 1e18;
         }
 
         IJoePair pair = IJoePair(joeFactory.getPair(tokenAddress, wavax));
@@ -89,16 +89,16 @@ contract JoeUseFarmsHelper is BoringOwnable {
 
         if (token0Address == wavax) {
             reserve1 = reserve1.mul(_tokenDecimalsMultiplier(token1Address)); // 18
-            return (reserve1.mul(uint256(1e18))) / reserve0; // 18
+            return (reserve0.mul(1e18)) / reserve1; // 18
         } else {
             reserve0 = reserve0.mul(_tokenDecimalsMultiplier(token0Address)); // 18
-            return (reserve0.mul(uint256(1e18))) / reserve1; // 18
+            return (reserve1.mul(1e18)) / reserve0; // 18
         }
     }
 
-    function _tokenDecimalsMultiplier(address tokenAddress) public pure returns (uint256) {
+    function _tokenDecimalsMultiplier(address tokenAddress) private pure returns (uint256) {
         uint256 decimalsNeeded = 18 - IJoeERC20(tokenAddress).decimals();
-        return uint256(1 * (10**decimalsNeeded));
+        return 1 * (10**decimalsNeeded);
     }
 
     function getReserveUSD(IJoePair pair) public view returns (uint256) {
@@ -112,10 +112,10 @@ contract JoeUseFarmsHelper is BoringOwnable {
 
         uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-        uint256 reserve0Avax = (reserve0.mul(uint256(1e18))) / token0PriceInAvax; // 18; 
-        uint256 reserve1Avax = (reserve1.mul(uint256(1e18))) / token1PriceInAvax; // 18;
-        uint256 reserveAVAX = reserve0Avax.add(reserve1Avax); // 18 
-        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / uint256(1e18); // 18 
+        uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36; 
+        uint256 reserve1Avax = reserve1.mul(token1PriceInAvax); // 36;
+        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18  
+        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18 
 
         return reserveUSD; // 18
     }
@@ -145,7 +145,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
          for (uint256 i = 0; i < pairAddresses.length; i++) {
             IJoePair lpToken = IJoePair(pairAddresses[i]);
             uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance > uint256(0)) {
+            if (balance > 0) {
                 farmCount++;
             }
         }
@@ -157,7 +157,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
 
             // filtering out farms that chef has no balance in
             uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance == uint256(0)) { continue; } 
+            if (balance == 0) { continue; } 
 
             // get pair information
             address lpAddress = address(lpToken);
@@ -189,11 +189,11 @@ contract JoeUseFarmsHelper is BoringOwnable {
     struct AllFarmData {
         uint256 avaxPriceUSD;
         uint256 joePriceUSD;
-        uint256 totalAllocChef;
+        uint256 totalAllocChefV2;
         uint256 totalAllocChefV3;
-        uint256 joePerSecChef;
+        uint256 joePerSecChefV2;
         uint256 joePerSecChefV3;
-        FarmPair[] farmPairs;
+        FarmPair[] farmPairsV2;
         FarmPair[] farmPairsV3;
     }
 
@@ -203,13 +203,13 @@ contract JoeUseFarmsHelper is BoringOwnable {
         allFarmData.avaxPriceUSD = getAvaxPrice();
         allFarmData.joePriceUSD = getPriceInUSD(joe);
 
-        allFarmData.totalAllocChef = IMasterChef(chef).totalAllocPoint();
-        allFarmData.joePerSecChef = IMasterChef(chef).joePerSec();
+        allFarmData.totalAllocChefV2 = IMasterChef(chefv2).totalAllocPoint();
+        allFarmData.joePerSecChefV2 = IMasterChef(chefv2).joePerSec();
 
         allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
         allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
 
-        allFarmData.farmPairs = getFarmPairs(pairAddresses, address(chef));
+        allFarmData.farmPairsV2 = getFarmPairs(pairAddresses, address(chefv2));
         allFarmData.farmPairsV3 = getFarmPairs(pairAddresses, address(chefv3));
 
         return allFarmData;
