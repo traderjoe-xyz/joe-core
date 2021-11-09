@@ -110,10 +110,10 @@ contract FarmLens is BoringOwnable {
 
         uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-        uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36; 
+        uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36;
         uint256 reserve1Avax = reserve1.mul(token1PriceInAvax); // 36;
-        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18  
-        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18 
+        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18
+        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18
 
         return reserveUSD; // 18
     }
@@ -147,7 +147,9 @@ contract FarmLens is BoringOwnable {
 
             // filtering out farms that chef has no balance in
             uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance == 0) { continue; } 
+            if (balance == 0) {
+                continue;
+            }
 
             // get pair information
             address lpAddress = address(lpToken);
