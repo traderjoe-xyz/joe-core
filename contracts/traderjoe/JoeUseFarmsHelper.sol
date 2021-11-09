@@ -19,8 +19,10 @@ interface IMasterChef {
         uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
     }
 
-    function poolLength() external view returns (uint256); 
+    function poolLength() external view returns (uint256);
+
     function totalAllocPoint() external view returns (uint256);
+
     function joePerSec() external view returns (uint256);
 }
 
