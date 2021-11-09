@@ -19,8 +19,8 @@ interface IMasterChef {
         uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
     }
 
+    function poolLength() external view returns (uint256); 
     function totalAllocPoint() external view returns (uint256);
-
     function joePerSec() external view returns (uint256);
 }
 
@@ -73,7 +73,7 @@ contract FarmLens is BoringOwnable {
         return (getAvaxPrice().mul(getPriceInAvax(tokenAddress))) / 1e18; // 18
     }
 
-    // Need to be aware of decimals here, not always 18, it depends on the token
+    /// @dev Need to be aware of decimals here, not always 18, it depends on the token
     function getPriceInAvax(address tokenAddress) public view returns (uint256) {
         if (tokenAddress == wavax) {
             return 1e18;
@@ -137,18 +137,10 @@ contract FarmLens is BoringOwnable {
         view
         returns (FarmPair[] memory)
     {
-        uint256 farmCount;
         uint256 farmPairIndex = 0;
-        // get count of farm pairs that this masterChef owns, needed due to solidity lacking dynamic memory array support
-        for (uint256 i = 0; i < pairAddresses.length; i++) {
-            IJoePair lpToken = IJoePair(pairAddresses[i]);
-            uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance > 0) {
-                farmCount++;
-            }
-        }
+        uint256 farmPairsLength = IMasterChef(chefAddress).poolLength();
 
-        FarmPair[] memory farmPairs = new FarmPair[](farmCount);
+        FarmPair[] memory farmPairs = new FarmPair[](farmPairsLength);
 
         for (uint256 i = 0; i < pairAddresses.length; i++) {
             IJoePair lpToken = IJoePair(pairAddresses[i]);
