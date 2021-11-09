@@ -103,18 +103,17 @@ contract FarmLens is BoringOwnable {
         address token0Address = pair.token0();
         address token1Address = pair.token1();
 
-        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves(); // reserve0, reserve1 are 18 decimals
+        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves(); 
+        
+        reserve0 = reserve0.mul(_tokenDecimalsMultiplier(token0Address)); // 18
+        reserve1 = reserve1.mul(_tokenDecimalsMultiplier(token1Address)); // 18
 
         uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-        uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address))).mul(token0PriceInAvax).mul(
-            getAvaxPrice()
-        ); // 18.mul(18).mul(18) = 54 decimals
-        uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address))).mul(token1PriceInAvax).mul(
-            getAvaxPrice()
-        ); // 54
-
-        uint256 reserveUSD = (token0ReserveUSD.add(token1ReserveUSD)) / uint256(1e36);
+        uint256 reserve0Avax = (reserve0.mul(uint256(1e18))) / token0PriceInAvax; // 18; 
+        uint256 reserve1Avax = (reserve1.mul(uint256(1e18))) / token1PriceInAvax; // 18;
+        uint256 reserveAVAX = reserve0Avax.add(reserve1Avax); // 18 
+        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / uint256(1e18); // 18 
 
         return reserveUSD; // 18
     }
@@ -138,31 +137,48 @@ contract FarmLens is BoringOwnable {
         view
         returns (FarmPair[] memory)
     {
-        FarmPair[] memory farmPairs = new FarmPair[](pairAddresses.length);
+        uint256 farmCount;
+        uint256 farmPairIndex = 0;
+        // get count of farm pairs that this masterChef owns, needed due to solidity lacking dynamic memory array support
+         for (uint256 i = 0; i < pairAddresses.length; i++) {
+            IJoePair lpToken = IJoePair(pairAddresses[i]);
+            uint256 balance = lpToken.balanceOf(chefAddress);
+            if (balance > uint256(0)) {
+                farmCount++;
+            }
+        }
+
+        FarmPair[] memory farmPairs = new FarmPair[](farmCount);
 
         for (uint256 i = 0; i < pairAddresses.length; i++) {
-            // get pair information
             IJoePair lpToken = IJoePair(pairAddresses[i]);
+
+            // filtering out farms that chef has no balance in
+            uint256 balance = lpToken.balanceOf(chefAddress);
+            if (balance == uint256(0)) { continue; } 
+
+            // get pair information
             address lpAddress = address(lpToken);
             address token0Address = lpToken.token0();
             address token1Address = lpToken.token1();
-            farmPairs[i].token0Address = token0Address;
-            farmPairs[i].token1Address = token1Address;
-            farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
-            farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
+            farmPairs[farmPairIndex].lpAddress = lpAddress;
+            farmPairs[farmPairIndex].token0Address = token0Address;
+            farmPairs[farmPairIndex].token1Address = token1Address;
+            farmPairs[farmPairIndex].token0Symbol = IJoeERC20(token0Address).symbol();
+            farmPairs[farmPairIndex].token1Symbol = IJoeERC20(token1Address).symbol();
 
             // calculate reserveUSD of lp
-            farmPairs[i].reserveUSD = getReserveUSD(lpToken); // 18
+            farmPairs[farmPairIndex].reserveUSD = getReserveUSD(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairIndex].totalSupply = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            uint256 balance = lpToken.balanceOf(chefAddress);
-            farmPairs[i].chefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
-            farmPairs[i].chefAddress = chefAddress;
-            farmPairs[i].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
-            farmPairs[i].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
+            farmPairs[farmPairIndex].chefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairIndex].chefAddress = chefAddress;
+            farmPairs[farmPairIndex].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
+            farmPairs[farmPairIndex].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
+            farmPairIndex++;
         }
 
         return farmPairs;
