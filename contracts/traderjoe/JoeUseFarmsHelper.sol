@@ -127,9 +127,9 @@ contract JoeUseFarmsHelper is BoringOwnable {
         string token0Symbol;
         string token1Symbol;
         uint256 reserveUSD;
-        uint256 totalSupply;
+        uint256 totalSupplyScaled;
         address chefAddress;
-        uint256 chefBalance;
+        uint256 chefBalanceScaled;
         uint256 chefTotalAlloc;
         uint256 chefJoePerSec;
     }
@@ -167,10 +167,10 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[farmPairIndex].reserveUSD = getReserveUSD(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairIndex].totalSupply = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairIndex].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            farmPairs[farmPairIndex].chefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairIndex].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
             farmPairs[farmPairIndex].chefAddress = chefAddress;
             farmPairs[farmPairIndex].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
             farmPairs[farmPairIndex].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
