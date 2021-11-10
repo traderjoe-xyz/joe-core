@@ -136,15 +136,11 @@ contract JoeUseFarmsHelper is BoringOwnable {
         uint256 chefJoePerSec;
     }
 
-    function getFarmPairs(address chefAddress)
-        public
-        view
-        returns (FarmPair[] memory)
-    {
+    function getFarmPairs(address chefAddress) public view returns (FarmPair[] memory) {
         IMasterChef chef = IMasterChef(chefAddress);
         IMasterChef.PoolInfo[] memory chefPools = chef.poolInfo();
         uint256 poolsLength = chef.poolLength();
-    
+
         FarmPair[] memory farmPairs = new FarmPair[](poolsLength);
 
         for (uint256 i = 0; i < poolsLength; i++) {
