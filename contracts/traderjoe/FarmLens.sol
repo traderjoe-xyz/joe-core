@@ -21,6 +21,8 @@ interface IMasterChef {
 
     function poolLength() external view returns (uint256);
 
+    function poolInfo() external view returns (PoolInfo[] memory);
+
     function totalAllocPoint() external view returns (uint256);
 
     function joePerSec() external view returns (uint256);
@@ -134,18 +136,19 @@ contract FarmLens is BoringOwnable {
         uint256 chefJoePerSec;
     }
 
-    function getFarmPairs(address[] calldata pairAddresses, address chefAddress)
+    function getFarmPairs(address chefAddress)
         public
         view
         returns (FarmPair[] memory)
     {
-        uint256 farmPairIndex = 0;
-        uint256 farmPairsLength = IMasterChef(chefAddress).poolLength();
+        IMasterChef chef = IMasterChef(chefAddress);
+        IMasterChef.PoolInfo[] memory chefPools = chef.poolInfo();
+        uint256 poolsLength = chef.poolLength();
+    
+        FarmPair[] memory farmPairs = new FarmPair[](poolsLength);
 
-        FarmPair[] memory farmPairs = new FarmPair[](farmPairsLength);
-
-        for (uint256 i = 0; i < pairAddresses.length; i++) {
-            IJoePair lpToken = IJoePair(pairAddresses[i]);
+        for (uint256 i = 0; i < poolsLength; i++) {
+            IJoePair lpToken = IJoePair(address(chefPools[i].lpToken));
 
             // filtering out farms that chef has no balance in
             uint256 balance = lpToken.balanceOf(chefAddress);
@@ -157,24 +160,23 @@ contract FarmLens is BoringOwnable {
             address lpAddress = address(lpToken);
             address token0Address = lpToken.token0();
             address token1Address = lpToken.token1();
-            farmPairs[farmPairIndex].lpAddress = lpAddress;
-            farmPairs[farmPairIndex].token0Address = token0Address;
-            farmPairs[farmPairIndex].token1Address = token1Address;
-            farmPairs[farmPairIndex].token0Symbol = IJoeERC20(token0Address).symbol();
-            farmPairs[farmPairIndex].token1Symbol = IJoeERC20(token1Address).symbol();
+            farmPairs[i].lpAddress = lpAddress;
+            farmPairs[i].token0Address = token0Address;
+            farmPairs[i].token1Address = token1Address;
+            farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
+            farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
 
             // calculate reserveUSD of lp
-            farmPairs[farmPairIndex].reserveUSD = getReserveUSD(lpToken); // 18
+            farmPairs[i].reserveUSD = getReserveUSD(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairIndex].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[i].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            farmPairs[farmPairIndex].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
-            farmPairs[farmPairIndex].chefAddress = chefAddress;
-            farmPairs[farmPairIndex].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
-            farmPairs[farmPairIndex].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
-            farmPairIndex++;
+            farmPairs[i].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[i].chefAddress = chefAddress;
+            farmPairs[i].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
+            farmPairs[i].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
         }
 
         return farmPairs;
@@ -191,7 +193,7 @@ contract FarmLens is BoringOwnable {
         FarmPair[] farmPairsV3;
     }
 
-    function getAllFarmData(address[] calldata pairAddresses) public view returns (AllFarmData memory) {
+    function getAllFarmData() public view returns (AllFarmData memory) {
         AllFarmData memory allFarmData;
 
         allFarmData.avaxPriceUSD = getAvaxPrice();
@@ -203,8 +205,8 @@ contract FarmLens is BoringOwnable {
         allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
         allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
 
-        allFarmData.farmPairsV2 = getFarmPairs(pairAddresses, address(chefv2));
-        allFarmData.farmPairsV3 = getFarmPairs(pairAddresses, address(chefv3));
+        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2));
+        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3));
 
         return allFarmData;
     }
