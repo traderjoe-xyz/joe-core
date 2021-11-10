@@ -368,8 +368,10 @@ interface IMasterChef {
         uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
     }
 
-    function poolLength() external view returns (uint256); 
+    function poolLength() external view returns (uint256);
+
     function totalAllocPoint() external view returns (uint256);
+
     function joePerSec() external view returns (uint256);
 }
 
@@ -459,10 +461,10 @@ contract FarmLens is BoringOwnable {
 
         uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-        uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36; 
+        uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36;
         uint256 reserve1Avax = reserve1.mul(token1PriceInAvax); // 36;
-        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18  
-        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18 
+        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18
+        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18
 
         return reserveUSD; // 18
     }
@@ -474,9 +476,9 @@ contract FarmLens is BoringOwnable {
         string token0Symbol;
         string token1Symbol;
         uint256 reserveUSD;
-        uint256 totalSupply;
+        uint256 totalSupplyScaled;
         address chefAddress;
-        uint256 chefBalance;
+        uint256 chefBalanceScaled;
         uint256 chefTotalAlloc;
         uint256 chefJoePerSec;
     }
@@ -496,7 +498,9 @@ contract FarmLens is BoringOwnable {
 
             // filtering out farms that chef has no balance in
             uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance == 0) { continue; } 
+            if (balance == 0) {
+                continue;
+            }
 
             // get pair information
             address lpAddress = address(lpToken);
@@ -512,10 +516,10 @@ contract FarmLens is BoringOwnable {
             farmPairs[farmPairIndex].reserveUSD = getReserveUSD(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairIndex].totalSupply = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairIndex].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            farmPairs[farmPairIndex].chefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairIndex].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
             farmPairs[farmPairIndex].chefAddress = chefAddress;
             farmPairs[farmPairIndex].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
             farmPairs[farmPairIndex].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
