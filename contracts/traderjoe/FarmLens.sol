@@ -149,85 +149,46 @@ contract FarmLens is BoringOwnable {
 
     /// @notice Gets the farm pair data for a given MasterChef.
     /// @param chefAddress The address of the MasterChef.
-    /// @param blacklistedPids Array of all ids of pools that are blacklisted from our farms.
-    function getFarmPairs(address chefAddress, uint256[] calldata blacklistedPids)
+    /// @param whitelistedPids Array of all ids of pools that are whitelisted and valid to have their farm data returned.
+    function getFarmPairs(address chefAddress, uint256[] calldata whitelistedPids)
         public
         view
         returns (FarmPair[] memory)
     {
         IMasterChef chef = IMasterChef(chefAddress);
-        uint256 poolsLength = chef.poolLength();
 
-        FarmPair[] memory farmPairs = new FarmPair[](poolsLength - blacklistedPids.length);
-        uint256 farmPairsIndex = 0;
+        uint256 whitelistLength = whitelistedPids.length;
+        FarmPair[] memory farmPairs = new FarmPair[](whitelistLength);
 
-        for (uint256 i = 0; i < poolsLength; i++) {
-            if (_pidInBlacklist(i, blacklistedPids)) {
-                continue;
-            }
-
-            IMasterChef.PoolInfo memory pool = chef.poolInfo(i);
+        for (uint256 i = 0; i < whitelistLength; i++) {
+            IMasterChef.PoolInfo memory pool = chef.poolInfo(whitelistedPids[i]);
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
             // get pair information
-            PairDataForFarm memory pair = _getPairData(lpToken);
-            farmPairs[farmPairsIndex].lpAddress = pair.lpAddress;
-            farmPairs[farmPairsIndex].token0Address = pair.token0Address;
-            farmPairs[farmPairsIndex].token1Address = pair.token1Address;
-            farmPairs[farmPairsIndex].token0Symbol = pair.token0Symbol;
-            farmPairs[farmPairsIndex].token1Symbol = pair.token1Symbol;
+            address lpAddress = address(lpToken);
+            address token0Address = lpToken.token0();
+            address token1Address = lpToken.token1();
+            farmPairs[i].lpAddress = lpAddress;
+            farmPairs[i].token0Address = token0Address;
+            farmPairs[i].token1Address = token1Address;
+            farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
+            farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
 
             // calculate reserveUsd of lp
-            farmPairs[farmPairsIndex].reserveUsd = getReserveUsd(lpToken); // 18
+            farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(pair.lpAddress));
+            farmPairs[i].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(_tokenDecimalsMultiplier(pair.lpAddress));
-            farmPairs[farmPairsIndex].chefAddress = chefAddress;
-            farmPairs[farmPairsIndex].chefTotalAlloc = chef.totalAllocPoint();
-            farmPairs[farmPairsIndex].chefJoePerSec = chef.joePerSec();
-            farmPairsIndex++;
+            uint256 balance = lpToken.balanceOf(chefAddress);
+            farmPairs[i].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[i].chefAddress = chefAddress;
+            farmPairs[i].chefTotalAlloc = chef.totalAllocPoint();
+            farmPairs[i].chefJoePerSec = chef.joePerSec();
         }
 
         return farmPairs;
-    }
-
-    struct PairDataForFarm {
-        address lpAddress;
-        address token0Address;
-        address token1Address;
-        string token0Symbol;
-        string token1Symbol;
-    }
-
-    /// @notice Retrieves the pair data for a given lp token
-    /// @param lpToken The lp token to get pair data for
-    /// @dev This logic is seperated out to avoid a call stack error from having too many local variables in getFarmPairs()
-    function _getPairData(IJoePair lpToken) private view returns (PairDataForFarm memory) {
-        PairDataForFarm memory pair;
-
-        address lpAddress = address(lpToken);
-        address token0Address = lpToken.token0();
-        address token1Address = lpToken.token1();
-        pair.lpAddress = lpAddress;
-        pair.token0Address = token0Address;
-        pair.token1Address = token1Address;
-        pair.token0Symbol = IJoeERC20(token0Address).symbol();
-        pair.token1Symbol = IJoeERC20(token1Address).symbol();
-
-        return pair;
-    }
-
-    function _pidInBlacklist(uint256 pid, uint256[] calldata blacklistedPids) private view returns (bool) {
-        for (uint256 i = 0; i < blacklistedPids.length; i++) {
-            if (blacklistedPids[i] == pid) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     struct AllFarmData {
@@ -241,9 +202,9 @@ contract FarmLens is BoringOwnable {
         FarmPair[] farmPairsV3;
     }
 
-    /// @notice Get all data needed for farm pages on interface.
-    /// @param blacklistedPids Array of all ids of pools that are blacklisted from our farms.
-    function getAllFarmData(uint256[] calldata blacklistedPids) public view returns (AllFarmData memory) {
+    /// @notice Get all data needed for useFarms hook.
+    /// @param whitelistedPids Array of all ids of pools that are whitelisted and valid to have their farm data returned.
+    function getAllFarmData(uint256[] calldata whitelistedPids) public returns (AllFarmData memory) {
         AllFarmData memory allFarmData;
 
         allFarmData.avaxPriceUsd = getAvaxPrice();
@@ -255,8 +216,8 @@ contract FarmLens is BoringOwnable {
         allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
         allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
 
-        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2), blacklistedPids);
-        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3), blacklistedPids);
+        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2), whitelistedPids);
+        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3), whitelistedPids);
 
         return allFarmData;
     }
