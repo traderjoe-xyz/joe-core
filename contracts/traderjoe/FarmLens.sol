@@ -21,7 +21,7 @@ interface IMasterChef {
 
     function poolLength() external view returns (uint256);
 
-    function poolInfo() external view returns (PoolInfo[] memory);
+    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
 
     function totalAllocPoint() external view returns (uint256);
 
@@ -51,6 +51,7 @@ contract FarmLens is BoringOwnable {
         chefv3 = chefv3_;
     }
 
+    /// @notice Returns price of avax in usd.
     function getAvaxPrice() public view returns (uint256) {
         uint256 priceFromWavaxUsdt = _getAvaxPrice(IJoePair(address(0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256))); // 18
         uint256 priceFromWavaxUsdc = _getAvaxPrice(IJoePair(address(0x87Dee1cC9FFd464B79e058ba20387c1984aed86a))); // 18
@@ -61,6 +62,8 @@ contract FarmLens is BoringOwnable {
         return avaxPrice; // 18
     }
 
+    /// @notice Returns value of wavax in units of stablecoins per wavax.
+    /// @param pair A wavax-stablecoin pair.
     function _getAvaxPrice(IJoePair pair) private view returns (uint256) {
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
@@ -73,11 +76,15 @@ contract FarmLens is BoringOwnable {
         }
     }
 
-    function getPriceInUSD(address tokenAddress) public view returns (uint256) {
+    /// @notice Get the price of a token in Usd.
+    /// @param tokenAddress Address of the token.
+    function getPriceInUsd(address tokenAddress) public view returns (uint256) {
         return (getAvaxPrice().mul(getPriceInAvax(tokenAddress))) / 1e18; // 18
     }
 
-    /// @dev Need to be aware of decimals here, not always 18, it depends on the token
+    /// @notice Get the price of a token in Avax.
+    /// @param tokenAddress Address of the token.
+    /// @dev Need to be aware of decimals here, not always 18, it depends on the token.
     function getPriceInAvax(address tokenAddress) public view returns (uint256) {
         if (tokenAddress == wavax) {
             return 1e18;
@@ -98,12 +105,16 @@ contract FarmLens is BoringOwnable {
         }
     }
 
+    /// @notice Calculates the multiplier needed to scale a token's numerical field to 18 decimals.
+    /// @param tokenAddress Address of the token.
     function _tokenDecimalsMultiplier(address tokenAddress) private pure returns (uint256) {
         uint256 decimalsNeeded = 18 - IJoeERC20(tokenAddress).decimals();
         return 1 * (10**decimalsNeeded);
     }
 
-    function getReserveUSD(IJoePair pair) public view returns (uint256) {
+    /// @notice Calculates the reserve of a pair in usd.
+    /// @param pair Pair for which the reserve will be calculated.
+    function getReserveUsd(IJoePair pair) public view returns (uint256) {
         address token0Address = pair.token0();
         address token1Address = pair.token1();
 
@@ -116,10 +127,10 @@ contract FarmLens is BoringOwnable {
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
         uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36;
         uint256 reserve1Avax = reserve1.mul(token1PriceInAvax); // 36;
-        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18
-        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18
+        uint256 reserveAvax = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18
+        uint256 reserveUsd = (reserveAvax.mul(getAvaxPrice())) / 1e18; // 18
 
-        return reserveUSD; // 18
+        return reserveUsd; // 18
     }
 
     struct FarmPair {
@@ -128,7 +139,7 @@ contract FarmLens is BoringOwnable {
         address token1Address;
         string token0Symbol;
         string token1Symbol;
-        uint256 reserveUSD;
+        uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
         uint256 chefBalanceScaled;
@@ -136,25 +147,22 @@ contract FarmLens is BoringOwnable {
         uint256 chefJoePerSec;
     }
 
-    function getFarmPairs(address chefAddress)
+    /// @notice Gets the farm pair data for a given MasterChef.
+    /// @param chefAddress The address of the MasterChef.
+    /// @param whitelistedPids Array of all ids of pools that are whitelisted and valid to have their farm data returned.
+    function getFarmPairs(address chefAddress, uint256[] calldata whitelistedPids)
         public
         view
         returns (FarmPair[] memory)
     {
         IMasterChef chef = IMasterChef(chefAddress);
-        IMasterChef.PoolInfo[] memory chefPools = chef.poolInfo();
-        uint256 poolsLength = chef.poolLength();
-    
-        FarmPair[] memory farmPairs = new FarmPair[](poolsLength);
 
-        for (uint256 i = 0; i < poolsLength; i++) {
-            IJoePair lpToken = IJoePair(address(chefPools[i].lpToken));
+        uint256 whitelistLength = whitelistedPids.length;
+        FarmPair[] memory farmPairs = new FarmPair[](whitelistLength);
 
-            // filtering out farms that chef has no balance in
-            uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance == 0) {
-                continue;
-            }
+        for (uint256 i = 0; i < whitelistLength; i++) {
+            IMasterChef.PoolInfo memory pool = chef.poolInfo(whitelistedPids[i]);
+            IJoePair lpToken = IJoePair(address(pool.lpToken));
 
             // get pair information
             address lpAddress = address(lpToken);
@@ -166,25 +174,30 @@ contract FarmLens is BoringOwnable {
             farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
             farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
 
-            // calculate reserveUSD of lp
-            farmPairs[i].reserveUSD = getReserveUSD(lpToken); // 18
+            // calculate reserveUsd of lp
+            farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[i].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(
+                _tokenDecimalsMultiplier(pair.lpAddress)
+            );
 
             // get masterChef data
-            farmPairs[i].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
-            farmPairs[i].chefAddress = chefAddress;
-            farmPairs[i].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
-            farmPairs[i].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
+            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(
+                _tokenDecimalsMultiplier(pair.lpAddress)
+            );
+            farmPairs[farmPairsIndex].chefAddress = chefAddress;
+            farmPairs[farmPairsIndex].chefTotalAlloc = chef.totalAllocPoint();
+            farmPairs[farmPairsIndex].chefJoePerSec = chef.joePerSec();
+            farmPairsIndex++;
         }
 
         return farmPairs;
     }
 
     struct AllFarmData {
-        uint256 avaxPriceUSD;
-        uint256 joePriceUSD;
+        uint256 avaxPriceUsd;
+        uint256 joePriceUsd;
         uint256 totalAllocChefV2;
         uint256 totalAllocChefV3;
         uint256 joePerSecChefV2;
@@ -193,11 +206,13 @@ contract FarmLens is BoringOwnable {
         FarmPair[] farmPairsV3;
     }
 
-    function getAllFarmData() public view returns (AllFarmData memory) {
+    /// @notice Get all data needed for useFarms hook.
+    /// @param whitelistedPids Array of all ids of pools that are whitelisted and valid to have their farm data returned.
+    function getAllFarmData(uint256[] calldata whitelistedPids) public returns (AllFarmData memory) {
         AllFarmData memory allFarmData;
 
-        allFarmData.avaxPriceUSD = getAvaxPrice();
-        allFarmData.joePriceUSD = getPriceInUSD(joe);
+        allFarmData.avaxPriceUsd = getAvaxPrice();
+        allFarmData.joePriceUsd = getPriceInUsd(joe);
 
         allFarmData.totalAllocChefV2 = IMasterChef(chefv2).totalAllocPoint();
         allFarmData.joePerSecChefV2 = IMasterChef(chefv2).joePerSec();
@@ -205,8 +220,8 @@ contract FarmLens is BoringOwnable {
         allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
         allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
 
-        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2));
-        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3));
+        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2), whitelistedPids);
+        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3), whitelistedPids);
 
         return allFarmData;
     }
