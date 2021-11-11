@@ -181,10 +181,14 @@ contract FarmLens is BoringOwnable {
             farmPairs[farmPairsIndex].reserveUsd = getReserveUsd(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(pair.lpAddress));
+            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(
+                _tokenDecimalsMultiplier(pair.lpAddress)
+            );
 
             // get masterChef data
-            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(_tokenDecimalsMultiplier(pair.lpAddress));
+            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(
+                _tokenDecimalsMultiplier(pair.lpAddress)
+            );
             farmPairs[farmPairsIndex].chefAddress = chefAddress;
             farmPairs[farmPairsIndex].chefTotalAlloc = chef.totalAllocPoint();
             farmPairs[farmPairsIndex].chefJoePerSec = chef.joePerSec();
