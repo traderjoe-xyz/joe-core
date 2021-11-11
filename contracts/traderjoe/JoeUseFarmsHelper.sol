@@ -198,7 +198,11 @@ contract JoeUseFarmsHelper is BoringOwnable {
     /// @notice Get all data needed for useFarms hook.
     /// @param whitelistedPidsV2 Array of all ids of pools that are whitelisted in chefV2.
     /// @param whitelistedPidsV3 Array of all ids of pools that are whitelisted in chefV3.
-    function getAllFarmData(uint256[] calldata whitelistedPidsV2, uint256[] calldata whitelistedPidsV3) public view returns (AllFarmData memory) {
+    function getAllFarmData(uint256[] calldata whitelistedPidsV2, uint256[] calldata whitelistedPidsV3)
+        public
+        view
+        returns (AllFarmData memory)
+    {
         AllFarmData memory allFarmData;
 
         allFarmData.avaxPriceUSD = getAvaxPrice();
