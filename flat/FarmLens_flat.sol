@@ -488,6 +488,7 @@ contract FarmLens is BoringOwnable {
         address token1Address;
         string token0Symbol;
         string token1Symbol;
+        uint256 allocPoint; 
         uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
@@ -526,6 +527,7 @@ contract FarmLens is BoringOwnable {
             farmPairs[i].token1Address = token1Address;
             farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
             farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
+            farmPairs[i].allocPoint = pool.allocPoint;
 
             // calculate reserveUsd of lp
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
@@ -558,7 +560,11 @@ contract FarmLens is BoringOwnable {
     /// @notice Get all data needed for useFarms hook.
     /// @param whitelistedPidsV2 Array of all ids of pools that are whitelisted in chefV2.
     /// @param whitelistedPidsV3 Array of all ids of pools that are whitelisted in chefV3.
-    function getAllFarmData(uint256[] calldata whitelistedPidsV2, uint256[] calldata whitelistedPidsV3) public view returns (AllFarmData memory) {
+    function getAllFarmData(uint256[] calldata whitelistedPidsV2, uint256[] calldata whitelistedPidsV3)
+        public
+        view
+        returns (AllFarmData memory)
+    {
         AllFarmData memory allFarmData;
 
         allFarmData.avaxPriceUSD = getAvaxPrice();
