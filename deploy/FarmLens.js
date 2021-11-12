@@ -19,7 +19,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   } else {
     throw Error("No WAVAX!");
   }
-  if (chainId === "43114") {  
+  if (chainId === "43114") {
     wavaxUsdtAddress = address("0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256");
     wavaxUsdcAddress = address("0x87Dee1cC9FFd464B79e058ba20387c1984aed86a");
     wavaxDaiAddress = address("0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1");
