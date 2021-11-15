@@ -144,7 +144,7 @@ contract FarmLens is BoringOwnable {
 
     struct FarmPair {
         uint256 id;
-        uint256 allocPoint; 
+        uint256 allocPoint;
         address lpAddress;
         address token0Address;
         address token1Address;
@@ -175,7 +175,7 @@ contract FarmLens is BoringOwnable {
             IMasterChef.PoolInfo memory pool = chef.poolInfo(whitelistedPids[i]);
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
-            //get pool information 
+            //get pool information
             farmPairs[i].allocPoint = pool.allocPoint;
             farmPairs[i].id = i;
 
