@@ -175,7 +175,7 @@ contract FarmLens is BoringOwnable {
             IMasterChef.PoolInfo memory pool = chef.poolInfo(whitelistedPids[i]);
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
-            //get pool information 
+            //get pool information
             farmPairs[i].id = whitelistedPids[i];
             farmPairs[i].allocPoint = pool.allocPoint;
 
