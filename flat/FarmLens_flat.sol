@@ -492,12 +492,13 @@ contract FarmLens is BoringOwnable {
     }
 
     struct FarmPair {
+        uint256 id;
+        uint256 allocPoint; 
         address lpAddress;
         address token0Address;
         address token1Address;
         string token0Symbol;
         string token1Symbol;
-        uint256 allocPoint; 
         uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
@@ -523,6 +524,10 @@ contract FarmLens is BoringOwnable {
             IMasterChef.PoolInfo memory pool = chef.poolInfo(whitelistedPids[i]);
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
+            //get pool information 
+            farmPairs[i].allocPoint = pool.allocPoint;
+            farmPairs[i].id = i;
+
             // get pair information
             address lpAddress = address(lpToken);
             address token0Address = lpToken.token0();
@@ -532,7 +537,6 @@ contract FarmLens is BoringOwnable {
             farmPairs[i].token1Address = token1Address;
             farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
             farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
-            farmPairs[i].allocPoint = pool.allocPoint;
 
             // calculate reserveUsd of lp
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
