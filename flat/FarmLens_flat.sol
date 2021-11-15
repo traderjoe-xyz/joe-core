@@ -493,7 +493,7 @@ contract FarmLens is BoringOwnable {
 
     struct FarmPair {
         uint256 id;
-        uint256 allocPoint; 
+        uint256 allocPoint;
         address lpAddress;
         address token0Address;
         address token1Address;
