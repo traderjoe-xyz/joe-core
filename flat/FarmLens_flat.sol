@@ -525,8 +525,8 @@ contract FarmLens is BoringOwnable {
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
             //get pool information 
+            farmPairs[i].id = whitelistedPids[i];
             farmPairs[i].allocPoint = pool.allocPoint;
-            farmPairs[i].id = i;
 
             // get pair information
             address lpAddress = address(lpToken);
