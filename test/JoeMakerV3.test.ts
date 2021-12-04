@@ -158,8 +158,7 @@ describe("joeMakerV3", function () {
     it("reverts if convert is called by non auth", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
       await this.joeAvax.transfer(this.joeMakerV3.address, await this.joeAvax.balanceOf(this.dev.address))
-      await expect(this.joeMakerV3.connect(this.alice)
-          .convert(this.joe.address, this.wavax.address)).to.be.revertedWith("JoeMakerV3: FORBIDDEN")
+      await expect(this.joeMakerV3.connect(this.alice).convert(this.joe.address, this.wavax.address)).to.be.revertedWith("JoeMakerV3: FORBIDDEN")
     })
 
     it("should convert USDT - JOE", async function () {
@@ -292,9 +291,9 @@ describe("joeMakerV3", function () {
       this.wavaxERC20 = await this.ERC20CF.attach(WAVAX_ADDRESS)
 
       const barBalance = await this.joe.balanceOf(BAR_ADDRESS)
-      const devBalance = (await this.wavaxERC20.balanceOf(this.dev.address))
+      const devBalance = await this.wavaxERC20.balanceOf(this.dev.address)
 
-      await this.zap.zapIn(this.usdcAvax.address, { value: "2000000000000000000"})
+      await this.zap.zapIn(this.usdcAvax.address, { value: "2000000000000000000" })
       await this.usdcAvax.transfer(this.joeMakerV3.address, await this.usdcAvax.balanceOf(this.dev.address))
       await this.joeMakerV3.convert(this.usdc.address, this.wavax.address)
       expect(await this.joe.balanceOf(this.joeMakerV3.address)).to.equal(0)
