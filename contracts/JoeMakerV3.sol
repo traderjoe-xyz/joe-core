@@ -12,7 +12,7 @@ import "./traderjoe/interfaces/IJoeFactory.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// JoeMakerV2 is MasterJoe's left hand and kinda a wizard. He can cook up Joe from pretty much anything!
+// JoeMakerV3 is MasterJoe's left hand and kinda a wizard. He can cook up Joe from pretty much anything!
 // This contract handles "serving up" rewards for xJoe holders by trading tokens collected from fees for Joe.
 
 // T1 - T4: OK
