@@ -9,327 +9,185 @@ pragma solidity =0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeRouter02.sol";
 import "./traderjoe/interfaces/IWAVAX.sol";
 
-contract ZapV2 is OwnableUpgradeable {
+contract ZapV2 is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     /* ========== CONSTANT VARIABLES ========== */
 
-    address public JOE;
-    address public constant USDT = 0xde3A24028580884448a5397872046a019649b084;
-    address public constant DAI = 0xbA7dEebBFC5fA1100Fb055a87773e1E99Cd3507a;
     address public constant WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
     IJoeRouter02 private ROUTER;
 
-    /* ========== STATE VARIABLES ========== */
-
-    mapping(address => bool) private notLP;
-    mapping(address => address) private routePairAddresses;
-    address[] public tokens;
-
     /* ========== INITIALIZER ========== */
 
-    function initialize(address _joe, address _router) external initializer {
-        __Ownable_init();
+    constructor(address _router) public {
         require(owner() != address(0), "ZapV2ETH: owner must be set");
 
-        JOE = _joe;
         ROUTER = IJoeRouter02(_router);
-        setNotLP(WAVAX);
-        setNotLP(USDT);
-        setNotLP(JOE);
-        setNotLP(DAI);
     }
 
     receive() external payable {}
 
     /* ========== View Functions ========== */
 
-    function isLP(address _address) public view returns (bool) {
-        return !notLP[_address];
-    }
-
-    function routePair(address _address) external view returns (address) {
-        return routePairAddresses[_address];
-    }
+    //    function getAmountOutMin(
+    //        address pairAddress,
+    //        address tokenIn,
+    //        uint256 amountIn,
+    //        uint256 slippage
+    //    )  public view returns (uint256) {
+    //        require(slippage <= 490, "ZapV2: slippage too high");
+    //        IJoePair pair = IJoePair(pairAddress);
+    //        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+    //        uint256 ratio = tokenIn == pair.token0() ? reserve1.mul(1e18).div(reserve0) : reserve0.mul(1e18).div(reserve1);
+    //
+    //        return ratio.mul(1000 - slippage).mul(amountIn).div(1000).div(1e18);
+    //    }
 
     /* ========== External Functions ========== */
 
     function zapInToken(
-        address _from,
-        uint256 amount,
-        address _to
+        address tokenFrom,
+        uint256 amountFrom,
+        uint256 amount0Min,
+        uint256 amount1Min,
+        address[] calldata pathToToken0,
+        address[] calldata pathToToken1
+    ) public {
+        IERC20(tokenFrom).safeTransferFrom(msg.sender, address(this), amountFrom);
+        _approveTokenIfNeeded(tokenFrom, amountFrom);
+
+        (address token0, address token1) = _getTokens(pathToToken0, pathToToken1);
+
+        uint256 amount0 = _swapHalfIfNeeded(amountFrom, amount0Min, pathToToken0);
+        uint256 amount1 = _swapHalfIfNeeded(amountFrom, amount1Min, pathToToken1);
+
+        _approveTokenIfNeeded(token0, amount0);
+        _approveTokenIfNeeded(token1, amount1);
+
+        ROUTER.addLiquidity(
+        token0,
+        token1,
+        amount0,
+        amount1,
+        amount0Min,
+        amount1Min,
+        msg.sender,
+        block.timestamp
+        );
+    }
+
+    function zapIn(
+        uint256 amount0Min,
+        uint256 amount1Min,
+        address[] calldata pathToToken0,
+        address[] calldata pathToToken1
+    ) external payable {
+        IWAVAX(WAVAX).deposit{value: msg.value}();
+        zapInToken(
+            WAVAX,
+            msg.value,
+            amount0Min,
+            amount1Min,
+            pathToToken0,
+            pathToToken1
+        );
+    }
+
+    function zapOut(
+        address pairFrom,
+        uint256 amountFrom,
+        uint256 amountToMin,
+        address[] calldata pathFromToken0,
+        address[] calldata pathFromToken1
     ) external {
-        IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
-        _approveTokenIfNeeded(_from);
+        IERC20(pairFrom).safeTransferFrom(msg.sender, address(this), amountFrom);
+        _approveTokenIfNeeded(pairFrom, amountFrom);
 
-        if (isLP(_to)) {
-            IJoePair pair = IJoePair(_to);
-            address token0 = pair.token0();
-            address token1 = pair.token1();
-            if (_from == token0 || _from == token1) {
-                // swap half amount for other
-                address other = _from == token0 ? token1 : token0;
-                _approveTokenIfNeeded(other);
-                uint256 sellAmount = amount.div(2);
-                uint256 otherAmount = _swap(_from, sellAmount, other, address(this));
-                ROUTER.addLiquidity(
-                    _from,
-                    other,
-                    amount.sub(sellAmount),
-                    otherAmount,
-                    0,
-                    0,
-                    msg.sender,
-                    block.timestamp
-                );
-            } else {
-                uint256 avaxAmount = _swapTokenForAVAX(_from, amount, address(this));
-                _swapAVAXToLP(_to, avaxAmount, msg.sender);
-            }
-        } else {
-            _swap(_from, amount, _to, msg.sender);
-        }
-    }
+        IJoePair pair = IJoePair(pairFrom);
+        address token0 = pair.token0();
+        address token1 = pair.token1();
 
-    function zapIn(address _to) external payable {
-        _swapAVAXToLP(_to, msg.value, msg.sender);
-    }
+        (uint256 balance0, uint256 balance1) = _removeLiquidity(token0, token1, amountFrom);
 
-    function zapOut(address _from, uint256 amount) external {
-        IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
-        _approveTokenIfNeeded(_from);
+        uint256 balance = _swapExactTokensForTokens(balance0, 0, pathFromToken0);
+        balance += _swapExactTokensForTokens(balance1, 0, pathFromToken1);
 
-        if (!isLP(_from)) {
-            _swapTokenForAVAX(_from, amount, msg.sender);
-        } else {
-            IJoePair pair = IJoePair(_from);
-            address token0 = pair.token0();
-            address token1 = pair.token1();
-            if (token0 == WAVAX || token1 == WAVAX) {
-                ROUTER.removeLiquidityAVAX(
-                    token0 != WAVAX ? token0 : token1,
-                    amount,
-                    0,
-                    0,
-                    msg.sender,
-                    block.timestamp
-                );
-            } else {
-                ROUTER.removeLiquidity(token0, token1, amount, 0, 0, msg.sender, block.timestamp);
-            }
-        }
+        require(balance >= amountToMin, "ZapV2: INSUFFICIENT_TOKEN_AMOUNT");
     }
 
     /* ========== Private Functions ========== */
 
-    function _approveTokenIfNeeded(address token) private {
-        if (IERC20(token).allowance(address(this), address(ROUTER)) == 0) {
+    function _approveTokenIfNeeded(address token, uint256 amount) private {
+        if (IERC20(token).allowance(address(this), address(ROUTER)) < amount) {
             IERC20(token).safeApprove(address(ROUTER), uint256(~0));
         }
     }
 
-    function _swapAVAXToLP(
-        address lp,
-        uint256 amount,
-        address receiver
-    ) private {
-        if (!isLP(lp)) {
-            _swapAVAXForToken(lp, amount, receiver);
-        } else {
-            // lp
-            IJoePair pair = IJoePair(lp);
-            address token0 = pair.token0();
-            address token1 = pair.token1();
-            if (token0 == WAVAX || token1 == WAVAX) {
-                address token = token0 == WAVAX ? token1 : token0;
-                uint256 swapValue = amount.div(2);
-                uint256 tokenAmount = _swapAVAXForToken(token, swapValue, address(this));
-
-                _approveTokenIfNeeded(token);
-                ROUTER.addLiquidityAVAX{value: amount.sub(swapValue)}(
-                    token,
-                    tokenAmount,
-                    0,
-                    0,
-                    receiver,
-                    block.timestamp
-                );
-            } else {
-                uint256 swapValue = amount.div(2);
-                uint256 token0Amount = _swapAVAXForToken(token0, swapValue, address(this));
-                uint256 token1Amount = _swapAVAXForToken(token1, amount.sub(swapValue), address(this));
-
-                _approveTokenIfNeeded(token0);
-                _approveTokenIfNeeded(token1);
-                ROUTER.addLiquidity(token0, token1, token0Amount, token1Amount, 0, 0, receiver, block.timestamp);
-            }
-        }
+    function _swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path
+    ) private returns (uint256 balanceOut){
+        IERC20 tokenOut = IERC20(path[path.length - 1]);
+        uint256 balanceBefore = tokenOut.balanceOf(address(this));
+        ROUTER.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), block.timestamp);
+        balanceOut = tokenOut.balanceOf(address(this)).sub(balanceBefore);
+        require(balanceOut >= amountOutMin, "ZapV2: INSUFFICIENT_TOKEN_AMOUNT");
     }
 
-    function _swapAVAXForToken(
-        address token,
-        uint256 value,
-        address receiver
-    ) private returns (uint256) {
-        address[] memory path;
-
-        if (routePairAddresses[token] != address(0)) {
-            path = new address[](3);
-            path[0] = WAVAX;
-            path[1] = routePairAddresses[token];
-            path[2] = token;
-        } else {
-            path = new address[](2);
-            path[0] = WAVAX;
-            path[1] = token;
-        }
-
-        uint256[] memory amounts = ROUTER.swapExactAVAXForTokens{value: value}(0, path, receiver, block.timestamp);
-        return amounts[amounts.length - 1];
+    function _swapHalfIfNeeded(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path
+    ) private returns (uint256 amountOut){
+        uint256 sellAmount = amountIn / 2;
+        if (path.length >= 2)
+            amountOut = _swapExactTokensForTokens(amountIn.div(2), amountOutMin, path);
+        else
+            amountOut = sellAmount;
     }
 
-    function _swapTokenForAVAX(
-        address token,
-        uint256 amount,
-        address receiver
-    ) private returns (uint256) {
-        address[] memory path;
-        if (routePairAddresses[token] != address(0)) {
-            path = new address[](3);
-            path[0] = token;
-            path[1] = routePairAddresses[token];
-            path[2] = WAVAX;
-        } else {
-            path = new address[](2);
-            path[0] = token;
-            path[1] = WAVAX;
-        }
-
-        uint256[] memory amounts = ROUTER.swapExactTokensForAVAX(amount, 0, path, receiver, block.timestamp);
-        return amounts[amounts.length - 1];
+    function _getTokens(
+        address[] calldata path0,
+        address[] calldata path1
+    ) private pure returns (address, address){
+        uint256 len0 = path0.length;
+        uint256 len1 = path1.length;
+        return (path0[len0 - 1], path1[len1 - 1]);
     }
 
-    function _swap(
-        address _from,
-        uint256 amount,
-        address _to,
-        address receiver
-    ) private returns (uint256) {
-        address intermediate = routePairAddresses[_from];
-        if (intermediate == address(0)) {
-            intermediate = routePairAddresses[_to];
-        }
+    function _removeLiquidity(
+        address token0Address,
+        address token1Address,
+        uint256 amount
+    ) private returns (uint256 balance0, uint256 balance1) {
+        IERC20 token0 = IERC20(token0Address);
+        IERC20 token1 = IERC20(token1Address);
 
-        address[] memory path;
-        if (intermediate != address(0) && (_from == WAVAX || _to == WAVAX)) {
-            // [WAVAX, BUSD, VAI] or [VAI, BUSD, WAVAX]
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = intermediate;
-            path[2] = _to;
-        } else if (intermediate != address(0) && (_from == intermediate || _to == intermediate)) {
-            // [VAI, BUSD] or [BUSD, VAI]
-            path = new address[](2);
-            path[0] = _from;
-            path[1] = _to;
-        } else if (intermediate != address(0) && routePairAddresses[_from] == routePairAddresses[_to]) {
-            // [VAI, DAI] or [VAI, USDC]
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = intermediate;
-            path[2] = _to;
-        } else if (
-            routePairAddresses[_from] != address(0) &&
-            routePairAddresses[_to] != address(0) &&
-            routePairAddresses[_from] != routePairAddresses[_to]
-        ) {
-            // routePairAddresses[xToken] = xRoute
-            // [VAI, BUSD, WAVAX, xRoute, xToken]
-            path = new address[](5);
-            path[0] = _from;
-            path[1] = routePairAddresses[_from];
-            path[2] = WAVAX;
-            path[3] = routePairAddresses[_to];
-            path[4] = _to;
-        } else if (intermediate != address(0) && routePairAddresses[_from] != address(0)) {
-            // [VAI, BUSD, WAVAX, BUNNY]
-            path = new address[](4);
-            path[0] = _from;
-            path[1] = intermediate;
-            path[2] = WAVAX;
-            path[3] = _to;
-        } else if (intermediate != address(0) && routePairAddresses[_to] != address(0)) {
-            // [BUNNY, WAVAX, BUSD, VAI]
-            path = new address[](4);
-            path[0] = _from;
-            path[1] = WAVAX;
-            path[2] = intermediate;
-            path[3] = _to;
-        } else if (_from == WAVAX || _to == WAVAX) {
-            // [WAVAX, BUNNY] or [BUNNY, WAVAX]
-            path = new address[](2);
-            path[0] = _from;
-            path[1] = _to;
-        } else {
-            // [USDT, BUNNY] or [BUNNY, USDT]
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = WAVAX;
-            path[2] = _to;
-        }
-
-        uint256[] memory amounts = ROUTER.swapExactTokensForTokens(amount, 0, path, receiver, block.timestamp);
-        return amounts[amounts.length - 1];
+        uint256 balance0Before = token0.balanceOf(address(this));
+        uint256 balance1Before = token1.balanceOf(address(this));
+        ROUTER.removeLiquidity(
+            token0Address,
+            token1Address,
+            amount,
+            0,
+            0,
+            address(this),
+            block.timestamp
+        );
+        balance0 = token0.balanceOf(address(this)) - balance0Before;
+        balance1 = token0.balanceOf(address(this)) - balance1Before;
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
-    function setRoutePairAddress(address asset, address route) external onlyOwner {
-        routePairAddresses[asset] = route;
-    }
-
-    function setNotLP(address token) public onlyOwner {
-        bool needPush = notLP[token] == false;
-        notLP[token] = true;
-        if (needPush) {
-            tokens.push(token);
-        }
-    }
-
-    function removeToken(uint256 i) external onlyOwner {
-        address token = tokens[i];
-        notLP[token] = false;
-        tokens[i] = tokens[tokens.length - 1];
-        tokens.pop();
-    }
-
-    function sweep() external onlyOwner {
-        for (uint256 i = 0; i < tokens.length; i++) {
-            address token = tokens[i];
-            if (token == address(0)) continue;
-            uint256 amount = IERC20(token).balanceOf(address(this));
-            if (amount > 0) {
-                if (token == WAVAX) {
-                    IWAVAX(token).withdraw(amount);
-                } else {
-                    _swapTokenForAVAX(token, amount, owner());
-                }
-            }
-        }
-
-        uint256 balance = address(this).balance;
-        if (balance > 0) {
-            payable(owner()).transfer(balance);
-        }
-    }
 
     function withdraw(address token) external onlyOwner {
         if (token == address(0)) {
