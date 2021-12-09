@@ -370,7 +370,7 @@ interface IMasterChef {
 
     function poolLength() external view returns (uint256);
 
-    function poolInfo() external view returns (PoolInfo[] memory);
+    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
 
     function totalAllocPoint() external view returns (uint256);
 
@@ -409,6 +409,7 @@ contract FarmLens is BoringOwnable {
         chefv3 = chefv3_;
     }
 
+    /// @notice Returns price of avax in usd.
     function getAvaxPrice() public view returns (uint256) {
         uint256 priceFromWavaxUsdt = _getAvaxPrice(IJoePair(wavaxUsdt)); // 18
         uint256 priceFromWavaxUsdc = _getAvaxPrice(IJoePair(wavaxUsdc)); // 18
@@ -419,6 +420,8 @@ contract FarmLens is BoringOwnable {
         return avaxPrice; // 18
     }
 
+    /// @notice Returns value of wavax in units of stablecoins per wavax.
+    /// @param pair A wavax-stablecoin pair.
     function _getAvaxPrice(IJoePair pair) private view returns (uint256) {
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
@@ -431,11 +434,15 @@ contract FarmLens is BoringOwnable {
         }
     }
 
-    function getPriceInUSD(address tokenAddress) public view returns (uint256) {
+    /// @notice Get the price of a token in Usd.
+    /// @param tokenAddress Address of the token.
+    function getPriceInUsd(address tokenAddress) public view returns (uint256) {
         return (getAvaxPrice().mul(getPriceInAvax(tokenAddress))) / 1e18; // 18
     }
 
-    /// @dev Need to be aware of decimals here, not always 18, it depends on the token
+    /// @notice Get the price of a token in Avax.
+    /// @param tokenAddress Address of the token.
+    /// @dev Need to be aware of decimals here, not always 18, it depends on the token.
     function getPriceInAvax(address tokenAddress) public view returns (uint256) {
         if (tokenAddress == wavax) {
             return 1e18;
@@ -456,12 +463,16 @@ contract FarmLens is BoringOwnable {
         }
     }
 
+    /// @notice Calculates the multiplier needed to scale a token's numerical field to 18 decimals.
+    /// @param tokenAddress Address of the token.
     function _tokenDecimalsMultiplier(address tokenAddress) private pure returns (uint256) {
         uint256 decimalsNeeded = 18 - IJoeERC20(tokenAddress).decimals();
         return 1 * (10**decimalsNeeded);
     }
 
-    function getReserveUSD(IJoePair pair) public view returns (uint256) {
+    /// @notice Calculates the reserve of a pair in usd.
+    /// @param pair Pair for which the reserve will be calculated.
+    function getReserveUsd(IJoePair pair) public view returns (uint256) {
         address token0Address = pair.token0();
         address token1Address = pair.token1();
 
@@ -474,15 +485,15 @@ contract FarmLens is BoringOwnable {
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
         uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36;
         uint256 reserve1Avax = reserve1.mul(token1PriceInAvax); // 36;
-        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18
-        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18
+        uint256 reserveAvax = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18
+        uint256 reserveUsd = (reserveAvax.mul(getAvaxPrice())) / 1e18; // 18
 
-        return reserveUSD; // 18
+        return reserveUsd; // 18
     }
 
     struct FarmPair {
         uint256 id;
-        uint256 allocPoint; 
+        uint256 allocPoint;
         address lpAddress;
         address token0Address;
         address token1Address;
@@ -514,8 +525,8 @@ contract FarmLens is BoringOwnable {
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
             //get pool information 
+            farmPairs[i].id = whitelistedPids[i];
             farmPairs[i].allocPoint = pool.allocPoint;
-            farmPairs[i].id = i;
 
             // get pair information
             address lpAddress = address(lpToken);
@@ -545,8 +556,8 @@ contract FarmLens is BoringOwnable {
     }
 
     struct AllFarmData {
-        uint256 avaxPriceUSD;
-        uint256 joePriceUSD;
+        uint256 avaxPriceUsd;
+        uint256 joePriceUsd;
         uint256 totalAllocChefV2;
         uint256 totalAllocChefV3;
         uint256 joePerSecChefV2;
@@ -565,8 +576,8 @@ contract FarmLens is BoringOwnable {
     {
         AllFarmData memory allFarmData;
 
-        allFarmData.avaxPriceUSD = getAvaxPrice();
-        allFarmData.joePriceUSD = getPriceInUSD(joe);
+        allFarmData.avaxPriceUsd = getAvaxPrice();
+        allFarmData.joePriceUsd = getPriceInUsd(joe);
 
         allFarmData.totalAllocChefV2 = IMasterChef(chefv2).totalAllocPoint();
         allFarmData.joePerSecChefV2 = IMasterChef(chefv2).joePerSec();
