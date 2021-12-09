@@ -141,9 +141,38 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
 
             // calculate total supply
-            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress);
+            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress));
         }
 
         return farmPairs;
+    }
+
+    struct AllFarmData {
+        uint256 avaxPriceUSD; 
+        uint256 joePriceUSD;
+        uint256 totalAllocChef;
+        uint256 totalAllocChefV3;
+        uint256 joePerSecChef;
+        uint256 joePerSecChefV3;
+        FarmPair[] farmPairs;
+        FarmPair[] farmPairsV3; 
+    }
+
+    function getAllFarmData(address[] calldata pairAddresses) public view returns (AllFarmData memory) {
+        AllFarmData memory allFarmData;
+
+        allFarmData.avaxPriceUSD = getAvaxPrice();
+        allFarmData.joePriceUSD = getPriceInUSD(joe);
+
+        allFarmData.totalAllocChef = IMasterChef(chef).totalAllocPoint();
+        allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
+
+        allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
+        allFarmData.joePerSecChef = IMasterChef(chefv3).joePerSec();
+
+        allFarmData.farmPairs = getFarmPairs(pairAddresses, address(chef));
+        allFarmData.farmPairsV3 = getFarmPairs(pairAddresses, address(chefv3));
+
+        return allFarmData;
     }
 }
