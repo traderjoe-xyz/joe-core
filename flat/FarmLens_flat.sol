@@ -488,7 +488,6 @@ contract FarmLens is BoringOwnable {
         address token1Address;
         string token0Symbol;
         string token1Symbol;
-        uint256 allocPoint; 
         uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
@@ -527,7 +526,6 @@ contract FarmLens is BoringOwnable {
             farmPairs[i].token1Address = token1Address;
             farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
             farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
-            farmPairs[i].allocPoint = pool.allocPoint;
 
             // calculate reserveUsd of lp
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
