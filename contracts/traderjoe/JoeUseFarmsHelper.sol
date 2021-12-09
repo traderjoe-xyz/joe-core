@@ -184,18 +184,14 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(
-                _tokenDecimalsMultiplier(pair.lpAddress)
-            );
+            farmPairs[i].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(
-                _tokenDecimalsMultiplier(pair.lpAddress)
-            );
-            farmPairs[farmPairsIndex].chefAddress = chefAddress;
-            farmPairs[farmPairsIndex].chefTotalAlloc = chef.totalAllocPoint();
-            farmPairs[farmPairsIndex].chefJoePerSec = chef.joePerSec();
-            farmPairsIndex++;
+            uint256 balance = lpToken.balanceOf(chefAddress);
+            farmPairs[i].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[i].chefAddress = chefAddress;
+            farmPairs[i].chefTotalAlloc = chef.totalAllocPoint();
+            farmPairs[i].chefJoePerSec = chef.joePerSec();
         }
 
         return farmPairs;
@@ -213,13 +209,8 @@ contract JoeUseFarmsHelper is BoringOwnable {
     }
 
     /// @notice Get all data needed for useFarms hook.
-    /// @param whitelistedPidsV2 Array of all ids of pools that are whitelisted in chefV2.
-    /// @param whitelistedPidsV3 Array of all ids of pools that are whitelisted in chefV3.
-    function getAllFarmData(uint256[] calldata whitelistedPidsV2, uint256[] calldata whitelistedPidsV3)
-        public
-        view
-        returns (AllFarmData memory)
-    {
+    /// @param whitelistedPids Array of all ids of pools that are whitelisted and valid to have their farm data returned.
+    function getAllFarmData(uint256[] calldata whitelistedPids) public returns (AllFarmData memory) {
         AllFarmData memory allFarmData;
 
         allFarmData.avaxPriceUSD = getAvaxPrice();
@@ -231,8 +222,8 @@ contract JoeUseFarmsHelper is BoringOwnable {
         allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
         allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
 
-        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2), whitelistedPidsV2);
-        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3), whitelistedPidsV3);
+        allFarmData.farmPairsV2 = getFarmPairs(address(chefv2), whitelistedPids);
+        allFarmData.farmPairsV3 = getFarmPairs(address(chefv3), whitelistedPids);
 
         return allFarmData;
     }
