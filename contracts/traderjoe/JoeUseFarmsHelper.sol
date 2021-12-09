@@ -105,17 +105,17 @@ contract JoeUseFarmsHelper is BoringOwnable {
         address token0Address = pair.token0();
         address token1Address = pair.token1();
 
-        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves(); 
-        
+        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+
         reserve0 = reserve0.mul(_tokenDecimalsMultiplier(token0Address)); // 18
         reserve1 = reserve1.mul(_tokenDecimalsMultiplier(token1Address)); // 18
 
         uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
         uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-        uint256 reserve0Avax = reserve0.mul(token0PriceInAvax); // 36; 
-        uint256 reserve1Avax = reserve1.mul(token1PriceInAvax); // 36;
-        uint256 reserveAVAX = (reserve0Avax.add(reserve1Avax)) / 1e18; // 18  
-        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / 1e18; // 18 
+        uint256 reserve0Avax = (reserve0.mul(uint256(1e18))) / token0PriceInAvax; // 18;
+        uint256 reserve1Avax = (reserve1.mul(uint256(1e18))) / token1PriceInAvax; // 18;
+        uint256 reserveAVAX = reserve0Avax.add(reserve1Avax); // 18
+        uint256 reserveUSD = (reserveAVAX.mul(getAvaxPrice())) / uint256(1e18); // 18
 
         return reserveUSD; // 18
     }
@@ -142,7 +142,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
         uint256 farmCount;
         uint256 farmPairIndex = 0;
         // get count of farm pairs that this masterChef owns, needed due to solidity lacking dynamic memory array support
-         for (uint256 i = 0; i < pairAddresses.length; i++) {
+        for (uint256 i = 0; i < pairAddresses.length; i++) {
             IJoePair lpToken = IJoePair(pairAddresses[i]);
             uint256 balance = lpToken.balanceOf(chefAddress);
             if (balance > 0) {
@@ -157,7 +157,9 @@ contract JoeUseFarmsHelper is BoringOwnable {
 
             // filtering out farms that chef has no balance in
             uint256 balance = lpToken.balanceOf(chefAddress);
-            if (balance == 0) { continue; } 
+            if (balance == uint256(0)) {
+                continue;
+            }
 
             // get pair information
             address lpAddress = address(lpToken);
