@@ -133,16 +133,13 @@ contract JoeUseFarmsHelper is BoringOwnable {
 
     struct FarmPair {
         uint256 id;
-<<<<<<< HEAD:contracts/traderjoe/JoeUseFarmsHelper.sol
-        uint256 allocPoint;
-=======
         uint256 allocPoint; 
->>>>>>> ef8b44c (add pool id to return):contracts/traderjoe/FarmLens.sol
         address lpAddress;
         address token0Address;
         address token1Address;
         string token0Symbol;
         string token1Symbol;
+        uint256 allocPoint;
         uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
@@ -168,12 +165,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
             IMasterChef.PoolInfo memory pool = chef.poolInfo(whitelistedPids[i]);
             IJoePair lpToken = IJoePair(address(pool.lpToken));
 
-<<<<<<< HEAD:contracts/traderjoe/JoeUseFarmsHelper.sol
-            //get pool information
-            farmPairs[i].id = whitelistedPids[i];
-=======
             //get pool information 
->>>>>>> ef8b44c (add pool id to return):contracts/traderjoe/FarmLens.sol
             farmPairs[i].allocPoint = pool.allocPoint;
             farmPairs[i].id = i;
 
