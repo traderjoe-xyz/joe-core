@@ -1,6 +1,7 @@
-// File: @openzeppelin/contracts/math/SafeMath.sol
+// SPDX-License-Identifier: MIXED
 
-// SPDX-License-Identifier: MIT
+// File @openzeppelin/contracts/math/SafeMath.sol@v3.4.2
+// License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -215,8 +216,8 @@ library SafeMath {
     }
 }
 
-// File: @openzeppelin/contracts/utils/Address.sol
-
+// File @openzeppelin/contracts/utils/Address.sol@v3.4.2
+// License-Identifier: MIT
 
 pragma solidity >=0.6.2 <0.8.0;
 
@@ -406,8 +407,72 @@ library Address {
     }
 }
 
-// File: contracts/boringcrypto/BoringOwnable.sol
+// File @openzeppelin/contracts/utils/ReentrancyGuard.sol@v3.4.2
+// License-Identifier: MIT
 
+pragma solidity >=0.6.0 <0.8.0;
+
+/**
+ * @dev Contract module that helps prevent reentrant calls to a function.
+ *
+ * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
+ * available, which can be applied to functions to make sure there are no nested
+ * (reentrant) calls to them.
+ *
+ * Note that because there is a single `nonReentrant` guard, functions marked as
+ * `nonReentrant` may not call one another. This can be worked around by making
+ * those functions `private`, and then adding `external` `nonReentrant` entry
+ * points to them.
+ *
+ * TIP: If you would like to learn more about reentrancy and alternative ways
+ * to protect against it, check out our blog post
+ * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
+ */
+abstract contract ReentrancyGuard {
+    // Booleans are more expensive than uint256 or any type that takes up a full
+    // word because each write operation emits an extra SLOAD to first read the
+    // slot's contents, replace the bits taken up by the boolean, and then write
+    // back. This is the compiler's defense against contract upgrades and
+    // pointer aliasing, and it cannot be disabled.
+
+    // The values being non-zero value makes deployment a bit more expensive,
+    // but in exchange the refund on every call to nonReentrant will be lower in
+    // amount. Since refunds are capped to a percentage of the total
+    // transaction's gas, it is best to keep them low in cases like this one, to
+    // increase the likelihood of the full refund coming into effect.
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor () internal {
+        _status = _NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and make it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _status = _ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _status = _NOT_ENTERED;
+    }
+}
+
+// File contracts/boringcrypto/BoringOwnable.sol
+// License-Identifier: MIT
 pragma solidity 0.6.12;
 
 // Audit on 5-Jan-2021 by Keno and BoringCrypto
@@ -472,8 +537,8 @@ contract BoringOwnable is BoringOwnableData {
     }
 }
 
-// File: contracts/interfaces/IERC20.sol
-
+// File contracts/interfaces/IERC20.sol
+// License-Identifier: MIT
 pragma solidity 0.6.12;
 
 interface IERC20 {
@@ -500,10 +565,9 @@ interface IERC20 {
     ) external;
 }
 
-// File: contracts/libraries/SafeERC20.sol
-
+// File contracts/libraries/SafeERC20.sol
+// License-Identifier: MIT
 pragma solidity 0.6.12;
-
 
 library SafeERC20 {
     function safeSymbol(IERC20 token) internal view returns (string memory) {
@@ -542,8 +606,8 @@ library SafeERC20 {
     }
 }
 
-// File: contracts/rewarders/SimpleRewarderPerSec.sol
-
+// File contracts/rewarders/SimpleRewarderPerSec.sol
+// License-Identifier: GPL-3.0
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -592,7 +656,7 @@ interface IMasterChefJoe {
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
  */
-contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
+contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -607,6 +671,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
+        uint256 unpaidRewards;
     }
 
     /// @notice Info of each MCJ poolInfo.
@@ -628,8 +693,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
-    modifier onlyMCJ {
-        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe  can call this function");
+    modifier onlyMCJ() {
+        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe can call this function");
         _;
     }
 
@@ -685,38 +750,42 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
     /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ {
+    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ nonReentrant {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
-        uint256 pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
-        uint256 prevAmount = user.amount;
+        uint256 pending;
+        if (user.amount > 0) {
+            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
+                user.unpaidRewards
+            );
 
-        // Effects before interactions to prevent re-entrancy
-        user.amount = _lpAmount;
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
-
-        if (prevAmount > 0) {
             if (isNative) {
                 uint256 balance = address(this).balance;
                 if (pending > balance) {
                     (bool success, ) = _user.call.value(balance)("");
                     require(success, "Transfer failed");
+                    user.unpaidRewards = pending - balance;
                 } else {
                     (bool success, ) = _user.call.value(pending)("");
                     require(success, "Transfer failed");
+                    user.unpaidRewards = 0;
                 }
             } else {
                 uint256 balance = rewardToken.balanceOf(address(this));
                 if (pending > balance) {
                     rewardToken.safeTransfer(_user, balance);
+                    user.unpaidRewards = pending - balance;
                 } else {
                     rewardToken.safeTransfer(_user, pending);
+                    user.unpaidRewards = 0;
                 }
             }
         }
 
-        emit OnReward(_user, pending);
+        user.amount = _lpAmount;
+        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+        emit OnReward(_user, pending - user.unpaidRewards);
     }
 
     /// @notice View function to see pending tokens
@@ -735,7 +804,9 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable {
             accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
+            user.unpaidRewards
+        );
     }
 
     /// @notice In case rewarder is stopped before emissions finished, this function allows
