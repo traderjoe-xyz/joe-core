@@ -150,7 +150,6 @@ contract FarmLens is BoringOwnable {
         address token1Address;
         string token0Symbol;
         string token1Symbol;
-        uint256 allocPoint;
         uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
@@ -179,7 +178,6 @@ contract FarmLens is BoringOwnable {
             //get pool information
             farmPairs[i].id = whitelistedPids[i];
             farmPairs[i].allocPoint = pool.allocPoint;
-            farmPairs[i].id = i;
 
             // get pair information
             address lpAddress = address(lpToken);
@@ -195,18 +193,14 @@ contract FarmLens is BoringOwnable {
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(
-                _tokenDecimalsMultiplier(pair.lpAddress)
-            );
+            farmPairs[i].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
 
             // get masterChef data
-            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(
-                _tokenDecimalsMultiplier(pair.lpAddress)
-            );
-            farmPairs[farmPairsIndex].chefAddress = chefAddress;
-            farmPairs[farmPairsIndex].chefTotalAlloc = chef.totalAllocPoint();
-            farmPairs[farmPairsIndex].chefJoePerSec = chef.joePerSec();
-            farmPairsIndex++;
+            uint256 balance = lpToken.balanceOf(chefAddress);
+            farmPairs[i].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[i].chefAddress = chefAddress;
+            farmPairs[i].chefTotalAlloc = chef.totalAllocPoint();
+            farmPairs[i].chefJoePerSec = chef.joePerSec();
         }
 
         return farmPairs;
