@@ -139,6 +139,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
         address token1Address;
         string token0Symbol;
         string token1Symbol;
+        uint256 allocPoint;
         uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
