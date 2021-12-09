@@ -33,6 +33,9 @@ contract JoeUseFarmsHelper is BoringOwnable {
 
     address public joe; // 0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd;
     address public wavax; // 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+    address public wavaxUsdt; // 0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256
+    address public wavaxUsdc; // 0x87Dee1cC9FFd464B79e058ba20387c1984aed86a
+    address public wavaxDai; // 0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1
     IJoeFactory public joeFactory; // IJoeFactory(0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10);
     IMasterChef public chefv2; //0xd6a4F121CA35509aF06A0Be99093d08462f53052
     IMasterChef public chefv3; //0x188bED1968b795d5c9022F6a0bb5931Ac4c18F00
@@ -40,21 +43,27 @@ contract JoeUseFarmsHelper is BoringOwnable {
     constructor(
         address joe_,
         address wavax_,
+        address wavaxUsdt_,
+        address wavaxUsdc_,
+        address wavaxDai_,
         IJoeFactory joeFactory_,
         IMasterChef chefv2_,
         IMasterChef chefv3_
     ) public {
         joe = joe_;
         wavax = wavax_;
+        wavaxUsdt = wavaxUsdt_;
+        wavaxUsdc = wavaxUsdc_;
+        wavaxDai = wavaxDai_;
         joeFactory = IJoeFactory(joeFactory_);
         chefv2 = chefv2_;
         chefv3 = chefv3_;
     }
 
     function getAvaxPrice() public view returns (uint256) {
-        uint256 priceFromWavaxUsdt = _getAvaxPrice(IJoePair(address(0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256))); // 18
-        uint256 priceFromWavaxUsdc = _getAvaxPrice(IJoePair(address(0x87Dee1cC9FFd464B79e058ba20387c1984aed86a))); // 18
-        uint256 priceFromWavaxDai = _getAvaxPrice(IJoePair(address(0xA389f9430876455C36478DeEa9769B7Ca4E3DDB1))); // 18
+        uint256 priceFromWavaxUsdt = _getAvaxPrice(IJoePair(wavaxUsdt)); // 18
+        uint256 priceFromWavaxUsdc = _getAvaxPrice(IJoePair(wavaxUsdc)); // 18
+        uint256 priceFromWavaxDai = _getAvaxPrice(IJoePair(wavaxDai)); // 18
 
         uint256 sumPrice = priceFromWavaxUsdt.add(priceFromWavaxUsdc).add(priceFromWavaxDai); // 18
         uint256 avaxPrice = sumPrice / 3; // 18
@@ -128,7 +137,8 @@ contract JoeUseFarmsHelper is BoringOwnable {
         address token1Address;
         string token0Symbol;
         string token1Symbol;
-        uint256 reserveUSD;
+        uint256 allocPoint; 
+        uint256 reserveUsd;
         uint256 totalSupplyScaled;
         address chefAddress;
         uint256 chefBalanceScaled;
@@ -162,6 +172,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[i].token1Address = token1Address;
             farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
             farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
+            farmPairs[i].allocPoint = pool.allocPoint;
 
             // calculate reserveUsd of lp
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
