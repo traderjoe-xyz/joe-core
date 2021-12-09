@@ -167,14 +167,18 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[i].reserveUsd = getReserveUsd(lpToken); // 18
 
             // calculate total supply of lp
-            farmPairs[i].totalSupplyScaled = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[farmPairsIndex].totalSupplyScaled = lpToken.totalSupply().mul(
+                _tokenDecimalsMultiplier(pair.lpAddress)
+            );
 
             // get masterChef data
-            uint256 balance = lpToken.balanceOf(chefAddress);
-            farmPairs[i].chefBalanceScaled = balance.mul(_tokenDecimalsMultiplier(lpAddress));
-            farmPairs[i].chefAddress = chefAddress;
-            farmPairs[i].chefTotalAlloc = chef.totalAllocPoint();
-            farmPairs[i].chefJoePerSec = chef.joePerSec();
+            farmPairs[farmPairsIndex].chefBalanceScaled = lpToken.balanceOf(chefAddress).mul(
+                _tokenDecimalsMultiplier(pair.lpAddress)
+            );
+            farmPairs[farmPairsIndex].chefAddress = chefAddress;
+            farmPairs[farmPairsIndex].chefTotalAlloc = chef.totalAllocPoint();
+            farmPairs[farmPairsIndex].chefJoePerSec = chef.joePerSec();
+            farmPairsIndex++;
         }
 
         return farmPairs;
