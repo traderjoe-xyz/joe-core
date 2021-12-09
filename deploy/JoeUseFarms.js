@@ -39,12 +39,19 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
       usdcAddress,
       daiAddress,
       joeFactoryAddress,
-      pangolinFactoryAddress[chainId],
+      chefAddress,
+      chefAddressV3,
     ],
     log: true,
     deterministicDeployment: false,
   });
 };
 
-module.exports.tags = ["JoeUseFarms"];
-module.exports.dependencies = ["JoeToken", "JoeFactory"];
+module.exports.tags = ["FarmLens"];
+module.exports.dependencies = [
+  "JoeToken",
+  "JoeFactory",
+  "MasterChefJoeV2",
+  "MasterChefJoeV3",
+  "WAVAX9Mock",
+];
