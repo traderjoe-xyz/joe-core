@@ -101,16 +101,42 @@ contract JoeUseFarmsHelper is BoringOwnable {
         return uint256(1 * (10**decimalsNeeded));
     }
 
+    function getReserveUSD(IJoePair pair)
+        public
+        view
+        returns (uint256) 
+    {
+        address token0Address = pair.token0();
+        address token1Address = pair.token1();
+
+        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves(); // reserve0, reserve1 are 18 decimals
+
+        uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
+        uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
+        uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address)))
+            .mul(token0PriceInAvax)
+            .mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
+        uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address)))
+            .mul(token1PriceInAvax)
+            .mul(getAvaxPrice()); // 54
+        
+        uint256 reserveUSD = (token0ReserveUSD.add(token1ReserveUSD)) / uint256(1e36);
+
+        return reserveUSD; // 18
+    }
+
     struct FarmPair {
         address lpAddress;
         address token0Address;
         address token1Address;
         string token0Symbol;
         string token1Symbol;
-        address masterChefAddress;
-        uint256 masterChefBalance;
         uint256 reserveUSD;
         uint256 totalSupply;
+        address chefAddress;
+        uint256 chefBalance;
+        uint256 chefTotalAlloc;
+        uint256 chefJoePerSec;
     }
 
     function getFarmPairs(address[] calldata pairAddresses, address chefAddress)
@@ -121,15 +147,9 @@ contract JoeUseFarmsHelper is BoringOwnable {
         FarmPair[] memory farmPairs = new FarmPair[](pairAddresses.length);
 
         for (uint256 i = 0; i < pairAddresses.length; i++) {
-            // get LP Address and masterChefBalance of LP
+            // get pair information
             IJoePair lpToken = IJoePair(pairAddresses[i]);
             address lpAddress = address(lpToken);
-            uint256 balance = lpToken.balanceOf(chefAddress);
-            farmPairs[i].lpAddress = lpAddress;
-            farmPairs[i].masterChefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
-            farmPairs[i].masterChefAddress = chefAddress;
-
-            // get pair information
             address token0Address = lpToken.token0();
             address token1Address = lpToken.token1();
             farmPairs[i].token0Address = token0Address;
@@ -137,20 +157,18 @@ contract JoeUseFarmsHelper is BoringOwnable {
             farmPairs[i].token0Symbol = IJoeERC20(token0Address).symbol();
             farmPairs[i].token1Symbol = IJoeERC20(token1Address).symbol();
 
-            // calculate reserveUSD of pair
-            (uint256 reserve0, uint256 reserve1, ) = lpToken.getReserves(); // reserve0, reserve1 are 18 decimals
-            uint256 token0PriceInAvax = getPriceInAvax(token0Address); // 18
-            uint256 token1PriceInAvax = getPriceInAvax(token1Address); // 18
-            uint256 token0ReserveUSD = (reserve0.mul(_tokenDecimalsMultiplier(token0Address)))
-                .mul(token0PriceInAvax)
-                .mul(getAvaxPrice()); // 18.mul(18).mul(18) = 54 decimals
-            uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address)))
-                .mul(token1PriceInAvax)
-                .mul(getAvaxPrice()); // 54
-            farmPairs[i].reserveUSD = (token0ReserveUSD.add(token1ReserveUSD)) / uint256(1e36); //54 decimals after adding? 18 after division
+            // calculate reserveUSD of lp
+            farmPairs[i].reserveUSD = getReserveUSD(lpToken); // 18
 
-            // calculate total supply
+            // calculate total supply of lp
             farmPairs[i].totalSupply = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
+
+            // get masterChef data
+            uint256 balance = lpToken.balanceOf(chefAddress);
+            farmPairs[i].chefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
+            farmPairs[i].chefAddress = chefAddress;
+            farmPairs[i].chefTotalAlloc = IMasterChef(chefAddress).totalAllocPoint();
+            farmPairs[i].chefJoePerSec = IMasterChef(chefAddress).joePerSec();
         }
 
         return farmPairs;
