@@ -63,14 +63,16 @@ contract JoeUseFarmsHelper is BoringOwnable {
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
 
         if (pair.token0() == wavax) {
-            return (reserve1.mul(_tokenDecimalsMultiplier(pair.token1())).mul(uint256(1e18))) / reserve0; // 18
+            reserve1 = reserve1.mul(_tokenDecimalsMultiplier(pair.token1())); // 18
+            return (reserve1.mul(uint256(1e18))) / reserve0; // 18
         } else {
-            return (reserve0.mul(_tokenDecimalsMultiplier(pair.token0())).mul(uint256(1e18))) / reserve1; // 18
+            reserve0 = reserve0.mul(_tokenDecimalsMultiplier(pair.token0())); // 18
+            return (reserve0.mul(uint256(1e18))) / reserve1; // 18
         }
     }
 
     function getPriceInUSD(address tokenAddress) public view returns (uint256) {
-        return getAvaxPrice().mul(getPriceInAvax(tokenAddress)) / uint256(1e18); // 36 / 18 = 1
+        return (getAvaxPrice().mul(getPriceInAvax(tokenAddress))) / uint256(1e18); // 36 / 18 = 1
     }
 
     // Need to be aware of decimals here, not always 18, it depends on the token
@@ -86,19 +88,16 @@ contract JoeUseFarmsHelper is BoringOwnable {
         address token1Address = pair.token1();
 
         if (token0Address == wavax) {
-            return (reserve1.mul(_tokenDecimalsMultiplier(token1Address)).mul(uint256(1e18))) / reserve0; // 18
+            reserve1 = reserve1.mul(_tokenDecimalsMultiplier(token1Address)); // 18
+            return (reserve1.mul(uint256(1e18))) / reserve0; // 18
         } else {
-            return (reserve0.mul(_tokenDecimalsMultiplier(token0Address)).mul(uint256(1e18))) / reserve1; // 18
+            reserve0 = reserve0.mul(_tokenDecimalsMultiplier(token0Address)); // 18
+            return (reserve0.mul(uint256(1e18))) / reserve1; // 18
         }
     }
 
     function _tokenDecimalsMultiplier(address tokenAddress) public pure returns (uint256) {
         uint256 decimalsNeeded = 18 - IJoeERC20(tokenAddress).decimals();
-        return uint256(1 * (10**decimalsNeeded));
-    }
-
-    function _pairDecimalsMultiplier(address pairAddress) public pure returns (uint256) {
-        uint256 decimalsNeeded = 18 - IJoePair(pairAddress).decimals();
         return uint256(1 * (10**decimalsNeeded));
     }
 
@@ -127,7 +126,7 @@ contract JoeUseFarmsHelper is BoringOwnable {
             address lpAddress = address(lpToken);
             uint256 balance = lpToken.balanceOf(chefAddress);
             farmPairs[i].lpAddress = lpAddress;
-            farmPairs[i].masterChefBalance = balance.mul(_pairDecimalsMultiplier(lpAddress);
+            farmPairs[i].masterChefBalance = balance.mul(_tokenDecimalsMultiplier(lpAddress));
             farmPairs[i].masterChefAddress = chefAddress;
 
             // get pair information
@@ -148,10 +147,10 @@ contract JoeUseFarmsHelper is BoringOwnable {
             uint256 token1ReserveUSD = (reserve1.mul(_tokenDecimalsMultiplier(token1Address)))
                 .mul(token1PriceInAvax)
                 .mul(getAvaxPrice()); // 54
-            farmPairs[i].reserveUSD = token0ReserveUSD.add(token1ReserveUSD) / uint256(1e36); //54 decimals after adding? 18 after division
+            farmPairs[i].reserveUSD = (token0ReserveUSD.add(token1ReserveUSD)) / uint256(1e36); //54 decimals after adding? 18 after division
 
             // calculate total supply
-            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_pairDecimalsMultiplier(lpAddress));
+            farmPairs[i].totalSupply = lpToken.totalSupply().mul(_tokenDecimalsMultiplier(lpAddress));
         }
 
         return farmPairs;
@@ -175,10 +174,10 @@ contract JoeUseFarmsHelper is BoringOwnable {
         allFarmData.joePriceUSD = getPriceInUSD(joe);
 
         allFarmData.totalAllocChef = IMasterChef(chef).totalAllocPoint();
-        allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
+        allFarmData.joePerSecChef = IMasterChef(chef).joePerSec();
 
         allFarmData.totalAllocChefV3 = IMasterChef(chefv3).totalAllocPoint();
-        allFarmData.joePerSecChef = IMasterChef(chefv3).joePerSec();
+        allFarmData.joePerSecChefV3 = IMasterChef(chefv3).joePerSec();
 
         allFarmData.farmPairs = getFarmPairs(pairAddresses, address(chef));
         allFarmData.farmPairsV3 = getFarmPairs(pairAddresses, address(chefv3));
