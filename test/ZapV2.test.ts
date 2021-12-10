@@ -1,7 +1,6 @@
 // @ts-ignore
-import { ethers, network } from "hardhat"
+import { ethers, network, waffle } from "hardhat"
 import { expect } from "chai"
-import { getBigNumber } from "./utilities"
 
 const JOE_ADDRESS = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd"
 const WAVAX_ADDRESS = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
@@ -20,7 +19,7 @@ const USDCAVAX_ADDRESS = "0xa389f9430876455c36478deea9769b7ca4e3ddb1"
 const TRACTORAVAX_ADDRESS = "0x601e0f63be88a52b79dbac667d6b4a167ce39113"
 const LINKUSDC_ADDRESS = "0xb9f425bc9af072a91c423e31e9eb7e04f226b39d"
 const JOEUSDT_ADDRESS = "0x1643de2efB8e35374D796297a9f95f64C082a8ce"
-const USDCDAI_ADDRESS = "0x63ABE32d0Ee76C05a11838722A63e012008416E6"
+const USDCUSDT_ADDRESS = "0x2E02539203256c83c7a9F6fA6f8608A32A2b1Ca2"
 const WBTCUSDC_ADDRESS = "0x62475f52add016a06b398aa3b2c2f2e540d36859"
 
 describe("zapV2", function () {
@@ -34,13 +33,15 @@ describe("zapV2", function () {
 
     // Account
     this.signers = await ethers.getSigners()
-    this.alice = this.signers[0]
+    this.dev = this.signers[0]
+    this.alice = this.signers[1]
 
     // Contracts
     this.router = await this.RouterCF.attach(ROUTER_ADDRESS, this.alice)
 
     // Tokens
-    this.wavax = await ethers.getContractAt("IWAVAX", WAVAX_ADDRESS, this.alice)
+    this.wavax = await ethers.getContractAt("IWAVAX", WAVAX_ADDRESS)
+    this.wavax_erc20 = await this.ERC20CF.attach(WAVAX_ADDRESS)
     this.joe = await this.ERC20CF.attach(JOE_ADDRESS)
     this.usdt = await this.ERC20CF.attach(USDT_ADDRESS)
     this.usdc = await this.ERC20CF.attach(USDC_ADDRESS)
@@ -56,7 +57,7 @@ describe("zapV2", function () {
     this.usdcAvax = await this.PairCF.attach(USDCAVAX_ADDRESS, this.alice)
     this.linkUsdc = await this.PairCF.attach(LINKUSDC_ADDRESS, this.alice)
     this.joeUsdt = await this.PairCF.attach(JOEUSDT_ADDRESS, this.alice)
-    this.usdcDai = await this.PairCF.attach(USDCDAI_ADDRESS, this.alice)
+    this.usdcUsdt = await this.PairCF.attach(USDCUSDT_ADDRESS, this.alice)
     this.wbtcUsdc = await this.PairCF.attach(WBTCUSDC_ADDRESS, this.alice)
     this.tractorAvax = await this.PairCF.attach(TRACTORAVAX_ADDRESS, this.alice)
   })
@@ -83,9 +84,50 @@ describe("zapV2", function () {
     await this.zapV2.deployed()
   })
 
-  describe("setBridge", function () {
-    it("test", async function () {
-      console.log(await this.zapV2.WAVAX())
+  describe("ZapIn", function () {
+    it("zapIn 1 $AVAX to JOE/WAVAX and zapOut to $JOE", async function () {
+      await this.zapV2.zapIn(
+          0,
+          0,
+          [WAVAX_ADDRESS, JOE_ADDRESS],
+          [WAVAX_ADDRESS],
+          {value: "1000000000000000000"}
+      )
+      expect(await this.joeAvax.balanceOf(this.dev.address)).to.equal("2187779366469804130")
+      await this.joeAvax.approve(this.zapV2.address, "10000000000000000000000000000")
+      await this.zapV2.zapOutToken(
+          this.joeAvax.address,
+          await this.joeAvax.balanceOf(this.dev.address),
+          0,
+          [JOE_ADDRESS],
+          [WAVAX_ADDRESS, JOE_ADDRESS]
+      )
+      expect(await this.joe.balanceOf(this.dev.address)).to.equal("25259388092762344753")
+    })
+
+
+    it("zapIn 1 $AVAX to USDC/USDT and zapOut to $AVAX", async function () {
+      const provider = waffle.provider;
+      console.log((await provider.getBalance(this.dev.address)).toString());
+      await this.zapV2.zapIn(
+          0,
+          0,
+          [WAVAX_ADDRESS, USDC_ADDRESS],
+          [WAVAX_ADDRESS, USDT_ADDRESS],
+          {value: "1000000000000000000"}
+      )
+      console.log((await provider.getBalance(this.dev.address)).toString());
+      expect(await this.usdcUsdt.balanceOf(this.dev.address)).to.equal("32235170")
+      await this.usdcUsdt.approve(this.zapV2.address, "10000000000000000000000000000")
+      await this.zapV2.zapOut(
+          this.usdcUsdt.address,
+          await this.usdcUsdt.balanceOf(this.dev.address),
+          0,
+          [USDT_ADDRESS, WAVAX_ADDRESS],
+          [USDC_ADDRESS, USDT_ADDRESS, WAVAX_ADDRESS],
+      )
+
+      console.log((await provider.getBalance(this.dev.address)).toString());
     })
   })
 
