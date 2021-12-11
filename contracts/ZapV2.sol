@@ -14,7 +14,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeRouter02.sol";
 import "./traderjoe/interfaces/IWAVAX.sol";
-import "hardhat/console.sol";
 
 contract ZapV2 is Ownable {
     using SafeMath for uint256;
@@ -29,7 +28,7 @@ contract ZapV2 is Ownable {
     /* ========== INITIALIZER ========== */
 
     constructor(address _router) public {
-        require(owner() != address(0), "ZapV2ETH: owner must be set");
+        require(owner() != address(0), "ZapV2: owner must be set");
 
         ROUTER = IJoeRouter02(_router);
     }
@@ -37,6 +36,7 @@ contract ZapV2 is Ownable {
     receive() external payable {}
 
     /* ========== External Functions ========== */
+
 
     function zapInToken(
         address tokenFrom,
@@ -46,10 +46,14 @@ contract ZapV2 is Ownable {
         address[] calldata pathToToken0,
         address[] calldata pathToToken1
     ) external {
+        IERC20 token = IERC20(tokenFrom);
+        uint256 balanceBefore = token.balanceOf(address(this));
         IERC20(tokenFrom).safeTransferFrom(msg.sender, address(this), amountFrom);
+        uint256 amount = token.balanceOf(address(this)) - balanceBefore;
+
         _zapInToken(
             tokenFrom,
-            amountFrom,
+            amount,
             amount0Min,
             amount1Min,
             pathToToken0,
@@ -65,6 +69,7 @@ contract ZapV2 is Ownable {
         address[] calldata pathToToken1
     ) external payable {
         IWAVAX(WAVAX).deposit{value : msg.value}();
+
         _zapInToken(
             WAVAX,
             msg.value,
@@ -83,16 +88,12 @@ contract ZapV2 is Ownable {
         address[] calldata path0,
         address[] calldata path1
     ) external {
-        IJoePair pair = IJoePair(pairFrom);
-        address[] calldata pathFromToken0 = path0[0] == pair.token0() ? path0 : path1;
-        address[] calldata pathFromToken1 = path1[0] == pair.token1() ? path1 : path0;
-
         _zapOutToken(
             pairFrom,
             amountFrom,
             amountToMin,
-            pathFromToken0,
-            pathFromToken1,
+            path0,
+            path1,
             msg.sender
         );
     }
@@ -104,16 +105,12 @@ contract ZapV2 is Ownable {
         address[] calldata path0,
         address[] calldata path1
     ) external {
-        IJoePair pair = IJoePair(pairFrom);
-        address[] calldata pathFromToken0 = path0[0] == pair.token0() ? path0 : path1;
-        address[] calldata pathFromToken1 = path1[0] == pair.token1() ? path1 : path0;
-
         uint256 amountAvax = _zapOutToken(
             pairFrom,
             amountFrom,
             amountToMin,
-            pathFromToken0,
-            pathFromToken1,
+            path0,
+            path1,
             address(this)
         );
         IWAVAX(WAVAX).withdraw(amountAvax);
@@ -165,6 +162,16 @@ contract ZapV2 is Ownable {
         return (path0[len0 - 1], path1[len1 - 1]);
     }
 
+
+    function _orderPath(
+        address pairFrom,
+        address[] calldata path0,
+        address[] calldata path1
+    ) private view returns (address[] calldata pathFromToken0, address[] calldata pathFromToken1){
+        IJoePair pair = IJoePair(pairFrom);
+        (pathFromToken0, pathFromToken1) = path0[0] == pair.token0() ? (path0, path1) : (path1, path0);
+    }
+
     function _removeLiquidity(
         address pairFrom,
         uint256 amount
@@ -197,17 +204,32 @@ contract ZapV2 is Ownable {
     function _swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,
-        address[] calldata path
+        address[] calldata path,
+        address to
     ) private returns (uint256 amountOut){
         if (path.length >= 2) {
             IERC20 tokenOut = IERC20(path[path.length - 1]);
             uint256 balanceBefore = tokenOut.balanceOf(address(this));
             _approveTokenIfNeeded(path[0], amountIn);
-            ROUTER.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), block.timestamp);
+            ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                block.timestamp
+            );
             amountOut = tokenOut.balanceOf(address(this)) - balanceBefore;
         }
         else {
-            amountOut = amountIn;
+            if (to != address(this)) {
+                IERC20 token = IERC20(path[0]);
+                uint256 balanceBefore = token.balanceOf(to);
+                token.safeTransfer(to, amountIn);
+                amountOut = token.balanceOf(to) - balanceBefore;
+            }
+            else {
+                amountOut = amountIn;
+            }
         }
         require(amountOut >= amountOutMin, "ZapV2: INSUFFICIENT_TOKEN_AMOUNT");
     }
@@ -222,11 +244,14 @@ contract ZapV2 is Ownable {
         address to
     ) private returns (uint256 liquidity){
         _approveTokenIfNeeded(tokenFrom, amountFrom);
-        require(pathToToken0[0] == tokenFrom && pathToToken1[0] == tokenFrom, "ZapV2: Wrong route");
+        require(pathToToken0[0] == tokenFrom && pathToToken1[0] == tokenFrom, "ZapV2: INVALID_PATH");
 
         uint256 sellAmount = amountFrom / 2;
-        uint256 amount0 = _swapExactTokensForTokens(sellAmount, 0, pathToToken0);
-        uint256 amount1 = _swapExactTokensForTokens(amountFrom - sellAmount, 0, pathToToken1);
+        uint256 amount0 = _swapExactTokensForTokens(sellAmount, 0, pathToToken0, address(this));
+        uint256 amount1 = _swapExactTokensForTokens(amountFrom - sellAmount, 0, pathToToken1, address(this));
+
+        require(amount0 > amount0Min, "ZapV2: INSUFFICIENT_A_AMOUNT");
+        require(amount1 > amount1Min, "ZapV2: INSUFFICIENT_B_AMOUNT");
 
         liquidity = _addLiquidity(
             amount0,
@@ -243,21 +268,24 @@ contract ZapV2 is Ownable {
         address pairFrom,
         uint256 amountFrom,
         uint256 amountToMin,
-        address[] calldata pathFromToken0,
-        address[] calldata pathFromToken1,
+        address[] calldata path0,
+        address[] calldata path1,
         address to
     ) private returns (uint256 balance){
         IERC20(pairFrom).safeTransferFrom(msg.sender, address(this), amountFrom);
         _approveTokenIfNeeded(pairFrom, amountFrom);
 
+        (address[] calldata pathFromToken0, address[] calldata pathFromToken1) = _orderPath(pairFrom, path0, path1);
+
+        {
+            (address token0, address token1) = _getTokens(pathFromToken0, pathFromToken1);
+            require(token0 == token1, "ZapV2: INVALID_PATH");
+        }
+
         (uint256 balance0, uint256 balance1) = _removeLiquidity(pairFrom, amountFrom);
 
-//        address[] calldata pathFrom0 = pathFromToken0[0] == ;
-
-        balance = _swapExactTokensForTokens(balance0, 0, pathFromToken0);
-        balance += _swapExactTokensForTokens(balance1, 0, pathFromToken1);
-
-        IERC20(pathFromToken0[pathFromToken0.length - 1]).safeTransfer(to, balance);
+        balance = _swapExactTokensForTokens(balance0, 0, pathFromToken0, to);
+        balance += _swapExactTokensForTokens(balance1, 0, pathFromToken1, to);
 
         require(balance >= amountToMin, "ZapV2: INSUFFICIENT_TOKEN_AMOUNT");
     }
