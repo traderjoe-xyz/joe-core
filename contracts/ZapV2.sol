@@ -201,8 +201,8 @@ contract ZapV2 is Ownable {
         uint256 amount0 = _swapExactTokensForTokens(sellAmount, 0, pathToToken0, address(this));
         uint256 amount1 = _swapExactTokensForTokens(amountFrom - sellAmount, 0, pathToToken1, address(this));
 
-        require(amount0 > amount0Min, "ZapV2: INSUFFICIENT_A_AMOUNT");
-        require(amount1 > amount1Min, "ZapV2: INSUFFICIENT_B_AMOUNT");
+        require(amount0 >= amount0Min, "ZapV2: INSUFFICIENT_A_AMOUNT");
+        require(amount1 >= amount1Min, "ZapV2: INSUFFICIENT_B_AMOUNT");
 
         liquidity = _addLiquidity(amount0, amount1, amount0Min, amount1Min, pathToToken0, pathToToken1, to);
     }
