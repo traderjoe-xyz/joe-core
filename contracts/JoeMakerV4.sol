@@ -254,15 +254,15 @@ contract JoeMakerV4 is Ownable {
 
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         (uint256 reserveInput, uint256 reserveOutput) = fromToken == pair.token0()
-        ? (reserve0, reserve1)
-        : (reserve1, reserve0);
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
         uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(reserveInput); // calculate amount that was transferred, this accounts for transfer taxes
 
         amountOut = getAmountOut(amountInput, reserveInput, reserveOutput);
         (uint256 amount0Out, uint256 amount1Out) = fromToken == pair.token0()
-        ? (uint256(0), amountOut)
-        : (amountOut, uint256(0));
+            ? (uint256(0), amountOut)
+            : (amountOut, uint256(0));
         pair.swap(amount0Out, amount1Out, to, new bytes(0));
     }
 
