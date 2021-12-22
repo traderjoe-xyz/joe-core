@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat"
 import { expect } from "chai"
-import {duration, increase} from "./utilities";
-const hre = require("hardhat");
+import { duration, increase } from "./utilities"
+const hre = require("hardhat")
 
 describe("JoeBar", function () {
   before(async function () {
@@ -16,12 +16,10 @@ describe("JoeBar", function () {
   })
 
   beforeEach(async function () {
-
     this.joe = await this.JoeToken.deploy()
     this.bar = await hre.upgrades.deployProxy(this.JoeBarV2, [this.joe.address, "500"])
 
     this.rewarder = await this.BarRewarder.deploy(this.joe.address, this.bar.address, "1500")
-
 
     await this.bar.setRewarder(this.rewarder.address)
     await this.joe.mint(this.alice.address, "100000000000000000000")
@@ -30,11 +28,9 @@ describe("JoeBar", function () {
   })
 
   it("should not allow enter if not enough approve", async function () {
-    await expect(this.bar.enter("100000000000000000000")).to.be.revertedWith(
-        "ERC20: transfer amount exceeds allowance")
+    await expect(this.bar.enter("100000000000000000000")).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
     await this.joe.approve(this.bar.address, "50000000000000000000")
-    await expect(this.bar.enter("100000000000000000000")).to.be.revertedWith(
-        "ERC20: transfer amount exceeds allowance")
+    await expect(this.bar.enter("100000000000000000000")).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
     await this.joe.approve(this.bar.address, "100000000000000000000")
     await this.bar.enter("100000000000000000000")
     expect(await this.bar.balanceOf(this.alice.address)).to.equal("95000000000000000000")
@@ -78,7 +74,6 @@ describe("JoeBar", function () {
 
     await increase(duration.days(365))
 
-
     await this.bar.connect(this.alice).leave("47500000000000000000")
     expect(await this.bar.balanceOf(this.alice.address)).to.equal("47500000000000000000")
     expect(await this.joe.balanceOf(this.bar.address)).to.equal("50000000000000000000")
@@ -92,7 +87,7 @@ describe("JoeBar", function () {
     await this.bar.connect(this.alice).leave(await this.bar.balanceOf(this.alice.address))
     expect(await this.bar.balanceOf(this.alice.address)).to.equal("0")
     expect(await this.joe.balanceOf(this.bar.address)).to.equal("0")
-    expect(await this.joe.balanceOf(this.alice.address) - 1).to.be.greaterThan(Number("100000000000000000000"))
+    expect((await this.joe.balanceOf(this.alice.address)) - 1).to.be.greaterThan(Number("100000000000000000000"))
     expect(await this.rewarder.unpaidRewards()).to.be.equal("0")
   })
 

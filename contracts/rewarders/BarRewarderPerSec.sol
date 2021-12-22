@@ -16,7 +16,6 @@ interface IBarV2 {
     function entryFee() external view returns (uint256);
 }
 
-
 /**
  * This is a sample contract to be used in the JoeBarV2 to reward moJoe holder with JOE.
  *
@@ -82,7 +81,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
     function setApr(uint256 _apr) external onlyOwner {
         uint256 oldApr = apr;
         apr = _apr; // in basis points aka parts per 10,000 so 5000 is 50%, apr of 50%.
-//        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees this needs to be called to update the actual apr
+        //        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees this needs to be called to update the actual apr
 
         emit AprUpdated(oldApr, _apr);
     }
