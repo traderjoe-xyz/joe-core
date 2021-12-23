@@ -136,7 +136,11 @@ contract JoeMakerV4 is Ownable {
     //     As the size of the JoeBar has grown, this requires large amounts of funds and isn't super profitable anymore
     //     The onlyEOA modifier prevents this being done with a flash loan.
     // C1 - C24: OK
-    function convert(address token0, address token1, uint256 slippage) external onlyEOA onlyAuth {
+    function convert(
+        address token0,
+        address token1,
+        uint256 slippage
+    ) external onlyEOA onlyAuth {
         require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 5000");
         _convert(token0, token1, slippage);
     }
@@ -144,7 +148,11 @@ contract JoeMakerV4 is Ownable {
     // F1 - F10: OK, see convert
     // C1 - C24: OK
     // C3: Loop is under control of the caller
-    function convertMultiple(address[] calldata token0, address[] calldata token1, uint256 slippage) external onlyEOA onlyAuth {
+    function convertMultiple(
+        address[] calldata token0,
+        address[] calldata token1,
+        uint256 slippage
+    ) external onlyEOA onlyAuth {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
         require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 5000");
 
@@ -156,7 +164,11 @@ contract JoeMakerV4 is Ownable {
 
     // F1 - F10: OK
     // C1- C24: OK
-    function _convert(address token0, address token1, uint256 slippage) internal {
+    function _convert(
+        address token0,
+        address token1,
+        uint256 slippage
+    ) internal {
         uint256 amount0;
         uint256 amount1;
 
@@ -181,7 +193,14 @@ contract JoeMakerV4 is Ownable {
             amount0 = IERC20(token0).balanceOf(address(this)).sub(tok0bal);
             amount1 = IERC20(token1).balanceOf(address(this)).sub(tok1bal);
         }
-        emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1, slippage));
+        emit LogConvert(
+            msg.sender,
+            token0,
+            token1,
+            amount0,
+            amount1,
+            _convertStep(token0, token1, amount0, amount1, slippage)
+        );
     }
 
     // F1 - F10: OK
@@ -217,16 +236,10 @@ contract JoeMakerV4 is Ownable {
             tokenOut = _toToken(token0, amount0, slippage).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            tokenOut = _toToken(
-                wavax,
-                _swap(token1, wavax, amount1, address(this), slippage).add(amount0),
-                slippage);
+            tokenOut = _toToken(wavax, _swap(token1, wavax, amount1, address(this), slippage).add(amount0), slippage);
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            tokenOut = _toToken(
-                wavax,
-                _swap(token0, wavax, amount0, address(this), slippage).add(amount1),
-                slippage);
+            tokenOut = _toToken(wavax, _swap(token0, wavax, amount0, address(this), slippage).add(amount1), slippage);
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
@@ -287,7 +300,8 @@ contract JoeMakerV4 is Ownable {
 
         {
             uint256 rest = uint256(10_000).sub(slippage);
-            require(getAmountOut(amountOut, reserveOutput, reserveInput) > amountInput.mul(rest).mul(rest).div(100_000_000),
+            require(
+                getAmountOut(amountOut, reserveOutput, reserveInput) > amountInput.mul(rest).mul(rest).div(100_000_000),
                 "JoeMakerV4: Slippage caught"
             );
         }
@@ -299,7 +313,11 @@ contract JoeMakerV4 is Ownable {
 
     // F1 - F10: OK
     // C1 - C24: OK
-    function _toToken(address token, uint256 amountIn, uint256 slippage) internal returns (uint256 amountOut) {
+    function _toToken(
+        address token,
+        uint256 amountIn,
+        uint256 slippage
+    ) internal returns (uint256 amountOut) {
         uint256 amount = amountIn;
         if (devCut > 0) {
             amount = amount.mul(devCut).div(10000);

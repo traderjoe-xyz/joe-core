@@ -214,16 +214,14 @@ describe("joeMakerV4", function () {
     it("reverts if slippage is lower than 0.3% (fees for swap)", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
       await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
-      await expect(this.joeMakerV4.convert(this.joe.address, this.wavax.address, "29"))
-          .to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 0.29% this will revert as the fee for a swap is 0.3%
+      await expect(this.joeMakerV4.convert(this.joe.address, this.wavax.address, "29")).to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 0.29% this will revert as the fee for a swap is 0.3%
     })
 
     it("reverts if using a pair with really low liquidity even with slippage at maximum", async function () {
       await this.zap.zapIn(this.mimTime.address, { value: "2000000000000000000" })
       await this.mimTime.transfer(this.joeMakerV4.address, await this.mimTime.balanceOf(this.dev.address))
       await this.joeMakerV4.setBridge(this.mim.address, this.joe.address)
-      await expect(this.joeMakerV4.convert(this.mim.address, this.time.address, "4999"))
-          .to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 1% this will revert as the JOE/MIM pair has really low liquidity.
+      await expect(this.joeMakerV4.convert(this.mim.address, this.time.address, "4999")).to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 1% this will revert as the JOE/MIM pair has really low liquidity.
     })
 
     it("reverts if convert is called by non auth", async function () {
