@@ -113,7 +113,7 @@ describe("joeMakerV4", function () {
     it("should convert WAVAX", async function () {
       await this.wavax.deposit({ value: "2000000000000000000" })
       await this.wavax.transfer(this.joeMakerV4.address, await this.wavaxERC20.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.wavax.address, this.wavax.address)
+      await this.joeMakerV4.convert(this.wavax.address, this.wavax.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.wavaxERC20.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("215434297")
@@ -123,7 +123,7 @@ describe("joeMakerV4", function () {
       await this.router.swapExactAVAXForTokens("0", [this.wavax.address, this.usdc.address], this.joeMakerV4.address, "111111111111111111", {
         value: "2000000000000000000",
       })
-      await this.joeMakerV4.convert(this.usdc.address, this.usdc.address)
+      await this.joeMakerV4.convert(this.usdc.address, this.usdc.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.wavaxERC20.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("215434297")
@@ -133,7 +133,7 @@ describe("joeMakerV4", function () {
       await this.router.swapExactAVAXForTokens("0", [this.wavax.address, this.wbtc.address], this.joeMakerV4.address, "111111111111111111", {
         value: "2000000000000000000",
       })
-      await this.joeMakerV4.convert(this.wbtc.address, this.wbtc.address)
+      await this.joeMakerV4.convert(this.wbtc.address, this.wbtc.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.wavaxERC20.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214143468")
@@ -144,7 +144,7 @@ describe("joeMakerV4", function () {
     it("should convert AVAX - USDC", async function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: "2000000000000000000" })
       await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address)
+      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("215111242")
@@ -153,7 +153,7 @@ describe("joeMakerV4", function () {
     it("should convert USDC - DAI", async function () {
       await this.zap.zapIn(this.usdcDai.address, { value: "2000000000000000000" })
       await this.usdcDai.transfer(this.joeMakerV4.address, await this.usdcDai.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.dai.address, this.usdc.address)
+      await this.joeMakerV4.convert(this.dai.address, this.usdc.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdcDai.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214878919")
@@ -162,7 +162,7 @@ describe("joeMakerV4", function () {
     it("should convert JOE - AVAX", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
       await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.joe.address, this.wavax.address)
+      await this.joeMakerV4.convert(this.joe.address, this.wavax.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.joeAvax.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214466109")
@@ -173,7 +173,7 @@ describe("joeMakerV4", function () {
       await this.mimTime.transfer(this.joeMakerV4.address, await this.mimTime.balanceOf(this.dev.address))
       await this.joeMakerV4.setBridge(this.time.address, this.mim.address)
       await this.joeMakerV4.setBridge(this.mim.address, this.wavax.address)
-      await this.joeMakerV4.convert(this.mim.address, this.time.address)
+      await this.joeMakerV4.convert(this.mim.address, this.time.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.mimTime.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("213737823")
@@ -204,29 +204,34 @@ describe("joeMakerV4", function () {
         value: "1000000000000000000",
       })
 
-      await this.joeMakerV4.convert(this.tractor.address, this.wavax.address)
+      await this.joeMakerV4.convert(this.tractor.address, this.wavax.address, "100")
 
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdcDai.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("186168809")
     })
 
+    it("reverts if slippage is lower than 0.3% (fees for swap)", async function () {
+      await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
+      await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
+      await expect(this.joeMakerV4.convert(this.joe.address, this.wavax.address, "29"))
+          .to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 0.29% this will revert as the fee for a swap is 0.3%
+    })
+
+    it("reverts if using a pair with really low liquidity even with slippage at maximum", async function () {
+      await this.zap.zapIn(this.mimTime.address, { value: "2000000000000000000" })
+      await this.mimTime.transfer(this.joeMakerV4.address, await this.mimTime.balanceOf(this.dev.address))
+      await this.joeMakerV4.setBridge(this.mim.address, this.joe.address)
+      await expect(this.joeMakerV4.convert(this.mim.address, this.time.address, "4999"))
+          .to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 1% this will revert as the JOE/MIM pair has really low liquidity.
+    })
+
     it("reverts if convert is called by non auth", async function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: "2000000000000000000" })
       await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await expect(this.joeMakerV4.connect(this.alice).convert(this.usdc.address, this.wavax.address)).to.be.revertedWith(
+      await expect(this.joeMakerV4.connect(this.alice).convert(this.usdc.address, this.wavax.address, "100")).to.be.revertedWith(
         "JoeMakerV4: FORBIDDEN"
       )
-    })
-
-    it("reverts if caller is not EOA", async function () {
-      const exploiterCF = await ethers.getContractFactory("JoeMakerExploitMock")
-      const exploiter = await exploiterCF.deploy(this.joeMakerV4.address)
-      await exploiter.deployed()
-
-      await this.zap.zapIn(this.avaxUsdc.address, { value: "2000000000000000000" })
-      await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await expect(exploiter.convert(this.usdc.address, this.wavax.address)).to.be.revertedWith("JoeMakerV4: must use EOA")
     })
 
     it("reverts if it loops back", async function () {
@@ -234,11 +239,11 @@ describe("joeMakerV4", function () {
       await this.joeUsdt.transfer(this.joeMakerV4.address, await this.joeUsdt.balanceOf(this.dev.address))
       await this.joeMakerV4.setBridge(this.joe.address, this.usdt.address)
       await this.joeMakerV4.setBridge(this.usdt.address, this.joe.address)
-      await expect(this.joeMakerV4.convert(this.usdt.address, this.joe.address)).to.be.reverted
+      await expect(this.joeMakerV4.convert(this.usdt.address, this.joe.address, "100")).to.be.reverted
     })
 
     it("reverts if pair does not exist", async function () {
-      await expect(this.joeMakerV4.convert(this.usdc.address, this.avaxUsdc.address)).to.be.revertedWith("JoeMakerV4: Invalid pair")
+      await expect(this.joeMakerV4.convert(this.usdc.address, this.avaxUsdc.address, "100")).to.be.revertedWith("JoeMakerV4: Invalid pair")
     })
   })
 
@@ -248,7 +253,7 @@ describe("joeMakerV4", function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: "2000000000000000000" })
       await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
       await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convertMultiple([this.joe.address, this.usdc.address], [this.wavax.address, this.wavax.address])
+      await this.joeMakerV4.convertMultiple([this.joe.address, this.usdc.address], [this.wavax.address, this.wavax.address], "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.joeAvax.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
@@ -268,7 +273,7 @@ describe("joeMakerV4", function () {
 
       await this.zap.zapIn(this.avaxUsdc.address, { value: "2000000000000000000" })
       await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address)
+      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect((await this.usdc.balanceOf(BAR_ADDRESS)) - barBalance).to.be.greaterThan(0)
@@ -291,7 +296,7 @@ describe("joeMakerV4", function () {
       expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("90009160457674355334497135")
 
       await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address)
+      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address, "100")
       expect(await this.joe.balanceOf(BAR_ADDRESS)).to.equal("90009210905950105791950559")
 
       expect(await this.joe.balanceOf(this.joeMaker.address)).to.equal(0)

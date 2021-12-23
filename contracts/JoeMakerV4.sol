@@ -136,24 +136,27 @@ contract JoeMakerV4 is Ownable {
     //     As the size of the JoeBar has grown, this requires large amounts of funds and isn't super profitable anymore
     //     The onlyEOA modifier prevents this being done with a flash loan.
     // C1 - C24: OK
-    function convert(address token0, address token1) external onlyEOA onlyAuth {
-        _convert(token0, token1);
+    function convert(address token0, address token1, uint256 slippage) external onlyEOA onlyAuth {
+        require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 5000");
+        _convert(token0, token1, slippage);
     }
 
     // F1 - F10: OK, see convert
     // C1 - C24: OK
     // C3: Loop is under control of the caller
-    function convertMultiple(address[] calldata token0, address[] calldata token1) external onlyEOA onlyAuth {
+    function convertMultiple(address[] calldata token0, address[] calldata token1, uint256 slippage) external onlyEOA onlyAuth {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
+        require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 5000");
+
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
-            _convert(token0[i], token1[i]);
+            _convert(token0[i], token1[i], slippage);
         }
     }
 
     // F1 - F10: OK
     // C1- C24: OK
-    function _convert(address token0, address token1) internal {
+    function _convert(address token0, address token1, uint256 slippage) internal {
         uint256 amount0;
         uint256 amount1;
 
@@ -178,7 +181,7 @@ contract JoeMakerV4 is Ownable {
             amount0 = IERC20(token0).balanceOf(address(this)).sub(tok0bal);
             amount1 = IERC20(token1).balanceOf(address(this)).sub(tok1bal);
         }
-        emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1));
+        emit LogConvert(msg.sender, token0, token1, amount0, amount1, _convertStep(token0, token1, amount0, amount1, slippage));
     }
 
     // F1 - F10: OK
@@ -188,7 +191,8 @@ contract JoeMakerV4 is Ownable {
         address token0,
         address token1,
         uint256 amount0,
-        uint256 amount1
+        uint256 amount1,
+        uint256 slippage
     ) internal returns (uint256 tokenOut) {
         // Interactions
         if (token0 == token1) {
@@ -197,42 +201,61 @@ contract JoeMakerV4 is Ownable {
                 IERC20(tokenTo).safeTransfer(bar, amount);
                 tokenOut = amount;
             } else if (token0 == wavax) {
-                tokenOut = _toToken(wavax, amount);
+                tokenOut = _toToken(wavax, amount, slippage);
             } else {
                 address bridge = bridgeFor(token0);
-                amount = _swap(token0, bridge, amount, address(this));
-                tokenOut = _convertStep(bridge, bridge, amount, 0);
+                amount = _swap(token0, bridge, amount, address(this), slippage);
+                tokenOut = _convertStep(bridge, bridge, amount, 0, slippage);
             }
         } else if (token0 == tokenTo) {
             // eg. TOKEN - AVAX
             IERC20(tokenTo).safeTransfer(bar, amount0);
-            tokenOut = _toToken(token1, amount1).add(amount0);
+            tokenOut = _toToken(token1, amount1, slippage).add(amount0);
         } else if (token1 == tokenTo) {
             // eg. USDT - TOKEN
             IERC20(tokenTo).safeTransfer(bar, amount1);
-            tokenOut = _toToken(token0, amount0).add(amount1);
+            tokenOut = _toToken(token0, amount0, slippage).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            tokenOut = _toToken(wavax, _swap(token1, wavax, amount1, address(this)).add(amount0));
+            tokenOut = _toToken(
+                wavax,
+                _swap(token1, wavax, amount1, address(this), slippage).add(amount0),
+                slippage);
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            tokenOut = _toToken(wavax, _swap(token0, wavax, amount0, address(this)).add(amount1));
+            tokenOut = _toToken(
+                wavax,
+                _swap(token0, wavax, amount0, address(this), slippage).add(amount1),
+                slippage);
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
             address bridge1 = bridgeFor(token1);
             if (bridge0 == token1) {
                 // eg. MIC - USDT - and bridgeFor(MIC) = USDT
-                tokenOut = _convertStep(bridge0, token1, _swap(token0, bridge0, amount0, address(this)), amount1);
+                tokenOut = _convertStep(
+                    bridge0,
+                    token1,
+                    _swap(token0, bridge0, amount0, address(this), slippage),
+                    amount1,
+                    slippage
+                );
             } else if (bridge1 == token0) {
                 // eg. WBTC - DSD - and bridgeFor(DSD) = WBTC
-                tokenOut = _convertStep(token0, bridge1, amount0, _swap(token1, bridge1, amount1, address(this)));
+                tokenOut = _convertStep(
+                    token0,
+                    bridge1,
+                    amount0,
+                    _swap(token1, bridge1, amount1, address(this), slippage),
+                    slippage
+                );
             } else {
                 tokenOut = _convertStep(
                     bridge0,
                     bridge1, // eg. USDT - DSD - and bridgeFor(DSD) = WBTC
-                    _swap(token0, bridge0, amount0, address(this)),
-                    _swap(token1, bridge1, amount1, address(this))
+                    _swap(token0, bridge0, amount0, address(this), slippage),
+                    _swap(token1, bridge1, amount1, address(this), slippage),
+                    slippage
                 );
             }
         }
@@ -245,7 +268,8 @@ contract JoeMakerV4 is Ownable {
         address fromToken,
         address toToken,
         uint256 amountIn,
-        address to
+        address to,
+        uint256 slippage
     ) internal returns (uint256 amountOut) {
         // Checks
         // X1 - X5: OK
@@ -260,6 +284,13 @@ contract JoeMakerV4 is Ownable {
         uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(reserveInput); // calculate amount that was transferred, this accounts for transfer taxes
 
         amountOut = getAmountOut(amountInput, reserveInput, reserveOutput);
+
+        {
+            uint256 rest = uint256(10_000).sub(slippage);
+            require(getAmountOut(amountOut, reserveOutput, reserveInput) > amountInput.mul(rest).mul(rest).div(100_000_000),
+                "JoeMakerV4: Slippage caught"
+            );
+        }
         (uint256 amount0Out, uint256 amount1Out) = fromToken == pair.token0()
             ? (uint256(0), amountOut)
             : (amountOut, uint256(0));
@@ -268,14 +299,14 @@ contract JoeMakerV4 is Ownable {
 
     // F1 - F10: OK
     // C1 - C24: OK
-    function _toToken(address token, uint256 amountIn) internal returns (uint256 amountOut) {
+    function _toToken(address token, uint256 amountIn, uint256 slippage) internal returns (uint256 amountOut) {
         uint256 amount = amountIn;
         if (devCut > 0) {
             amount = amount.mul(devCut).div(10000);
             IERC20(token).safeTransfer(devAddr, amount);
             amount = amountIn.sub(amount);
         }
-        amountOut = _swap(token, tokenTo, amount, bar);
+        amountOut = _swap(token, tokenTo, amount, bar, slippage);
     }
 
     function getAmountOut(
