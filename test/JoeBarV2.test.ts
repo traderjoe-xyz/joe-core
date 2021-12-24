@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { duration, increase } from "./utilities"
-import {describe} from "mocha";
+import { describe } from "mocha"
 const hre = require("hardhat")
 
 describe("JoeBar", function () {
@@ -77,7 +77,7 @@ describe("JoeBar", function () {
     expect(await this.joe.balanceOf(this.bob.address)).to.equal("98508772030517058737")
   })
 
-  describe("Rewarder", function() {
+  describe("Rewarder", function () {
     it("Should allow enter, leave and claiming rewards each time", async function () {
       await this.joe.connect(this.alice).approve(this.bar.address, "1000000000000000000000")
       await this.bar.connect(this.alice).enter("100000000000000000000")
@@ -103,33 +103,33 @@ describe("JoeBar", function () {
       expect(await this.rewarder.unpaidRewards()).to.be.equal("0")
     })
 
-    it("should allow emergency withdraw", async function() {
+    it("should allow emergency withdraw", async function () {
       const bal = await this.joe.balanceOf(this.rewarder.address)
-      await this.rewarder.connect(this.dev).emergencyWithdraw();
+      await this.rewarder.connect(this.dev).emergencyWithdraw()
       expect(await this.joe.balanceOf(this.rewarder.address)).to.equal("0")
       expect(await this.joe.balanceOf(this.dev.address)).to.equal(bal)
     })
 
-    it("should increase unpaid reward", async function() {
+    it("should increase unpaid reward", async function () {
       await this.joe.connect(this.alice).approve(this.bar.address, "1000000000000000000000")
       await this.bar.connect(this.alice).enter("100000000000000000000")
 
       await increase(duration.days(1))
 
-      const unpaidReward = await this.rewarder.unpaidRewards();
+      const unpaidReward = await this.rewarder.unpaidRewards()
 
       await increase(duration.days(1))
 
-      await this.rewarder.update();
-      expect((await this.rewarder.unpaidRewards()) - unpaidReward).to.be.greaterThan(0);
+      await this.rewarder.update()
+      expect((await this.rewarder.unpaidRewards()) - unpaidReward).to.be.greaterThan(0)
     })
 
-    it("should revert on claim rewards from any other address than bar", async function() {
+    it("should revert on claim rewards from any other address than bar", async function () {
       await expect(this.rewarder.connect(this.dev).claimReward()).to.be.revertedWith("onlyBar: only JoeBar can call this function")
       await expect(this.rewarder.connect(this.alice).claimReward()).to.be.revertedWith("onlyBar: only JoeBar can call this function")
     })
 
-    it("set apr", async function() {
+    it("set apr", async function () {
       await this.rewarder.connect(this.dev).setApr("2000")
       await expect(this.rewarder.connect(this.alice).setApr("999999999999")).to.be.revertedWith("Ownable: caller is not the owner")
       expect(await this.rewarder.apr()).to.be.equal("2000")
