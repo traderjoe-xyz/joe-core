@@ -81,7 +81,8 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
     function setApr(uint256 _apr) external onlyOwner {
         uint256 oldApr = apr;
         apr = _apr; // in basis points aka parts per 10,000 so 5000 is 50%, apr of 50%.
-        //        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees this needs to be called to update the actual apr
+        //        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees
+        //                                                          this needs to be called to update the actual JOE apr
 
         emit AprUpdated(oldApr, _apr);
     }

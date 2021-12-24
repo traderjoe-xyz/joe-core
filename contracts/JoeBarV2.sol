@@ -21,24 +21,23 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 
     IERC20Upgradeable public joe;
     IBarRewarder public rewarder;
-    uint256 entryFee;
+    uint256 public entryFee;
 
     event SetEntryFee(uint256 _entryFee);
     event SetRewarder(address _rewarder);
 
     // Define the Joe token contract
     function initialize(IERC20Upgradeable _joe, uint256 _entryFee) public initializer {
-        require(_entryFee <= 5000, "JoeBarV2: entryFee too high");
         __ERC20_init("JoeBarV2", "moJOE");
         __Ownable_init();
 
         joe = _joe;
-        entryFee = _entryFee; // in basis points aka parts per 10,000 so 5000 is 50%, entry fee of 50%.
+        setEntryFee(_entryFee);
     }
 
     // Enter the bar. Pay some JOEs. Earn some shares.
     // Locks Joe and mints moJoe
-    function enter(uint256 _amount) public {
+    function enter(uint256 _amount) external {
         // Gets the rewards
         rewarder.claimReward();
 
@@ -67,7 +66,7 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 
     // Leave the bar. Claim back your JOEs.
     // Unlocks the staked + gained Joe and burns moJoe
-    function leave(uint256 _share) public {
+    function leave(uint256 _share) external {
         // Gets the rewards
         rewarder.claimReward();
 
@@ -80,7 +79,7 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     }
 
     // Set the entryFee for moJoe.
-    function setEntryFee(uint256 _entryFee) external onlyOwner {
+    function setEntryFee(uint256 _entryFee) public onlyOwner {
         require(_entryFee <= 5000, "JoeBarV2: entryFee too high");
         entryFee = _entryFee;
 
