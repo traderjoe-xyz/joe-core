@@ -641,7 +641,7 @@ describe("Stable Joe Staking", function () {
       await expect(
         this.stableJoeStaking
           .connect(this.dev)
-          .setDepositFeePercent(ethers.utils.parseEther("0.5"))
+          .setDepositFeePercent(ethers.utils.parseEther("0.5").add("1"))
       ).to.be.revertedWith(
         "StableJoeStaking: deposit fee can't be greater than 50%"
       );
