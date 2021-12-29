@@ -4,28 +4,17 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 
   const { deployer } = await getNamedAccounts();
 
-  const sushi = await ethers.getContract("SushiToken");
-  // const mcv2 = await ethers.getContract("MasterChefJoeV2");
-  const lpTokenAddress = "0x6d551ad3570888d49da4d6c8b8a626c8cbfd5ac2"; // WAVAX-USDT on Rinkeby
-  const mcv2Address = "0xff6eA1C23107e0D835930612ee2F4Cd975331D0D";
+  const rewardToken = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
+  const lpToken = "0xb97F23A9e289B5F5e8732b6e20df087977AcC434";
+  const mcj = "0x188bED1968b795d5c9022F6a0bb5931Ac4c18F00";
 
   await deploy("SimpleRewarderPerSec", {
     from: deployer,
-    args: [
-      sushi.address,
-      lpTokenAddress,
-      "100000000000000000000", // 100 SUSHI per sec
-      mcv2Address,
-    ],
+    args: [rewardToken, lpToken, "0", mcj, true],
     gasLmit: 22000000000,
     log: true,
     deterministicDeployment: false,
   });
-  const rewarder = await ethers.getContract("SimpleRewarderPerSec");
-
-  console.log("Minting 10M Sushi to rewarder...");
-  await sushi.mint(rewarder.address, "10000000000000000000000000");
 };
 
 module.exports.tags = ["SimpleRewarderPerSec"];
-module.exports.dependencies = ["SushiToken"];
