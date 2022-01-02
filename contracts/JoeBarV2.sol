@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 /// SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
@@ -10,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 interface IBarRewarder {
+    function initialize(address _bar) external;
     function claimReward() external;
 }
 
@@ -43,12 +46,16 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     event SetRewarder(address _rewarder);
 
     /// @notice Defines the moJOE token contract
-    function initialize(IERC20Upgradeable _joe, uint256 _entryFee) public initializer {
+    function initialize(address _joe, address _rewarder, uint256 _entryFee) public initializer {
         __ERC20_init("JoeBarV2", "moJOE");
         __Ownable_init();
 
-        joe = _joe;
+        joe = IERC20Upgradeable(_joe);
         setEntryFee(_entryFee);
+
+        (bool success, ) = _rewarder.call.value(0)(abi.encodeWithSignature("initialize()", 0));
+        require(success, "JoeBarV2: Failed to initialize rewarder");
+        setRewarder(IBarRewarder(_rewarder));
     }
 
     /**
@@ -115,7 +122,7 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
      * @dev Needs to be set up after deploying.
      * @param _rewarder The new rewarder.
      */
-    function setRewarder(IBarRewarder _rewarder) external onlyOwner {
+    function setRewarder(IBarRewarder _rewarder) public onlyOwner {
         rewarder = _rewarder;
 
         emit SetRewarder(address(_rewarder));

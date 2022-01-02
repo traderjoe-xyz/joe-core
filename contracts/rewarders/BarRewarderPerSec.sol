@@ -29,7 +29,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable joe;
-    IBarV2 public immutable bar;
+    IBarV2 public bar;
     uint256 public apr;
 
     uint256 private secondsPerYear = 365 days;
@@ -42,6 +42,8 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
     event ClaimReward(uint256 amount);
     event UpdateApr(uint256 oldRate, uint256 newRate);
 
+    bool private initialized;
+
     modifier onlyBar() {
         require(msg.sender == address(bar), "onlyBar: only JoeBar can call this function");
         _;
@@ -49,17 +51,22 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
 
     constructor(
         IERC20 _joe,
-        IBarV2 _bar,
         uint256 _apr
     ) public {
         require(Address.isContract(address(_joe)), "constructor: reward token must be a valid contract");
-        require(Address.isContract(address(_bar)), "constructor: LP token must be a valid contract");
 
         joe = _joe;
-        bar = _bar;
-        apr = _apr;
+        setApr(_apr);
         lastRewardTimestamp = block.timestamp;
         tokenPerSec = 0;
+    }
+
+    function initialize() public {
+        require(!initialized, "BarRewarderV2: Already initialized");
+
+        lastRewardTimestamp = block.timestamp;
+        bar = IBarV2(msg.sender);
+        initialized = true;
     }
 
     /// @notice Update reward variables.
@@ -78,7 +85,8 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
 
     /// @notice Sets the APR.
     /// @param _apr The new APR
-    function setApr(uint256 _apr) external onlyOwner {
+    function setApr(uint256 _apr) public onlyOwner {
+        require(_apr <= 10000, "BarRewarderPerSec: Apr can't be greater than 100%");
         uint256 oldApr = apr;
         apr = _apr; // in basis points aka parts per 10,000 so 5000 is 50%, apr of 50%.
 //        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees

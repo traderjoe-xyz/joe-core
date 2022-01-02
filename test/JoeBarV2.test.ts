@@ -19,9 +19,10 @@ describe("JoeBar", function () {
 
   beforeEach(async function () {
     this.joe = await this.JoeToken.deploy()
-    this.bar = await hre.upgrades.deployProxy(this.JoeBarV2, [this.joe.address, "500"])
 
-    this.rewarder = await this.BarRewarder.deploy(this.joe.address, this.bar.address, "1500")
+    this.rewarder = await this.BarRewarder.deploy(this.joe.address, "1500")
+
+    this.bar = await hre.upgrades.deployProxy(this.JoeBarV2, [this.joe.address, this.rewarder.address, "500"])
 
     await this.bar.setRewarder(this.rewarder.address)
     await this.joe.mint(this.alice.address, "100000000000000000000")
@@ -131,6 +132,7 @@ describe("JoeBar", function () {
 
     it("set apr", async function () {
       await this.rewarder.connect(this.dev).setApr("2000")
+      await expect(this.rewarder.connect(this.dev).setApr("10001")).to.be.revertedWith("BarRewarderPerSec: Apr can't be greater than 100%")
       await expect(this.rewarder.connect(this.alice).setApr("999999999999")).to.be.revertedWith("Ownable: caller is not the owner")
       expect(await this.rewarder.apr()).to.be.equal("2000")
     })
