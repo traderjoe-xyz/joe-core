@@ -13,6 +13,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 interface IBarRewarder {
     function initialize(address _bar) external;
+
     function claimReward() external;
 }
 
@@ -46,7 +47,11 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     event SetRewarder(address _rewarder);
 
     /// @notice Defines the moJOE token contract
-    function initialize(address _joe, address _rewarder, uint256 _entryFee) public initializer {
+    function initialize(
+        address _joe,
+        address _rewarder,
+        uint256 _entryFee
+    ) public initializer {
         __ERC20_init("JoeBarV2", "moJOE");
         __Ownable_init();
 

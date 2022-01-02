@@ -49,10 +49,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
         _;
     }
 
-    constructor(
-        IERC20 _joe,
-        uint256 _apr
-    ) public {
+    constructor(IERC20 _joe, uint256 _apr) public {
         require(Address.isContract(address(_joe)), "constructor: reward token must be a valid contract");
 
         joe = _joe;
@@ -89,8 +86,8 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
         require(_apr <= 10000, "BarRewarderPerSec: Apr can't be greater than 100%");
         uint256 oldApr = apr;
         apr = _apr; // in basis points aka parts per 10,000 so 5000 is 50%, apr of 50%.
-//        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees
-//                                                          this needs to be called to update the actual JOE apr
+        //        apr = _apr.mul(10_000).div(10_000 - IBarV2.entryFee()); // if added then when bar updates its fees
+        //                                                          this needs to be called to update the actual JOE apr
 
         emit UpdateApr(oldApr, _apr);
     }
