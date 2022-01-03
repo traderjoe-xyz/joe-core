@@ -40,9 +40,13 @@ describe("JoeBar", function () {
   })
 
   it("should not allow enter if not enough approve", async function () {
-    await expect(this.bar.connect(this.alice).enter(ethers.utils.parseEther("100"))).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+    await expect(this.bar.connect(this.alice).enter(ethers.utils.parseEther("100"))).to.be.revertedWith(
+      "ERC20: transfer amount exceeds allowance"
+    )
     await this.joe.connect(this.alice).approve(this.bar.address, ethers.utils.parseEther("50"))
-    await expect(this.bar.connect(this.alice).enter(ethers.utils.parseEther("100"))).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+    await expect(this.bar.connect(this.alice).enter(ethers.utils.parseEther("100"))).to.be.revertedWith(
+      "ERC20: transfer amount exceeds allowance"
+    )
     await this.joe.connect(this.alice).approve(this.bar.address, ethers.utils.parseEther("100"))
     await this.bar.connect(this.alice).enter(ethers.utils.parseEther("100"))
     expect(await this.bar.balanceOf(this.alice.address)).to.equal(ethers.utils.parseEther("95"))
@@ -51,7 +55,9 @@ describe("JoeBar", function () {
   it("should not allow withraw more than what you have", async function () {
     await this.joe.connect(this.alice).approve(this.bar.address, ethers.utils.parseEther("100"))
     await this.bar.connect(this.alice).enter(ethers.utils.parseEther("100"))
-    await expect(this.bar.connect(this.alice).leave(ethers.utils.parseEther("95.00000000000000001"))).to.be.revertedWith("ERC20: burn amount exceeds balance")
+    await expect(this.bar.connect(this.alice).leave(ethers.utils.parseEther("95.00000000000000001"))).to.be.revertedWith(
+      "ERC20: burn amount exceeds balance"
+    )
   })
 
   it("should work with more than one participant", async function () {
