@@ -75,9 +75,15 @@ describe("zapV2", function () {
       await expect(
         this.zapV2
           .connect(this.alice)
-          .zapInAVAX("0", ethers.utils.parseUnits("41.5", 6), [WAVAX_ADDRESS, USDT_ADDRESS, USDC_ADDRESS], [WAVAX_ADDRESS, USDC_ADDRESS, USDT_ADDRESS], {
-            value: ethers.utils.parseEther("1"),
-          })
+          .zapInAVAX(
+            "0",
+            ethers.utils.parseUnits("41.5", 6),
+            [WAVAX_ADDRESS, USDT_ADDRESS, USDC_ADDRESS],
+            [WAVAX_ADDRESS, USDC_ADDRESS, USDT_ADDRESS],
+            {
+              value: ethers.utils.parseEther("1"),
+            }
+          )
       ).to.be.revertedWith("ZapV2: INSUFFICIENT_B_AMOUNT")
     })
 
@@ -100,7 +106,9 @@ describe("zapV2", function () {
     })
 
     it("Revert on zapOutAVAX", async function () {
-      await this.zapV2.connect(this.alice).zapInAVAX(0, 0, [WAVAX_ADDRESS, JOE_ADDRESS], [WAVAX_ADDRESS], { value: ethers.utils.parseEther("1") })
+      await this.zapV2
+        .connect(this.alice)
+        .zapInAVAX(0, 0, [WAVAX_ADDRESS, JOE_ADDRESS], [WAVAX_ADDRESS], { value: ethers.utils.parseEther("1") })
       expect(await this.joeAvax.balanceOf(this.alice.address)).to.equal("2690071399116878197")
 
       await this.joeAvax.connect(this.alice).approve(this.zapV2.address, ethers.utils.parseEther("100"))
@@ -118,20 +126,22 @@ describe("zapV2", function () {
       ).to.be.revertedWith("ZapV2: INSUFFICIENT_TOKEN_AMOUNT")
 
       await this.zapV2
-          .connect(this.alice)
-          .zapOutToken(
-              this.joeAvax.address,
-              await this.joeAvax.balanceOf(this.alice.address),
-              "39598352614090637276",
-              [JOE_ADDRESS],
-              [WAVAX_ADDRESS, JOE_ADDRESS]
-          )
+        .connect(this.alice)
+        .zapOutToken(
+          this.joeAvax.address,
+          await this.joeAvax.balanceOf(this.alice.address),
+          "39598352614090637276",
+          [JOE_ADDRESS],
+          [WAVAX_ADDRESS, JOE_ADDRESS]
+        )
     })
   })
 
   describe("zapInAVAX", function () {
     it("zap 1 AVAX to JOE/WAVAX and zapOutAVAX to JOE", async function () {
-      await this.zapV2.connect(this.alice).zapInAVAX(0, 0, [WAVAX_ADDRESS, JOE_ADDRESS], [WAVAX_ADDRESS], { value: ethers.utils.parseEther("1") })
+      await this.zapV2
+        .connect(this.alice)
+        .zapInAVAX(0, 0, [WAVAX_ADDRESS, JOE_ADDRESS], [WAVAX_ADDRESS], { value: ethers.utils.parseEther("1") })
       expect(await this.joeAvax.balanceOf(this.alice.address)).to.equal("2690071399116878197")
 
       await this.joeAvax.connect(this.alice).approve(this.zapV2.address, ethers.utils.parseEther("100"))
@@ -145,10 +155,14 @@ describe("zapV2", function () {
       const provider = waffle.provider
       await this.zapV2
         .connect(this.alice)
-        .zapInAVAX(0, 0, [WAVAX_ADDRESS, USDT_ADDRESS, USDC_ADDRESS], [WAVAX_ADDRESS, USDC_ADDRESS, USDT_ADDRESS], { value: ethers.utils.parseEther("1") })
+        .zapInAVAX(0, 0, [WAVAX_ADDRESS, USDT_ADDRESS, USDC_ADDRESS], [WAVAX_ADDRESS, USDC_ADDRESS, USDT_ADDRESS], {
+          value: ethers.utils.parseEther("1"),
+        })
       await this.zapV2
         .connect(this.alice)
-        .zapInAVAX(0, 0, [WAVAX_ADDRESS, USDC_ADDRESS, USDT_ADDRESS], [WAVAX_ADDRESS, USDT_ADDRESS, USDC_ADDRESS], { value: ethers.utils.parseEther("1") })
+        .zapInAVAX(0, 0, [WAVAX_ADDRESS, USDC_ADDRESS, USDT_ADDRESS], [WAVAX_ADDRESS, USDT_ADDRESS, USDC_ADDRESS], {
+          value: ethers.utils.parseEther("1"),
+        })
       const balanceBefore = await provider.getBalance(this.alice.address)
       expect(await this.usdcUsdt.balanceOf(this.alice.address)).to.equal("81500860")
 
@@ -177,7 +191,9 @@ describe("zapV2", function () {
     it("zap JOE to APEX/AVAX and zapOutAVAX to USDT", async function () {
       await this.router
         .connect(this.alice)
-        .swapExactAVAXForTokens("0", [WAVAX_ADDRESS, JOE_ADDRESS], this.alice.address, ethers.utils.parseEther("0.1"), { value: ethers.utils.parseEther("1") })
+        .swapExactAVAXForTokens("0", [WAVAX_ADDRESS, JOE_ADDRESS], this.alice.address, ethers.utils.parseEther("0.1"), {
+          value: ethers.utils.parseEther("1"),
+        })
       const balance = await this.joe.balanceOf(this.alice.address)
 
       await this.joe.connect(this.alice).approve(this.zapV2.address, "10000000000000000000000000000")
@@ -204,7 +220,9 @@ describe("zapV2", function () {
     it("zap APEX to APEX/AVAX and zapOutAVAX to APEX", async function () {
       await this.router
         .connect(this.alice)
-        .swapExactAVAXForTokens("0", [WAVAX_ADDRESS, APEX_ADDRESS], this.alice.address, ethers.utils.parseEther("0.1"), { value: ethers.utils.parseEther("1") })
+        .swapExactAVAXForTokens("0", [WAVAX_ADDRESS, APEX_ADDRESS], this.alice.address, ethers.utils.parseEther("0.1"), {
+          value: ethers.utils.parseEther("1"),
+        })
       const balance = await this.apex.balanceOf(this.alice.address)
 
       await this.apex.connect(this.alice).approve(this.zapV2.address, ethers.utils.parseEther("100"))
