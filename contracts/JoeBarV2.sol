@@ -51,7 +51,7 @@ contract JoeBarV2 is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         address _joe,
         address _rewarder,
         uint256 _entryFee
-    ) public initializer {
+    ) external initializer {
         __ERC20_init("JoeBarV2", "moJOE");
         __Ownable_init();
 

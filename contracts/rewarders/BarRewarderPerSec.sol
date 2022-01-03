@@ -58,7 +58,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
         tokenPerSec = 0;
     }
 
-    function initialize() public {
+    function initialize() external {
         require(!initialized, "BarRewarderV2: Already initialized");
 
         lastRewardTimestamp = block.timestamp;
@@ -67,7 +67,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
     }
 
     /// @notice Update reward variables.
-    function update() public {
+    function updateRewardVars() public {
         if (block.timestamp > lastRewardTimestamp) {
             uint256 barSupply = bar.totalSupply();
             if (barSupply > 0) {
@@ -94,7 +94,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
 
     /// @notice Function called by JoeBar whenever staker enters or leaves moJOE.
     function claimReward() external onlyBar nonReentrant {
-        update();
+        updateRewardVars();
         uint256 pending = unpaidRewards;
 
         if (bar.totalSupply() > 0) {
@@ -113,7 +113,7 @@ contract BarRewarderPerSec is BoringOwnable, ReentrancyGuard {
 
     /// @notice In case rewarder is stopped before emissions finished, this function allows
     /// withdrawal of remaining tokens.
-    function emergencyWithdraw() public onlyOwner {
+    function emergencyWithdraw() external onlyOwner {
         joe.safeTransfer(address(msg.sender), joe.balanceOf(address(this)));
     }
 
