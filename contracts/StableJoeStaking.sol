@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /**
  * @title Stable JOE Staking
  * @author Trader Joe
- * @notice StableJoeStaking is a contract that allows to deposit JOE and receives stable coin sent by JoeMakerV4's daily
+ * @notice StableJoeStaking is a contract that allows users to deposit JOE and receives stable coin sent by JoeMakerV4's daily
  * harvests. Users deposit JOE and receive a share of what has been sent by JoeMakerV4 based on their participation
  * of the total deposited JOE
  */
@@ -44,7 +44,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     IERC20Upgradeable public rewardToken;
     uint256 public lastRewardTimestamp;
 
-    uint256 private tokenPerSecScaled;
+    uint256 private tokensPerSecScaled;
     /// @dev We update tokenPerSec after 1 day after lastDailyFeeTimestamp
     uint256 public lastDailyFeeTimestamp;
     /// @notice Last balance of reward token
@@ -81,8 +81,10 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         rewardToken = _rewardToken;
         joe = _joe;
 
-        lastTokenBalance = _rewardToken.balanceOf(address(this)); /// @dev Added to be upgrade safe
-        PRECISION = 1e12; /// @dev initialized here to be upgrade safe
+        /// @dev Added to be upgrade safe
+        lastTokenBalance = _rewardToken.balanceOf(address(this));
+        PRECISION = 1e12;
+        tokensPerSecScaled = 0;
         lastDailyFeeTimestamp = (block.timestamp / 1 days) * 1 days;
     }
 
@@ -109,7 +111,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @notice return the token per sec.
      */
     function tokenPerSec() external view returns (uint256) {
-        return tokenPerSecScaled.div(PRECISION);
+        return tokensPerSecScaled.div(PRECISION);
     }
 
     /**
@@ -117,37 +119,48 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _user The address of the user
      * @return `_user`'s pending reward token
      */
-    function pendingToken(address _user) external view returns (uint256) {
+    function pendingTokens(address _user) external view returns (uint256) {
         UserInfo storage user = userInfo[_user];
+
         uint256 lpSupply = joe.balanceOf(address(this));
         uint256 _accTokenPerShare = accTokenPerShare;
-        uint256 _multiplier;
-        uint256 _tokenReward;
         uint256 _lastRewardTimestamp = lastRewardTimestamp;
         uint256 _lastDailyFeeTimestamp = lastDailyFeeTimestamp;
-        uint256 _tokenPerSecScaled = tokenPerSecScaled;
+        uint256 _tokensPerSecScaled = tokensPerSecScaled;
         uint256 _lastTokenBalance = lastTokenBalance;
+
+        uint256 _multiplier;
+        uint256 _tokenReward;
+        // update values to be accurate with today's buyback
         if (block.timestamp > _lastDailyFeeTimestamp + 1 days) {
+            // remaining time of the previous buyback
             _multiplier = 1 days - (_lastRewardTimestamp % 1 days);
 
-            _tokenReward = _multiplier.mul(_tokenPerSecScaled);
+            _tokenReward = _multiplier.mul(_tokensPerSecScaled);
 
+            // now we update the values for today's buyback
             _lastRewardTimestamp = _lastDailyFeeTimestamp + 1 days;
+            // get the current day at 00:00:00, _lastRewardTimestamp and _lastDailyFeeTimestamp
+            // can be different, if `updatePool` isn't called at least once per day.
             _lastDailyFeeTimestamp = (block.timestamp / 1 days) * 1 days;
 
+            // get today's buyback amount
             uint256 _accruedFee = rewardToken.balanceOf(address(this)).sub(_lastTokenBalance);
             _lastTokenBalance = _lastTokenBalance.add(_accruedFee);
 
-            _tokenPerSecScaled = _accruedFee.mul(PRECISION).div(1 days);
+            // distribute today's buyback over 1 day
+            _tokensPerSecScaled = _accruedFee.mul(PRECISION).div(1 days);
         }
 
+        // in case `updatePool` isn't called in more than 2 days, we need to make sure user receives only one day
+        // worth of token
         if (block.timestamp > lastRewardTimestamp + 1 days) {
             _multiplier = 1 days;
         } else {
             _multiplier = block.timestamp - _lastRewardTimestamp;
         }
 
-        _tokenReward = _tokenReward.add(_multiplier.mul(_tokenPerSecScaled));
+        _tokenReward = _tokenReward.add(_multiplier.mul(_tokensPerSecScaled));
 
         _accTokenPerShare = _accTokenPerShare.add(_tokenReward.div(lpSupply));
         return user.amount.mul(_accTokenPerShare).div(PRECISION).sub(user.rewardDebt);
@@ -203,32 +216,35 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
         uint256 multiplier;
         uint256 tokenReward;
-        // each day we update token per sec
+        // update values to be accurate with today's buyback
         if (block.timestamp > lastDailyFeeTimestamp + 1 days) {
             // remaining time of the previous day
             multiplier = 1 days - (lastRewardTimestamp % 1 days);
 
-            tokenReward = multiplier.mul(tokenPerSecScaled);
+            tokenReward = multiplier.mul(tokensPerSecScaled);
 
             // now we update the values for the new day
             lastRewardTimestamp = lastDailyFeeTimestamp + 1 days;
+            // get the current day at 00:00:00, _lastRewardTimestamp and _lastDailyFeeTimestamp
+            // can be different, if `updatePool` isn't called at least once per day.
             lastDailyFeeTimestamp = (block.timestamp / 1 days) * 1 days;
 
-            // tokens sent to the contract are added to accruedFee and redistributed during the next 24h
+            // get today's buyback amount
             uint256 accruedFee = rewardToken.balanceOf(address(this)).sub(lastTokenBalance);
             lastTokenBalance = lastTokenBalance.add(accruedFee);
 
-            tokenPerSecScaled = accruedFee.mul(PRECISION).div(1 days);
+            // distribute today's buyback over 1 day
+            tokensPerSecScaled = accruedFee.mul(PRECISION).div(1 days);
         }
 
-        // in case update isn't called in more than 2 days, we need to make sure user receive only one day
+        // in case `updatePool` isn't called in more than 2 days, we need to make sure user receives only one day
         // worth of token
         if (block.timestamp > lastRewardTimestamp + 1 days) {
-            tokenReward = tokenReward.add(uint256(1 days).mul(tokenPerSecScaled));
-            tokenPerSecScaled = 0;
+            tokenReward = tokenReward.add(uint256(1 days).mul(tokensPerSecScaled));
+            tokensPerSecScaled = 0;
         } else {
             multiplier = block.timestamp - lastRewardTimestamp;
-            tokenReward = tokenReward.add(multiplier.mul(tokenPerSecScaled));
+            tokenReward = tokenReward.add(multiplier.mul(tokensPerSecScaled));
         }
 
         accTokenPerShare = accTokenPerShare.add(tokenReward.div(lpSupply));
@@ -237,18 +253,18 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     /**
      * @notice Safe Token Transfer function, just in case if rounding error
-     * causes pool To not have enough reward tokens
+     * causes pool to not have enough reward tokens
      * @param _to The address that will receive `_amount` `rewardToken`
      * @param _amount The amount to send to `_to`
      */
     function safeTokenTransfer(address _to, uint256 _amount) internal {
         uint256 rewardTokenBal = rewardToken.balanceOf(address(this));
         if (_amount > rewardTokenBal) {
-            rewardToken.transfer(_to, rewardTokenBal);
             lastTokenBalance = lastTokenBalance.sub(rewardTokenBal);
+            rewardToken.transfer(_to, rewardTokenBal);
         } else {
-            rewardToken.transfer(_to, _amount);
             lastTokenBalance = lastTokenBalance.sub(_amount);
+            rewardToken.transfer(_to, _amount);
         }
     }
 }
