@@ -359,8 +359,9 @@ const getPairInfo = async (pair, dev) => {
   }
 }
 
-const swapTo = (pair, tokenIsToken0, amountIn, slippage) => {
-  const amountInWithSlippage = amountIn.mul(slippage)
+// rest is 10_000 - slippage
+const swapTo = (pair, tokenIsToken0, amountIn, rest) => {
+  const amountInWithSlippage = amountIn.mul(rest)
   const reserveIn = tokenIsToken0 ? pair.reserve0 : pair.reserve1
   const reserveOut = tokenIsToken0 ? pair.reserve1 : pair.reserve0
   return amountInWithSlippage.mul(reserveOut).div(reserveIn.mul("10000").add(amountInWithSlippage))
