@@ -13,7 +13,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
  * @author Trader Joe
  * @notice StableJoeStaking is a contract that allows users to deposit JOE and receive stablecoins sent by JoeMakerV4's daily
  * harvests. Users deposit JOE and receive a share of what has been sent by JoeMakerV4 based on their participation
- * of the total deposited JOE
+ * of the total deposited JOE.
+ *
+ * Every day at 00:00 we update `tokenPerSecScaled` to distribute today's reward, `accruedRewards`.
+ * When calling updatePool, it distributes the remaining time of previous day with the previous rewards.
+ * After what, it updates `tokenPerSecScaled` and distributes the tokens according to the elapsed time, if elapsed time
+ * is bigger than 1 day, then we only distribute 1 day worth of rewards as it's calculated to be be only for one day.
  */
 contract StableJoeStaking is Initializable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
