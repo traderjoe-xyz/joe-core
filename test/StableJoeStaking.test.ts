@@ -26,7 +26,7 @@ describe("Stable Joe Staking", function () {
     await this.rewardToken.mint(this.joeMaker.address, ethers.utils.parseEther("1000000")) // 1_000_000 tokens
 
     const block = await ethers.provider.getBlock("latest")
-    // to make sure we start the tests at 23:59:00
+    // Make sure we start the tests at 23:59:00
     await increase(2 * 86400 - (block.timestamp % 86400) - 60)
 
     this.sJoe = await hre.upgrades.deployProxy(this.StableJoeStakingCF, [this.rewardToken.address, this.joe.address])
@@ -68,24 +68,34 @@ describe("Stable Joe Staking", function () {
 
       await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("86400"))
       expect(await this.rewardToken.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("86400"))
-      expect(await this.sJoe.lastTokenBalance()).to.be.equal("0")
-      expect(await this.sJoe.tokenPerSec()).to.be.equal("0")
+      expect(await this.sJoe.lastRewardBalance()).to.be.equal("0")
+      expect(await this.sJoe.tokensPerSec()).to.be.equal("0")
 
       await increase(3 * 3600)
       let block = await ethers.provider.getBlock("latest")
 
+      // As we sent 86400 tokens to sJoe, tokensPerSec = 1
+      // Alice is the only one that deposited, so she owns all the rewards.
+      //
+      // But previous day, `tokensPerSec = 0`, so she will receive no reward from day 0
+      // and only rewards from day 1, hence `currentTimeStamp - lastDayTimestampAt0`
+      // which is equal to `currentTimeStamp % 1 days` cause `currentTimeStamp = lastDayTimestampAt0 + elapsedSecondOfCurrentDay`
       expect(await this.rewardToken.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("86400"))
-      expect(await this.sJoe.pendingToken(this.alice.address)).to.be.equal(ethers.utils.parseEther("1").mul(block.timestamp % 86400))
+      expect(await this.sJoe.pendingTokens(this.alice.address)).to.be.equal(ethers.utils.parseEther("1").mul(block.timestamp % 86400))
+
+      // Making sure that `pendingTokens` still return the accurate tokens even after updating pools
       await this.sJoe.updatePool()
       block = await ethers.provider.getBlock("latest")
-      expect(await this.sJoe.pendingToken(this.alice.address)).to.be.equal(ethers.utils.parseEther("1").mul(block.timestamp % 86400))
+      expect(await this.sJoe.pendingTokens(this.alice.address)).to.be.equal(ethers.utils.parseEther("1").mul(block.timestamp % 86400))
 
       await increase(86_400)
 
-      // shoud be equal to 86400e18
-      expect(await this.sJoe.pendingToken(this.alice.address)).to.be.equal(ethers.utils.parseEther("86400"))
+      // Should be equal to 86400e18
+      expect(await this.sJoe.pendingTokens(this.alice.address)).to.be.equal(ethers.utils.parseEther("86400"))
+
+      // Making sure that `pendingTokens` still return the accurate tokens even after updating pools
       await this.sJoe.updatePool()
-      expect(await this.sJoe.pendingToken(this.alice.address)).to.be.equal(ethers.utils.parseEther("86400"))
+      expect(await this.sJoe.pendingTokens(this.alice.address)).to.be.equal(ethers.utils.parseEther("86400"))
     })
 
     it("should allow deposits and withdraws of multiple users and distribute rewards accordingly", async function () {
@@ -101,7 +111,7 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.carol.address)).to.be.equal(ethers.utils.parseEther("700"))
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("600"))
 
-      await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("518400")) // 6 * 86_400, tokenPerSec is 6
+      await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("518400")) // 6 * 86_400, tokensPerSec is 6
       await this.sJoe.updatePool()
       await increase(86_400 + 60)
 
@@ -122,7 +132,7 @@ describe("Stable Joe Staking", function () {
     })
 
     it("should distribute token accordingly even if update isn't called every day", async function () {
-      await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("86400")) // 6 * 86_400, tokenPerSec is 6
+      await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("86400")) // 6 * 86_400, tokensPerSec is 6
 
       await this.sJoe.connect(this.alice).deposit(1)
       await increase(10 * 86_400)
@@ -130,7 +140,7 @@ describe("Stable Joe Staking", function () {
       await this.sJoe.connect(this.alice).withdraw(0)
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("86400"))
 
-      await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("86400")) // 6 * 86_400, tokenPerSec is 6
+      await this.rewardToken.connect(this.joeMaker).transfer(this.sJoe.address, ethers.utils.parseEther("86400")) // 6 * 86_400, tokensPerSec is 6
       await increase(10 * 86_400)
 
       await this.sJoe.connect(this.alice).withdraw(0)
@@ -149,7 +159,7 @@ describe("Stable Joe Staking", function () {
       await this.sJoe.updatePool()
       await increase(86_400)
 
-      await this.sJoe.connect(this.bob).deposit(ethers.utils.parseEther("200")) // bob enters
+      await this.sJoe.connect(this.bob).deposit(ethers.utils.parseEther("200")) // Bob enters
       expect(await this.joe.balanceOf(this.bob.address)).to.be.equal(ethers.utils.parseEther("800"))
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("400"))
 
@@ -160,7 +170,7 @@ describe("Stable Joe Staking", function () {
       )
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("300"))
 
-      await this.sJoe.connect(this.alice).deposit(ethers.utils.parseEther("100")) // alice enters again to try to get more rewards
+      await this.sJoe.connect(this.alice).deposit(ethers.utils.parseEther("100")) // Alice enters again to try to get more rewards
       await this.sJoe.connect(this.alice).withdraw(ethers.utils.parseEther("200"))
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("1000"))
       // She gets the same reward as Carol, and a bit more as some time elapsed
@@ -178,7 +188,7 @@ describe("Stable Joe Staking", function () {
       )
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("200"))
 
-      await this.sJoe.connect(this.alice).withdraw("0") // alice shouldn't receive any token of the last reward
+      await this.sJoe.connect(this.alice).withdraw("0") // Alice shouldn't receive any token of the last reward
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("1000"))
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(aliceBalance)
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("200"))
@@ -189,10 +199,10 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("700"))
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("300"))
 
-      await this.rewardToken.mint(this.sJoe.address, ethers.utils.parseEther("100")) // we send 100 Tokens to sJoe's address
+      await this.rewardToken.mint(this.sJoe.address, ethers.utils.parseEther("100")) // We send 100 Tokens to sJoe's address
 
-      const pendingReward = await this.sJoe.pendingToken(this.alice.address)
-      await this.sJoe.connect(this.alice).withdraw("0") // alice shouldn't receive any token of the last reward
+      const pendingReward = await this.sJoe.pendingTokens(this.alice.address)
+      await this.sJoe.connect(this.alice).withdraw("0") // Alice shouldn't receive any token of the last reward
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("700"))
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(pendingReward)
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("300"))
@@ -203,9 +213,9 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("700"))
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("300"))
 
-      await this.rewardToken.mint(this.sJoe.address, ethers.utils.parseEther("100")) // we send 100 Tokens to sJoe's address
+      await this.rewardToken.mint(this.sJoe.address, ethers.utils.parseEther("100")) // We send 100 Tokens to sJoe's address
 
-      await this.sJoe.connect(this.alice).emergencyWithdraw() // alice shouldn't receive any token of the last reward
+      await this.sJoe.connect(this.alice).emergencyWithdraw() // Alice shouldn't receive any token of the last reward
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(ethers.utils.parseEther("1000"))
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(0)
       expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(0)
