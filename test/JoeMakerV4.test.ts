@@ -18,6 +18,7 @@ const TRACTOR_ADDRESS = "0x542fA0B261503333B90fE60c78F2BeeD16b7b7fD"
 const JOEAVAX_ADDRESS = "0x454E67025631C065d3cFAD6d71E6892f74487a15"
 const USDCAVAX_ADDRESS = "0xa389f9430876455c36478deea9769b7ca4e3ddb1"
 const MIMTIME_ADDRESS = "0x113f413371fc4cc4c9d6416cf1de9dfd7bf747df"
+const MIMAVAX_ADDRESS = "0x781655d802670bba3c89aebaaea59d3182fd755d"
 const TRACTORAVAX_ADDRESS = "0x601e0f63be88a52b79dbac667d6b4a167ce39113"
 const USDCDAI_ADDRESS = "0x63ABE32d0Ee76C05a11838722A63e012008416E6"
 const JOEUSDT_ADDRESS = "0x1643de2efB8e35374D796297a9f95f64C082a8ce"
@@ -66,6 +67,7 @@ describe("joeMakerV4", function () {
     this.avaxUsdc = await this.PairCF.attach(USDCAVAX_ADDRESS, this.dev)
     this.usdcDai = await this.PairCF.attach(USDCDAI_ADDRESS, this.dev)
     this.mimTime = await this.PairCF.attach(MIMTIME_ADDRESS, this.dev)
+    this.mimAvax = await this.PairCF.attach(MIMAVAX_ADDRESS, this.dev)
     this.tractorAvax = await this.PairCF.attach(TRACTORAVAX_ADDRESS, this.dev)
   })
 
@@ -161,24 +163,47 @@ describe("joeMakerV4", function () {
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214878919")
     })
 
-    it("should convert JOE - AVAX", async function () {
-      await this.zap.zapIn(this.joeAvax.address, { value: ethers.utils.parseEther("2") })
+    it("Should convert JOE - AVAX above slippage", async function () {
+      await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
+
+      const joeAvax = await getPairInfo(this.joeAvax, this.dev.address)
+      const avaxUsdc = await getPairInfo(this.avaxUsdc, this.dev.address)
+
+      const [joeAmount, avaxAmount] =
+        this.joe.address == joeAvax.token0 ? [joeAvax.amount0, joeAvax.amount1] : [joeAvax.amount1, joeAvax.amount0]
+
+      const swappedJoeToAvax = swapTo(joeAvax, (await joeAvax.token0) == this.joe.address, joeAmount, "9900")
+      const swappedAvaxToUsdc = swapTo(avaxUsdc, (await avaxUsdc.token0) == this.wavax.address, avaxAmount.add(swappedJoeToAvax), "9900")
+
       await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
       await this.joeMakerV4.convert(this.joe.address, this.wavax.address, "100")
+
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.joeAvax.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214466109")
+      expect((await this.usdc.balanceOf(BAR_ADDRESS)).sub(swappedAvaxToUsdc).toNumber()).to.be.greaterThan(0)
     })
 
-    it("should convert MIM - TIME", async function () {
+    it("should convert MIM - TIME above slippage", async function () {
       await this.zap.zapIn(this.mimTime.address, { value: ethers.utils.parseEther("2") })
       await this.mimTime.transfer(this.joeMakerV4.address, await this.mimTime.balanceOf(this.dev.address))
       await this.joeMakerV4.setBridge(this.time.address, this.mim.address)
       await this.joeMakerV4.setBridge(this.mim.address, this.wavax.address)
+
+      const mimTime = await getPairInfo(this.mimTime, this.dev.address)
+      const mimAvax = await getPairInfo(this.mimAvax, this.dev.address)
+      const avaxUsdc = await getPairInfo(this.avaxUsdc, this.dev.address)
+
+      const [mimAmount, timeAmount] =
+        this.mim.address == mimTime.token0 ? [mimTime.amount0, mimTime.amount1] : [mimTime.amount1, mimTime.amount0]
+
+      const swappedTimeToMim = swapTo(mimTime, (await mimTime.token0) == this.time.address, timeAmount, "9900")
+      const swappedMimToAvax = swapTo(mimAvax, (await mimAvax.token0) == this.mim.address, mimAmount.add(swappedTimeToMim), "9900")
+      const swappedAvaxToUsdc = swapTo(avaxUsdc, (await avaxUsdc.token0) == this.wavax.address, swappedMimToAvax, "9900")
+
       await this.joeMakerV4.convert(this.mim.address, this.time.address, "100")
       expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
       expect(await this.mimTime.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("213737823")
+      expect((await this.usdc.balanceOf(BAR_ADDRESS)).sub(swappedAvaxToUsdc).toNumber()).to.be.greaterThan(0)
     })
 
     it("should convert reflect tokens TRACTOR/AVAX", async function () {
@@ -226,7 +251,7 @@ describe("joeMakerV4", function () {
       await expect(this.joeMakerV4.convert(this.mim.address, this.time.address, "4999")).to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 1% this will revert as the JOE/MIM pair has really low liquidity.
     })
 
-    it("reverts if convert is called by non auth", async function () {
+    it("reverts if convert is called by non-authorised user", async function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
       await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
       await expect(this.joeMakerV4.connect(this.alice).convert(this.usdc.address, this.wavax.address, "100")).to.be.revertedWith(
@@ -312,3 +337,31 @@ describe("joeMakerV4", function () {
     })
   })
 })
+
+const getPairInfo = async (pair, dev) => {
+  const reserves = await pair.getReserves()
+  let reserve0 = reserves[0]
+  let reserve1 = reserves[1]
+  const totalSupply = await pair.totalSupply()
+  const balanceSupply = await pair.balanceOf(dev)
+  const amount0 = reserve0.mul(balanceSupply).div(totalSupply)
+  const amount1 = reserve1.mul(balanceSupply).div(totalSupply)
+  reserve0 = reserve0.sub(amount0)
+  reserve1 = reserve1.sub(amount1)
+  const token0 = await pair.token0()
+
+  return {
+    reserve0: reserve0,
+    reserve1: reserve1,
+    amount0: amount0,
+    amount1: amount1,
+    token0: token0,
+  }
+}
+
+const swapTo = (pair, tokenIsToken0, amountIn, slippage) => {
+  const amountInWithSlippage = amountIn.mul(slippage)
+  const reserveIn = tokenIsToken0 ? pair.reserve0 : pair.reserve1
+  const reserveOut = tokenIsToken0 ? pair.reserve1 : pair.reserve0
+  return amountInWithSlippage.mul(reserveOut).div(reserveIn.mul("10000").add(amountInWithSlippage))
+}
