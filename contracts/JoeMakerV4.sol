@@ -14,8 +14,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Joe Maker V4
 /// @author Trader Joe
-/// @notice JoeMaker receives 0.05% of the swaps done on TraderJoe. `convert` converts a pair to `tokenTo` and
-/// sends it to _bar
+/// @notice JoeMaker receives 0.05% of the swaps done on TraderJoe in the form of an LP. It swaps those LPs
+/// to a token of choice and sends it to the JoeBar
 contract JoeMakerV4 is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -100,10 +100,10 @@ contract JoeMakerV4 is Ownable {
     /// @param token The address of the tokenFrom
     /// @param bridge The address of the tokenTo
     function setBridge(address token, address bridge) external onlyOwner {
-        /// Checks
+        // Checks
         require(token != tokenTo && token != wavax && token != bridge, "JoeMakerV4: Invalid bridge");
 
-        /// Effects
+        // Effects
         _bridges[token] = bridge;
         emit LogBridgeSet(token, bridge);
     }
@@ -126,7 +126,7 @@ contract JoeMakerV4 is Ownable {
         emit SetDevAddr(_addr);
     }
 
-    /// @notice Sets token that we're buybacking
+    /// @notice Sets token that we're buying back
     /// @param _tokenTo The new token address
     function setTokenToAddress(address _tokenTo) external onlyOwner {
         require(_tokenTo != address(0), "setTokenToAddress, address cannot be zero address");
@@ -152,10 +152,11 @@ contract JoeMakerV4 is Ownable {
         _;
     }
 
-    /// @notice _convert is separate to save gas by only checking the 'onlyEOA' modifier once in case of convertMultiple
+    /// @notice Converts a pair of tokens to tokenTo
+    /// @dev _convert is separate to save gas by only checking the 'onlyEOA' modifier once in case of convertMultiple
     /// @param token0 The address of the first token of the pair that will be converted
     /// @param token1 The address of the second token of the pair that will be converted
-    /// @param slippage The accepted slippage, In basis points aka parts per 10,000 so 5000 is 50%
+    /// @param slippage The accepted slippage, in basis points aka parts per 10,000 so 5000 is 50%
     function convert(
         address token0,
         address token1,
@@ -165,10 +166,11 @@ contract JoeMakerV4 is Ownable {
         _convert(token0, token1, slippage);
     }
 
-    /// @notice _convert is separate to save gas by only checking the 'onlyEOA' modifier once in case of convertMultiple
+    /// @notice Converts a list of pairs of tokens to tokenTo
+    /// @dev _convert is separate to save gas by only checking the 'onlyEOA' modifier once in case of convertMultiple
     /// @param token0 The list of addresses of the first token of the pairs that will be converted
     /// @param token1 The list of addresses of the second token of the pairs that will be converted
-    /// @param slippage The accepted slippage, In basis points aka parts per 10,000 so 5000 is 50%
+    /// @param slippage The accepted slippage, in basis points aka parts per 10,000 so 5000 is 50%
     function convertMultiple(
         address[] calldata token0,
         address[] calldata token1,
@@ -183,10 +185,11 @@ contract JoeMakerV4 is Ownable {
         }
     }
 
-    /// @notice _convert is separate to save gas by only checking the 'onlyEOA' modifier once in case of convertMultiple
+    /// @notice Converts a pair of tokens to tokenTo
+    /// @dev _convert is separate to save gas by only checking the 'onlyEOA' modifier once in case of convertMultiple
     /// @param token0 The address of the first token of the pair that is currently being converted
     /// @param token1 The address of the second token of the pair that is currently being converted
-    /// @param slippage The accepted slippage, In basis points aka parts per 10,000 so 5000 is 50%
+    /// @param slippage The accepted slippage, in basis points aka parts per 10,000 so 5000 is 50%
     function _convert(
         address token0,
         address token1,
@@ -231,7 +234,7 @@ contract JoeMakerV4 is Ownable {
     /// @param token1 The address of the second token
     /// @param amount0 The amount of the `token0`
     /// @param amount1 The amount of the `token1`
-    /// @param slippage The accepted slippage, In basis points aka parts per 10,000 so 5000 is 50%
+    /// @param slippage The accepted slippage, in basis points aka parts per 10,000 so 5000 is 50%
     /// @return tokenOut The amount of token
     function _convertStep(
         address token0,
@@ -302,12 +305,12 @@ contract JoeMakerV4 is Ownable {
     }
 
     /// @notice Swaps `amountIn` `fromToken` to `toToken` and sends it to `to`, `amountOut` is required to be greater
-    /// than allowed `slippage`.
+    /// than allowed `slippage`
     /// @param fromToken The address of token that will be swapped
     /// @param toToken The address of the token that will be received
     /// @param amountIn The amount of the `fromToken`
     /// @param to The address that will receive the `toToken`
-    /// @param slippage The accepted slippage, In basis points aka parts per 10,000 so 5000 is 50%
+    /// @param slippage The accepted slippage, in basis points aka parts per 10,000 so 5000 is 50%
     /// @return amountOut The amount of `toToken` sent to `to`
     function _swap(
         address fromToken,
@@ -332,9 +335,9 @@ contract JoeMakerV4 is Ownable {
 
         {
             uint256 rest = uint256(10_000).sub(slippage);
-            /// @dev We calculate the amount received if we did a swapIn and swapOut, without updating the reserves,
-            /// this allows to catch if a pair has low liquidity. We do `rest^2`, i.e. calculating twice the slippage
-            /// cause we actually do two swaps, so slippage is actually applied twice.
+            /// @dev We simulate the amount received if we did a swapIn and swapOut without updating the reserves,
+            /// hence why we do rest^2, i.e. calculating the slippage twice cause we actually do two swaps.
+            /// This allows us to catch if a pair has low liquidity
             require(
                 getAmountOut(amountOut, reserveOutput, reserveInput) >=
                     amountInput.mul(rest).mul(rest).div(100_000_000),
@@ -348,12 +351,12 @@ contract JoeMakerV4 is Ownable {
         pair.swap(amount0Out, amount1Out, to, new bytes(0));
     }
 
-    /// @notice Swaps `amountIn` `token` to `tokenTo`, `amountOut` is required to be greater
-    /// than allowed `slippage`.
+    /// @notice Swaps an amount of token to another token, `tokenTo`
+    /// @dev `amountOut` is required to be greater after slippage
     /// @param token The address of token that will be swapped
     /// @param amountIn The amount of the `token`
-    /// @param slippage The accepted slippage, In basis points aka parts per 10,000 so 5000 is 50%
-    /// @return amountOut The amount of `toToken` sent to `to`
+    /// @param slippage The accepted slippage, in basis points aka parts per 10,000 so 5000 is 50%
+    /// @return amountOut The amount of `toToken` sent to JoeBar
     function _toToken(
         address token,
         uint256 amountIn,
@@ -368,7 +371,7 @@ contract JoeMakerV4 is Ownable {
         amountOut = _swap(token, tokenTo, amount, bar, slippage);
     }
 
-    /// @notice Returns the amount that user will receive after swaping from `in` to `out`
+    /// @notice Returns the amount that user will receive after swapping from `in` to `out`
     /// @param amountIn The amount of the `token`
     /// @param reserveIn The reserve of `tokenIn`
     /// @param reserveOut The reserve of `tokenOut`
