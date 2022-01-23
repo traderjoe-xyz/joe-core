@@ -8,7 +8,8 @@ import './interfaces/IVeERC20.sol';
 
 /// @title VeERC20
 /// @notice Modified version of ERC20 where transfers and allowances are disabled.
-/// @dev Only minting and burning are allowed. The hook _afterTokenOperation is called after minting and burning.
+/// @dev Only minting and burning are allowed. The hook `_beforeTokenOperation` and
+/// `_afterTokenOperation` methods are called before and after minting/burning respectively.
 contract VeERC20 is Context, IVeERC20 {
     mapping(address => uint256) private _balances;
 
