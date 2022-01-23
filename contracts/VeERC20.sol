@@ -93,7 +93,7 @@ contract VeERC20 is Context, IVeERC20 {
     function _mint(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
 
-        _beforeTokenTransfer(address(0), account, amount);
+        _beforeTokenOperation(address(0), account, amount);
 
         _totalSupply += amount;
         _balances[account] += amount;
@@ -116,7 +116,7 @@ contract VeERC20 is Context, IVeERC20 {
     function _burn(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
-        _beforeTokenTransfer(account, address(0), amount);
+        _beforeTokenOperation(account, address(0), amount);
 
         uint256 accountBalance = _balances[account];
         require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
@@ -131,20 +131,12 @@ contract VeERC20 is Context, IVeERC20 {
     }
 
     /**
-     * @dev Hook that is called before any transfer of tokens. This includes
-     * minting and burning.
-     *
-     * Calling conditions:
-     *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-     * will be transferred to `to`.
-     * - when `from` is zero, `amount` tokens will be minted for `to`.
-     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
-     * - `from` and `to` are never both zero.
-     *
-     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     * @dev Hook that is called before any minting and burning.
+     * @param from the account transferring tokens
+     * @param to the account receiving tokens
+     * @param amount the amount being minted or burned
      */
-    function _beforeTokenTransfer(
+    function _beforeTokenOperation(
         address from,
         address to,
         uint256 amount
@@ -153,7 +145,7 @@ contract VeERC20 is Context, IVeERC20 {
     /**
      * @dev Hook that is called after any minting and burning.	
      * @param account the account being affected	
-     * @param newBalance the new balance of `account` after operation	
+     * @param newBalance the new balance of `account` after minting/burning
      */
     function _afterTokenOperation(address account, uint256 newBalance) internal virtual {}
 }
