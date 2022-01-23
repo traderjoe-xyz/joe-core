@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/utils/Context.sol';
 
@@ -30,7 +30,7 @@ contract VeERC20 is Context, IVeERC20 {
      * All two of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory name_, string memory symbol_) {
+    constructor(string memory name_, string memory symbol_) internal {
         _name = name_;
         _symbol = symbol_;
     }
@@ -70,14 +70,14 @@ contract VeERC20 is Context, IVeERC20 {
     /**
      * @dev See {IERC20-totalSupply}.
      */
-    function totalSupply() public view virtual returns (uint256) {
+    function totalSupply() public view virtual override returns (uint256) {
         return _totalSupply;
     }
 
     /**
      * @dev See {IERC20-balanceOf}.
      */
-    function balanceOf(address account) public view virtual returns (uint256) {
+    function balanceOf(address account) public view virtual override returns (uint256) {
         return _balances[account];
     }
 
@@ -120,9 +120,7 @@ contract VeERC20 is Context, IVeERC20 {
 
         uint256 accountBalance = _balances[account];
         require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
-        unchecked {
-            _balances[account] = accountBalance - amount;
-        }
+        _balances[account] = accountBalance - amount;
         _totalSupply -= amount;
 
         emit Burn(account, amount);
