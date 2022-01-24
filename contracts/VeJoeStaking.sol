@@ -1,13 +1,12 @@
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "./VeJoeToken.sol";
 
@@ -59,11 +58,14 @@ contract VeJoeStaking is
   
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
-    /// @param _rJoe Address of the rJOE token contract
-    /// @param _rJoePerSec Number of rJOE tokens created per second
+    /// @param _veJoe Address of the veJOE token contract
+    /// @param _baseGenerationRate Rate of veJOE generated per sec per JOE staked
+    /// @param _boostedGenerationRate Boosted rate of veJOE generated per sec per JOE staked
+    /// @param _boostedThreshold Percentage of total staked JOE user has to deposit to be boosted
+    /// @param _boostedDuration Length of time a user receives boosted benefits
     function initialize(
         IERC20Upgradeable _joe,
-        VeJoeToken _veJoe;
+        VeJoeToken _veJoe,
         uint256 _baseGenerationRate,
         uint256 _boostedGenerationRate,
         uint256 _boostedThreshold,
@@ -81,7 +83,6 @@ contract VeJoeStaking is
         );
   
         __Ownable_init();
-        __ReentrancyGuard_init_unchained();
 
         maxCap = 100;
         joe = _joe;
@@ -129,7 +130,7 @@ contract VeJoeStaking is
             _boostedThreshold <= 100, 
             "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
         );
-        boostedGenerationRate = _boostedGenerationRate;
+        boostedThreshold = _boostedThreshold;
     }
 
     /// @notice Set boostedDuration
@@ -145,7 +146,7 @@ contract VeJoeStaking is
 
         if (getUserHasStakedJoe(msg.sender)) {
             // If user already has staked JOE, we first send them any pending veJOE
-            _claim(msg.sender);
+            _claim();
 
             userInfos[msg.sender].balance += _amount;
 
@@ -192,8 +193,8 @@ contract VeJoeStaking is
         userInfo.lastRewardTimestamp = block.timestamp;
 
         // Burn the user's current veJOE balance
-        uint256 userVeJoeBalance = veJOE.balanceOf(msg.sender);
-        _burn(msg.sender, userVeJoeBalance);
+        uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
+        veJoe.burnFrom(msg.sender, userVeJoeBalance);
 
         // Send user their requested amount of staked JOE
         joe.safeTransfer(msg.sender, _amount);
@@ -204,14 +205,14 @@ contract VeJoeStaking is
     /// @notice Claim any pending veJOE
     function claim() external {
         require(getUserHasStakedJoe(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
-        _claim(msg.sender);
+        _claim();
     }
 
     /// @notice Get the pending amount of veJOE for a given user
     /// @param _user The user to lookup
     /// @return The number of pending veJOE tokens for `_user`
-    function getPendingVeJoe(address _user) external view returns (uint256) {
-        if (!getUserHasStakedJoe(_user) || block.timestamp == user.lastRewardTimestamp) {
+    function getPendingVeJoe(address _user) public view returns (uint256) {
+        if (!getUserHasStakedJoe(_user)) {
           return 0;
         }
 
@@ -222,6 +223,9 @@ contract VeJoeStaking is
         // 2. Generation rate that the user is receiving
         // 3. Current amount of user's staked JOE
         uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
+        if (secondsElapsed == 0) {
+          return 0;
+        }
 
         // Calculate the generation rate the user should receive (in units of veJOE per sec per JOE).
         // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
@@ -251,6 +255,13 @@ contract VeJoeStaking is
         }
     }
 
+    /// @notice Checks to see if a given user currently has staked JOE
+    /// @param _user the user address to check
+    /// @return whether `_user` currently has staked JOE
+    function getUserHasStakedJoe(address _user) public view returns (bool) {
+        return userInfos[_user].balance > 0;
+    }
+
     /// @dev Helper to claim any pending veJOE
     function _claim() private {
         uint256 veJoeToClaim = getPendingVeJoe(msg.sender);
@@ -260,15 +271,8 @@ contract VeJoeStaking is
 
         if (veJoeToClaim > 0) {
             veJoe.mint(msg.sender, veJoeToClaim);
-            emit Claim(_addr, veJoeToClaim);
+            emit Claim(msg.sender, veJoeToClaim);
         }
-    }
-
-    /// @notice Checks to see if a given user currently has staked JOE
-    /// @param _user the user address to check
-    /// @return whether `_user` currently has staked JOE
-    function getUserHasStakedJoe(address _user) public view override returns (bool) {
-        return userInfos[_user].balance > 0;
     }
   
 }
