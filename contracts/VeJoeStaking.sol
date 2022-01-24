@@ -23,8 +23,9 @@ contract VeJoeStaking is
 
     struct UserInfo {
         uint256 balance; // Amount of JOE currently staked by user
-        uint256 lastRewardTimestamp; // Time of last veJOE claim, or time of first deposit if user 
+        uint256 lastRewardTimestamp; // Timestamp of last veJOE claim, or time of first deposit if user 
         // has not claimed any veJOE yet
+        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits
     }
 
     IERC20Upgradeable public joe;
@@ -40,9 +41,9 @@ contract VeJoeStaking is
     /// @notice Boosted rate of veJOE generated per sec per JOE staked
     uint256 public boostedGenerationRate;
   
-    /// @notice Amount of JOE required to deposit in order for user to start
+    /// @notice Percentage of total staked JOE user has to deposit in order to start
     /// receiving boosted benefits, in parts per 100. 
-    /// @dev Specifically, user has to deposit at least `boostedThreshold/100 * totalJoeStaked` JOE.
+    /// @dev Specifically, user has to deposit at least `boostedThreshold/100 * totalStakedJoe` JOE.
     /// The only exception is the user will also receive boosted benefits if its their first
     /// time staking.
     uint256 public boostedThreshold;
@@ -54,7 +55,7 @@ contract VeJoeStaking is
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
-    event Claimed(address indexed user, uint256 amount);
+    event Claim(address indexed user, uint256 amount);
   
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
@@ -143,12 +144,28 @@ contract VeJoeStaking is
         require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
 
         if (getUserHasStakedJoe(msg.sender)) {
-            // If user already has staked JOE, we first send any pending veJOE
-            // and then increase their balance
+            // If user already has staked JOE, we first send them any pending veJOE
             _claim(msg.sender);
+
             userInfos[msg.sender].balance += _amount;
+
+            // User is eligible for boosted benefits if:
+            // 1. They are not already currently receiving boosted benefits
+            // 2. Their staked JOE is at least `boostedThreshold / 100 * totalStakedJoe`
+            if (userInfos[msg.sender].boostEndTimestamp == 0) {
+                uint256 totalStakedJoe = joe.balanceOf(address(this));
+                if (userInfos[msg.sender].balance * 100 / boostedThreshold >= totalStakedJoe) {
+                    userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
+                }
+            }
         } else {
-            // Otherwise we just create a new entry for the user in `userInfos`
+            // If the user's `lastRewardTimestamp` is 0, i.e. if this is the user's first time staking,
+            // then they will receive boosted benefits.
+            // Note that it is important we perform this check **before** we update the user's `lastRewardTimestamp`
+            // down below.
+            if (userInfos[msg.sender].lastRewardTimestamp == 0) {
+              userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
+            }
             userInfos[msg.sender].balance = _amount;
             userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
         }
@@ -180,6 +197,8 @@ contract VeJoeStaking is
 
         // Send user their requested amount of staked JOE
         joe.safeTransfer(msg.sender, _amount);
+
+        emit Withdraw(msg.sender, _amount);
     }
 
     /// @notice Claim any pending veJOE
@@ -191,28 +210,40 @@ contract VeJoeStaking is
     /// @notice Get the pending amount of veJOE for a given user
     /// @param _user The user to lookup
     /// @return The number of pending veJOE tokens for `_user`
-    function pendingVeJoe(address _user) external view returns (uint256) {
+    function getPendingVeJoe(address _user) external view returns (uint256) {
         if (!getUserHasStakedJoe(_user) || block.timestamp == user.lastRewardTimestamp) {
           return 0;
         }
 
         UserInfo storage user = userInfos[_user];
 
-        // Calculate amount of pending veJOE based on user's staked JOE
-        // and seconds elapsed since last reward timestamp
+        // Calculate amount of pending veJOE based on:
+        // 1. Seconds elapsed since last reward timestamp
+        // 2. Generation rate that the user is receiving
+        // 3. Current amount of user's staked JOE
         uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
-        uint256 accVeJoePerJoe = secondsElapsed * user.balance;
-        uint256 pending = user.balance * accVeJoePerJoe;
+
+        // Calculate the generation rate the user should receive (in units of veJOE per sec per JOE).
+        // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
+        // that means the user is currently receiving boosted benefits so they should receive
+        // `boostedGenerationRate`, otherwise `baseGenerationRate`.
+        uint256 generationRate = block.timestamp <= user.boostEndTimestamp
+            ? boostedGenerationRate
+            : baseGenerationRate;
+
+        uint256 accVeJoePerJoe = secondsElapsed * generationRate;
+
+        uint256 pendingVeJoe = accVeJoePerJoe * user.balance;
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
         uint256 userMaxVeJoeCap = user.balance * maxCap;
 
         if (userVeJoeBalance < userMaxVeJoeCap) {
-          if (userVeJoeBalance + pending > userMaxVeJoeCap) {
+          if (userVeJoeBalance + pendingVeJoe > userMaxVeJoeCap) {
             return userMaxVeJoeCap - userVeJoeBalance;
           } else {
-            return pending;
+            return pendingVeJoe;
           }
         } else {
           // User already holds maximum amount of veJOE so there is no pending veJOE
@@ -222,14 +253,14 @@ contract VeJoeStaking is
 
     /// @dev Helper to claim any pending veJOE
     function _claim() private {
-        uint256 veJoeToClaim = pendingVeJoe(msg.sender);
+        uint256 veJoeToClaim = getPendingVeJoe(msg.sender);
 
         // Update user's last reward timestamp
         userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
 
         if (veJoeToClaim > 0) {
             veJoe.mint(msg.sender, veJoeToClaim);
-            emit Claimed(_addr, veJoeToClaim);
+            emit Claim(_addr, veJoeToClaim);
         }
     }
 
