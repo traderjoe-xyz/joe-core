@@ -69,10 +69,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _rewardToken The address of the ERC-20 reward token
      * @param _moJoe The address of the ERC-20 moJOE token, traderjoe's staking token.
      */
-    function initialize(
-        IERC20Upgradeable _rewardToken,
-        IERC20Upgradeable _moJoe
-    ) external initializer {
+    function initialize(IERC20Upgradeable _rewardToken, IERC20Upgradeable _moJoe) external initializer {
         __Ownable_init();
 
         rewardToken = _rewardToken;
@@ -93,14 +90,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         uint256 rewardTokenBalance = rewardToken.balanceOf(address(this));
         if (rewardTokenBalance != lastTokenBalance && lpSupply != 0) {
             uint256 rewardTokenAdded = rewardTokenBalance.sub(lastTokenBalance);
-            _accTokenPerShare = _accTokenPerShare.add(
-                rewardTokenAdded.mul(precision).div(lpSupply)
-            );
+            _accTokenPerShare = _accTokenPerShare.add(rewardTokenAdded.mul(precision).div(lpSupply));
         }
-        return
-            user.amount.mul(_accTokenPerShare).div(precision).sub(
-                user.rewardDebt
-            );
+        return user.amount.mul(_accTokenPerShare).div(precision).sub(user.rewardDebt);
     }
 
     /**
@@ -122,9 +114,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         }
 
         uint256 rewardTokenAdded = rewardTokenBalance.sub(lastTokenBalance);
-        accTokenPerShare = accTokenPerShare.add(
-            rewardTokenAdded.mul(precision).div(lpSupply)
-        );
+        accTokenPerShare = accTokenPerShare.add(rewardTokenAdded.mul(precision).div(lpSupply));
         lastTokenBalance = rewardTokenBalance;
     }
 
@@ -137,11 +127,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo storage user = userInfo[msg.sender];
         if (user.amount > 0) {
-            uint256 pending = user
-                .amount
-                .mul(accTokenPerShare)
-                .div(precision)
-                .sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(accTokenPerShare).div(precision).sub(user.rewardDebt);
             safeTokenTransfer(msg.sender, pending);
         }
         user.amount = user.amount.add(_amount);
@@ -160,9 +146,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         require(user.amount >= _amount, "withdraw: not good");
 
         updatePool();
-        uint256 pending = user.amount.mul(accTokenPerShare).div(precision).sub(
-            user.rewardDebt
-        );
+        uint256 pending = user.amount.mul(accTokenPerShare).div(precision).sub(user.rewardDebt);
 
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(accTokenPerShare).div(precision);
