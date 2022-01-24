@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 
 /// @title Vote Escrow ERC20 Token Interface
 /// @author Trader Joe
-/// @notice Interface for a ERC20 token used for vote escrow. Notice that transfers and
+/// @notice Interface of a ERC20 token used for vote escrow. Notice that transfers and
 /// allowances are disabled
 interface IVeERC20 {
     function totalSupply() external view returns (uint256);
