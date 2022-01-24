@@ -12,6 +12,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./VeJoeToken.sol";
 
+/// @title Vote Escrow Joe Staking
+/// @author Trader Joe
+/// @notice Stake JOE to earn veJOE, which you can use to earn higher farm yields and gain
+/// voting power. Note that unstaking any amount of JOE will burn all of your existing veJOE.
 contract VeJoeStaking is 
     Initializable,
     OwnableUpgradeable,
