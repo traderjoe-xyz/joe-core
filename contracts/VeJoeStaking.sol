@@ -42,10 +42,10 @@ contract VeJoeStaking is
     /// @notice The length of time a user receives boosted benefits
     uint256 public boostedDuration;
 
-    mapping(address => UserInfo) public userInfo;
+    mapping(address => UserInfo) public userInfos;
 
-    event Staked(address indexed user, uint256 amount);
-    event Unstaked(address indexed user, uint256 amount);
+    event Deposit(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 amount);
     event Claimed(address indexed user, uint256 amount);
   
     /// @notice Initialize with needed parameters
@@ -117,21 +117,68 @@ contract VeJoeStaking is
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
         boostedDuration = _boostedDuration;
     }
-  
-    /// @notice Get pending veJOE for a given `_user`
+
+    /// @notice Deposits JOE to start staking for veJOE
+    /// @param _amount the amount of JOE to deposit
+    function deposit(uint256 _amount) external {
+        require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
+
+        if (getUserHasStakedJoe(msg.sender)) {
+            // If user already has staked JOE, we first send any pending veJOE
+            // and then increase their balance
+            _claim(msg.sender);
+            userInfos[msg.sender].balance += _amount;
+        } else {
+            // Otherwise we just create a new entry for the user in `userInfos`
+            userInfos[msg.sender].balance = _amount;
+            userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
+        }
+
+        joe.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit Deposit(msg.sender, _amount);
+    }
+
+    /// @notice Claim any pending veJOE
+    function claim() external {
+        require(getUserHasStakedJoe(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
+        _claim(msg.sender);
+    }
+
+    /// @notice Get the pending amount of veJOE for a given user
     /// @param _user The user to lookup
     /// @return The number of pending veJOE tokens for `_user`
     function pendingVeJoe(address _user) external view returns (uint256) {
-        UserInfo storage user = userInfo[_user];
-        uint256 joeSupply = joe.balanceOf(address(this));
-        uint256 _accRJoePerShare = accRJoePerShare;
-  
-        if (block.timestamp > lastRewardTimestamp && joeSupply != 0) {
-            uint256 multiplier = block.timestamp - lastRewardTimestamp;
-            uint256 rJoeReward = multiplier * rJoePerSec;
-            _accRJoePerShare += (rJoeReward * PRECISION) / joeSupply;
+        if (!getUserHasStakedJoe(_user) || block.timestamp == user.lastRewardTimestamp) {
+          return 0;
         }
-        return (user.amount * _accRJoePerShare) / PRECISION - user.rewardDebt;
+
+        UserInfo storage user = userInfos[_user];
+
+        uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
+        uint256 accVeJoePerJoe = secondsElapsed * user.balance;
+
+        return user.balance * accVeJoePerJoe;
+    }
+
+    /// @dev Helper to claim any pending veJOE
+    function _claim() private {
+        uint256 veJoeToClaim = pendingVeJoe(msg.sender);
+
+        // Update user's last reward timestamp
+        userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
+
+        if (veJoeToClaim > 0) {
+            veJoe.mint(msg.sender, veJoeToClaim);
+            emit Claimed(_addr, veJoeToClaim);
+        }
+    }
+
+    /// @notice Checks to see if a given user currently has staked JOE
+    /// @param _user the user address to check
+    /// @return whether `_user` currently has staked JOE
+    function getUserHasStakedJoe(address _user) public view override returns (bool) {
+        return userInfos[_user].balance > 0;
     }
   
 }
