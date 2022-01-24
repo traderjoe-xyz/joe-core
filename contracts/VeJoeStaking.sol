@@ -101,6 +101,22 @@ contract VeJoeStaking is
         );
         boostedGenerationRate = _boostedGenerationRate;
     }
+
+    /// @notice Set boostedThreshold
+    /// @param _boostedThreshold the new boostedThreshold
+    function setBoostedThreshold(uint256 _boostedThreshold) external onlyOwner {
+        require(
+            _boostedThreshold <= 100, 
+            "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
+        );
+        boostedGenerationRate = _boostedGenerationRate;
+    }
+
+    /// @notice Set boostedDuration
+    /// @param _boostedDuration the new boostedDuration
+    function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
+        boostedDuration = _boostedDuration;
+    }
   
     /// @notice Get pending veJOE for a given `_user`
     /// @param _user The user to lookup
