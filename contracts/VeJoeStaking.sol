@@ -29,6 +29,10 @@ contract VeJoeStaking is
 
     IERC20Upgradeable public joe;
     VeJoeToken public veJoe;
+
+    /// @notice The maximum ratio of veJOE to staked JOE
+    /// For example, if user has `n` JOE staked, they can own a maximum of `n * maxCap` veJOE.
+    uint256 public maxCap;
   
     /// @notice Rate of veJOE generated per sec per JOE staked
     uint256 public baseGenerationRate;
@@ -78,12 +82,23 @@ contract VeJoeStaking is
         __Ownable_init();
         __ReentrancyGuard_init_unchained();
 
+        maxCap = 100;
         joe = _joe;
         veJoe = _veJoe; 
         baseGenerationRate = _baseGenerationRate;
         boostedGenerationRate = _boostedGenerationRate;
         boostedThreshold = _boostedThreshold;
         boostedDuration = _boostedDuration;
+    }
+
+    /// @notice Set maxCap
+    /// @param _maxCap the new maxCap
+    function setMaxCap(uint256 _maxCap) external onlyOwner {
+        require(
+            _maxCap > 0, 
+            "VeJoeStaking: expected new _maxCap to be greater than 0"
+        );
+        maxCap = _maxCap;
     }
 
     /// @notice Set baseGenerationRate
@@ -159,10 +174,26 @@ contract VeJoeStaking is
 
         UserInfo storage user = userInfos[_user];
 
+        // Calculate amount of pending veJOE based on user's staked JOE
+        // and seconds elapsed since last reward timestamp
         uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
         uint256 accVeJoePerJoe = secondsElapsed * user.balance;
+        uint256 pending = user.balance * accVeJoePerJoe;
 
-        return user.balance * accVeJoePerJoe;
+        // Get the user's current veJOE balance and maximum veJOE they can hold
+        uint256 userVeJoeBalance = veJoe.balanceOf(_user);
+        uint256 userMaxVeJoeCap = user.balance * maxCap;
+
+        if (userVeJoeBalance < userMaxVeJoeCap) {
+          if (userVeJoeBalance + pending > userMaxVeJoeCap) {
+            return userMaxVeJoeCap - userVeJoeBalance;
+          } else {
+            return pending;
+          }
+        } else {
+          // User already holds maximum amount of veJOE so there is no pending veJOE
+          return 0;
+        }
     }
 
     /// @dev Helper to claim any pending veJOE
