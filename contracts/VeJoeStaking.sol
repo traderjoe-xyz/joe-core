@@ -139,12 +139,13 @@ contract VeJoeStaking is
         boostedDuration = _boostedDuration;
     }
 
-    /// @notice Deposits JOE to start staking for veJOE
+    /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
+    /// will also be claimed in the process.
     /// @param _amount the amount of JOE to deposit
     function deposit(uint256 _amount) external {
         require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
 
-        if (getUserHasStakedJoe(msg.sender)) {
+        if (getUserHasNonZeroBalance(msg.sender)) {
             // If user already has staked JOE, we first send them any pending veJOE
             _claim();
 
@@ -204,7 +205,7 @@ contract VeJoeStaking is
 
     /// @notice Claim any pending veJOE
     function claim() external {
-        require(getUserHasStakedJoe(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
+        require(getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
         _claim();
     }
 
@@ -212,7 +213,7 @@ contract VeJoeStaking is
     /// @param _user The user to lookup
     /// @return The number of pending veJOE tokens for `_user`
     function getPendingVeJoe(address _user) public view returns (uint256) {
-        if (!getUserHasStakedJoe(_user)) {
+        if (!getUserHasNonZeroBalance(_user)) {
           return 0;
         }
 
@@ -258,7 +259,7 @@ contract VeJoeStaking is
     /// @notice Checks to see if a given user currently has staked JOE
     /// @param _user the user address to check
     /// @return whether `_user` currently has staked JOE
-    function getUserHasStakedJoe(address _user) public view returns (bool) {
+    function getUserHasNonZeroBalance(address _user) public view returns (bool) {
         return userInfos[_user].balance > 0;
     }
 
