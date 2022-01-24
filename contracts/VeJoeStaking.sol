@@ -3,11 +3,10 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./VeJoeToken.sol";
@@ -18,9 +17,10 @@ import "./VeJoeToken.sol";
 /// voting power. Note that unstaking any amount of JOE will burn all of your existing veJOE.
 contract VeJoeStaking is 
     Initializable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable
+    OwnableUpgradeable
 {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
     struct UserInfo {
         uint256 balance; // Amount of JOE currently staked by user
         uint256 lastRewardTimestamp; // Time of last veJOE claim, or time of first deposit if user 
@@ -156,6 +156,30 @@ contract VeJoeStaking is
         joe.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit Deposit(msg.sender, _amount);
+    }
+
+    /// @notice Withdraw staked JOE. Note that unstaking any amount of JOE means you will
+    /// lose all of your current veJOE.
+    /// @param _amount the amount of JOE to unstake
+    function withdraw(uint256 _amount) external {
+        require(_amount > 0, "VeJoeStaking: expected to withdraw non-zero amount of JOE");
+
+        UserInfo storage userInfo = userInfos[msg.sender];
+
+        require(
+            userInfo.balance >= _amount, 
+            "VeJoeStaking: cannot withdraw greater amount of JOE than currently staked"
+        );
+
+        userInfo.balance -= _amount;
+        userInfo.lastRewardTimestamp = block.timestamp;
+
+        // Burn the user's current veJOE balance
+        uint256 userVeJoeBalance = veJOE.balanceOf(msg.sender);
+        _burn(msg.sender, userVeJoeBalance);
+
+        // Send user their requested amount of staked JOE
+        joe.safeTransfer(msg.sender, _amount);
     }
 
     /// @notice Claim any pending veJOE
