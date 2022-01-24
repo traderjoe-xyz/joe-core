@@ -2,9 +2,9 @@
 
 pragma solidity 0.6.12;
 
-import '@openzeppelin/contracts/utils/Context.sol';
+import "@openzeppelin/contracts/utils/Context.sol";
 
-import './interfaces/IVeERC20.sol';
+import "./interfaces/IVeERC20.sol";
 
 /// @title VeERC20
 /// @notice Modified version of ERC20 where transfers and allowances are disabled.
@@ -18,8 +18,8 @@ contract VeERC20 is Context, IVeERC20 {
     string private _name;
     string private _symbol;
 
-    /// @dev Emitted when `value` tokens are burned and minted	
-    event Burn(address indexed account, uint256 value);	
+    /// @dev Emitted when `value` tokens are burned and minted
+    event Burn(address indexed account, uint256 value);
     event Mint(address indexed beneficiary, uint256 value);
 
     /**
@@ -142,8 +142,8 @@ contract VeERC20 is Context, IVeERC20 {
     ) internal virtual {}
 
     /**
-     * @dev Hook that is called after any minting and burning.	
-     * @param account the account being affected	
+     * @dev Hook that is called after any minting and burning.
+     * @param account the account being affected
      * @param newBalance the new balance of `account` after minting/burning
      */
     function _afterTokenOperation(address account, uint256 newBalance) internal virtual {}
