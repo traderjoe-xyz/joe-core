@@ -2,13 +2,14 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+import "./VeERC20.sol";
 
 /// @title Vote Escrow Joe Token - veJOE
 /// @author Trader Joe
 /// @notice Infinite supply, used to receive extra farming yields and voting power
-contract VeJoeToken is ERC20("VeJoeToken", "veJOE"), Ownable {
+contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
 
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (VeJoeStaking)
     /// @param _to The address that will receive the mint
