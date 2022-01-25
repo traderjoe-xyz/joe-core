@@ -14,15 +14,12 @@ import "./VeJoeToken.sol";
 /// @author Trader Joe
 /// @notice Stake JOE to earn veJOE, which you can use to earn higher farm yields and gain
 /// voting power. Note that unstaking any amount of JOE will burn all of your existing veJOE.
-contract VeJoeStaking is 
-    Initializable,
-    OwnableUpgradeable
-{
+contract VeJoeStaking is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct UserInfo {
         uint256 balance; // Amount of JOE currently staked by user
-        uint256 lastRewardTimestamp; // Timestamp of last veJOE claim, or time of first deposit if user 
+        uint256 lastRewardTimestamp; // Timestamp of last veJOE claim, or time of first deposit if user
         // has not claimed any veJOE yet
         uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits
     }
@@ -33,20 +30,20 @@ contract VeJoeStaking is
     /// @notice The maximum ratio of veJOE to staked JOE
     /// For example, if user has `n` JOE staked, they can own a maximum of `n * maxCap` veJOE.
     uint256 public maxCap;
-  
+
     /// @notice Rate of veJOE generated per sec per JOE staked
     uint256 public baseGenerationRate;
-  
+
     /// @notice Boosted rate of veJOE generated per sec per JOE staked
     uint256 public boostedGenerationRate;
-  
+
     /// @notice Percentage of total staked JOE user has to deposit in order to start
-    /// receiving boosted benefits, in parts per 100. 
+    /// receiving boosted benefits, in parts per 100.
     /// @dev Specifically, user has to deposit at least `boostedThreshold/100 * totalStakedJoe` JOE.
     /// The only exception is the user will also receive boosted benefits if its their first
     /// time staking.
     uint256 public boostedThreshold;
-  
+
     /// @notice The length of time a user receives boosted benefits
     uint256 public boostedDuration;
 
@@ -55,7 +52,7 @@ contract VeJoeStaking is
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event Claim(address indexed user, uint256 amount);
-  
+
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
     /// @param _veJoe Address of the veJOE token contract
@@ -74,19 +71,16 @@ contract VeJoeStaking is
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
         require(
-            _boostedGenerationRate > _baseGenerationRate, 
+            _boostedGenerationRate > _baseGenerationRate,
             "VeJoeStaking: expected _boostedGenerationRate to be greater than _baseGenerationRate"
         );
-        require(
-            _boostedThreshold <= 100, 
-            "VeJoeStaking: expected _boostedThreshold to be less than or equal to 100"
-        );
-  
+        require(_boostedThreshold <= 100, "VeJoeStaking: expected _boostedThreshold to be less than or equal to 100");
+
         __Ownable_init();
 
         maxCap = 100;
         joe = _joe;
-        veJoe = _veJoe; 
+        veJoe = _veJoe;
         baseGenerationRate = _baseGenerationRate;
         boostedGenerationRate = _boostedGenerationRate;
         boostedThreshold = _boostedThreshold;
@@ -96,10 +90,7 @@ contract VeJoeStaking is
     /// @notice Set maxCap
     /// @param _maxCap the new maxCap
     function setMaxCap(uint256 _maxCap) external onlyOwner {
-        require(
-            _maxCap > 0, 
-            "VeJoeStaking: expected new _maxCap to be greater than 0"
-        );
+        require(_maxCap > 0, "VeJoeStaking: expected new _maxCap to be greater than 0");
         maxCap = _maxCap;
     }
 
@@ -107,7 +98,7 @@ contract VeJoeStaking is
     /// @param _baseGenerationRate the new baseGenerationRate
     function setBaseGenerationRate(uint256 _baseGenerationRate) external onlyOwner {
         require(
-            _baseGenerationRate < boostedGenerationRate, 
+            _baseGenerationRate < boostedGenerationRate,
             "VeJoeStaking: expected new _baseGenerationRate to be less than boostedGenerationRate"
         );
         baseGenerationRate = _baseGenerationRate;
@@ -117,7 +108,7 @@ contract VeJoeStaking is
     /// @param _boostedGenerationRate the new boostedGenerationRate
     function setBoostedGenerationRate(uint256 _boostedGenerationRate) external onlyOwner {
         require(
-            _boostedGenerationRate > baseGenerationRate, 
+            _boostedGenerationRate > baseGenerationRate,
             "VeJoeStaking: expected new _boostedGenerationRate to be greater than baseGenerationRate"
         );
         boostedGenerationRate = _boostedGenerationRate;
@@ -127,7 +118,7 @@ contract VeJoeStaking is
     /// @param _boostedThreshold the new boostedThreshold
     function setBoostedThreshold(uint256 _boostedThreshold) external onlyOwner {
         require(
-            _boostedThreshold <= 100, 
+            _boostedThreshold <= 100,
             "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
         );
         boostedThreshold = _boostedThreshold;
@@ -156,7 +147,7 @@ contract VeJoeStaking is
             // 2. Their staked JOE is at least `boostedThreshold / 100 * totalStakedJoe`
             if (userInfos[msg.sender].boostEndTimestamp == 0) {
                 uint256 totalStakedJoe = joe.balanceOf(address(this));
-                if (userInfos[msg.sender].balance * 100 / boostedThreshold >= totalStakedJoe) {
+                if ((userInfos[msg.sender].balance * 100) / boostedThreshold >= totalStakedJoe) {
                     userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
                 }
             }
@@ -166,7 +157,7 @@ contract VeJoeStaking is
             // Note that it is important we perform this check **before** we update the user's `lastRewardTimestamp`
             // down below.
             if (userInfos[msg.sender].lastRewardTimestamp == 0) {
-              userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
+                userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
             }
             userInfos[msg.sender].balance = _amount;
             userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
@@ -186,7 +177,7 @@ contract VeJoeStaking is
         UserInfo storage userInfo = userInfos[msg.sender];
 
         require(
-            userInfo.balance >= _amount, 
+            userInfo.balance >= _amount,
             "VeJoeStaking: cannot withdraw greater amount of JOE than currently staked"
         );
 
@@ -214,7 +205,7 @@ contract VeJoeStaking is
     /// @return The number of pending veJOE tokens for `_user`
     function getPendingVeJoe(address _user) public view returns (uint256) {
         if (!getUserHasNonZeroBalance(_user)) {
-          return 0;
+            return 0;
         }
 
         UserInfo storage user = userInfos[_user];
@@ -225,16 +216,14 @@ contract VeJoeStaking is
         // 3. Current amount of user's staked JOE
         uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
         if (secondsElapsed == 0) {
-          return 0;
+            return 0;
         }
 
         // Calculate the generation rate the user should receive (in units of veJOE per sec per JOE).
         // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
         // that means the user is currently receiving boosted benefits so they should receive
         // `boostedGenerationRate`, otherwise `baseGenerationRate`.
-        uint256 generationRate = block.timestamp <= user.boostEndTimestamp
-            ? boostedGenerationRate
-            : baseGenerationRate;
+        uint256 generationRate = block.timestamp <= user.boostEndTimestamp ? boostedGenerationRate : baseGenerationRate;
 
         uint256 accVeJoePerJoe = secondsElapsed * generationRate;
 
@@ -245,14 +234,14 @@ contract VeJoeStaking is
         uint256 userMaxVeJoeCap = user.balance * maxCap;
 
         if (userVeJoeBalance < userMaxVeJoeCap) {
-          if (userVeJoeBalance + pendingVeJoe > userMaxVeJoeCap) {
-            return userMaxVeJoeCap - userVeJoeBalance;
-          } else {
-            return pendingVeJoe;
-          }
+            if (userVeJoeBalance + pendingVeJoe > userMaxVeJoeCap) {
+                return userMaxVeJoeCap - userVeJoeBalance;
+            } else {
+                return pendingVeJoe;
+            }
         } else {
-          // User already holds maximum amount of veJOE so there is no pending veJOE
-          return 0;
+            // User already holds maximum amount of veJOE so there is no pending veJOE
+            return 0;
         }
     }
 
@@ -275,5 +264,4 @@ contract VeJoeStaking is
             emit Claim(msg.sender, veJoeToClaim);
         }
     }
-  
 }
