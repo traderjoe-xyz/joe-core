@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const { describe } = require("mocha");
 const hre = require("hardhat");
 
-describe("Stable Joe Staking", function () {
+describe.only("Stable Joe Staking", function () {
   before(async function () {
     this.StableJoeStakingCF = await ethers.getContractFactory(
       "StableJoeStaking"
@@ -16,6 +16,7 @@ describe("Stable Joe Staking", function () {
     this.bob = this.signers[2];
     this.carol = this.signers[3];
     this.joeMaker = this.signers[4];
+    this.treasury = this.signers[5];
   });
 
   beforeEach(async function () {
@@ -33,6 +34,7 @@ describe("Stable Joe Staking", function () {
     this.sJoe = await hre.upgrades.deployProxy(this.StableJoeStakingCF, [
       this.rewardToken.address,
       this.joe.address,
+      this.treasury.address,
       ethers.utils.parseEther("0.03"),
     ]);
 
@@ -431,6 +433,96 @@ describe("Stable Joe Staking", function () {
       );
     });
 
+    it("should allow rewards in JOE and USDC", async function () {
+      await this.sJoe
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("1000"));
+      await this.sJoe
+        .connect(this.bob)
+        .deposit(ethers.utils.parseEther("1000"));
+      await this.sJoe
+        .connect(this.carol)
+        .deposit(ethers.utils.parseEther("1000"));
+
+      await this.rewardToken.mint(
+        this.sJoe.address,
+        ethers.utils.parseEther("3")
+      );
+
+      await this.joe.mint(this.sJoe.address, ethers.utils.parseEther("6"));
+
+      await this.sJoe
+        .connect(this.alice)
+        .claimRewards([this.rewardToken.address, this.joe.address]);
+      expect(
+        await this.rewardToken.balanceOf(this.alice.address)
+      ).to.be.closeTo(
+        ethers.utils.parseEther("1"),
+        ethers.utils.parseEther("0.0001")
+      );
+      // received by Alice:
+      //                 (Alice dep)      (bob dep )         (carol dep)
+      // feeFromDeposit: 1000 * 0.97 + 1000 * 0.97 / 2 + 1000 * 0.97 / 3
+      // sentToTheContract: 12 / 6
+      // total = 30 + 15 + 10 + 2 = 56
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.closeTo(
+        ethers.utils.parseEther("57"),
+        ethers.utils.parseEther("0.0001")
+      );
+
+      await this.sJoe
+        .connect(this.bob)
+        .claimRewards([this.rewardToken.address, this.joe.address]);
+      expect(await this.rewardToken.balanceOf(this.bob.address)).to.be.closeTo(
+        ethers.utils.parseEther("1"),
+        ethers.utils.parseEther("0.0001")
+      );
+      // received by Alice:
+      //                 (Alice dep)      (bob dep )         (carol dep)
+      // feeFromDeposit: 1000 * 0.97 + 1000 * 0.97 / 2 + 1000 * 0.97 / 3
+      // sentToTheContract: 6
+      // total = 57
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.closeTo(
+        ethers.utils.parseEther("57"),
+        ethers.utils.parseEther("0.0001")
+      );
+    });
+
+    it.only("test", async function () {
+      let token1 = await this.JoeTokenCF.deploy();
+      await this.sJoe.addRewardToken(token1.address);
+
+      await this.sJoe.connect(this.alice).deposit(1);
+      await this.sJoe.connect(this.bob).deposit(1);
+
+      await token1.mint(this.sJoe.address, ethers.utils.parseEther("1"));
+      await this.sJoe.connect(this.alice).claimReward(token1.address);
+      await this.sJoe.connect(this.alice).withdraw(1);
+
+      console.log(
+        (await token1.balanceOf(this.alice.address)).toString(),
+        (await token1.balanceOf(this.bob.address)).toString()
+      );
+
+      await token1.mint(this.sJoe.address, ethers.utils.parseEther("1"));
+      await this.sJoe.connect(this.bob).claimReward(token1.address);
+
+      console.log(
+        (await token1.balanceOf(this.alice.address)).toString(),
+        (await token1.balanceOf(this.bob.address)).toString()
+      );
+
+      await token1.mint(this.sJoe.address, ethers.utils.parseEther("1"));
+      await this.sJoe.connect(this.alice).deposit(1);
+      await this.sJoe.connect(this.bob).claimReward(token1.address);
+      await this.sJoe.connect(this.alice).claimReward(token1.address);
+
+      console.log(
+        (await token1.balanceOf(this.alice.address)).toString(),
+        (await token1.balanceOf(this.bob.address)).toString()
+      );
+    });
+
     it("should allow emergency withdraw", async function () {
       await this.sJoe
         .connect(this.alice)
@@ -454,8 +546,13 @@ describe("Stable Joe Staking", function () {
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(
         0
       );
-      expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(ethers.utils.parseEther("9"));
-      const userInfo = await this.sJoe.getUserInfo(this.sJoe.address, this.rewardToken.address);
+      expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(
+        ethers.utils.parseEther("9")
+      );
+      const userInfo = await this.sJoe.getUserInfo(
+        this.sJoe.address,
+        this.rewardToken.address
+      );
       expect(userInfo[0]).to.be.equal(0);
       expect(userInfo[1]).to.be.equal(0);
     });
