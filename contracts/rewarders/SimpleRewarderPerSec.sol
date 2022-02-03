@@ -7,13 +7,21 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
+import "../traderjoe/JoePair.sol";
+
+interface IERC20Metadata {
+    function decimals() external returns (uint256);
+}
 
 interface IRewarder {
     using SafeERC20 for IERC20;
 
     function onJoeReward(address user, uint256 newLpAmount) external;
 
-    function pendingTokens(address user) external view returns (uint256 pending);
+    function pendingTokens(address user)
+        external
+        view
+        returns (uint256 pending);
 
     function rewardToken() external view returns (IERC20);
 }
@@ -81,13 +89,16 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     mapping(address => UserInfo) public userInfo;
 
     uint256 public tokenPerSec;
-    uint256 private constant ACC_TOKEN_PRECISION = 1e12;
+    uint256 private ACC_TOKEN_PRECISION;
 
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
     modifier onlyMCJ() {
-        require(msg.sender == address(MCJ), "onlyMCJ: only MasterChefJoe can call this function");
+        require(
+            msg.sender == address(MCJ),
+            "onlyMCJ: only MasterChefJoe can call this function"
+        );
         _;
     }
 
@@ -98,16 +109,37 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         IMasterChefJoe _MCJ,
         bool _isNative
     ) public {
-        require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
-        require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
-        require(Address.isContract(address(_MCJ)), "constructor: MasterChefJoe must be a valid contract");
+        require(
+            Address.isContract(address(_rewardToken)),
+            "constructor: reward token must be a valid contract"
+        );
+        require(
+            Address.isContract(address(_lpToken)),
+            "constructor: LP token must be a valid contract"
+        );
+        require(
+            Address.isContract(address(_MCJ)),
+            "constructor: MasterChefJoe must be a valid contract"
+        );
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
         tokenPerSec = _tokenPerSec;
         MCJ = _MCJ;
         isNative = _isNative;
-        poolInfo = PoolInfo({lastRewardTimestamp: block.timestamp, accTokenPerShare: 0});
+        poolInfo = PoolInfo({
+            lastRewardTimestamp: block.timestamp,
+            accTokenPerShare: 0
+        });
+
+        JoePair pair = JoePair(address(_lpToken));
+        IERC20Metadata token0 = IERC20Metadata(pair.token0());
+        IERC20Metadata token1 = IERC20Metadata(pair.token1());
+
+        if (_tokenPerSec > 10**6)
+            ACC_TOKEN_PRECISION =
+                10**(36 - (token0.decimals() + token1.decimals()) / 2);
+        else ACC_TOKEN_PRECISION = 10**30;
     }
 
     /// @notice Update reward variables of the given poolInfo.
@@ -119,9 +151,13 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
             uint256 lpSupply = lpToken.balanceOf(address(MCJ));
 
             if (lpSupply > 0) {
-                uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
+                uint256 timeElapsed = block.timestamp.sub(
+                    pool.lastRewardTimestamp
+                );
                 uint256 tokenReward = timeElapsed.mul(tokenPerSec);
-                pool.accTokenPerShare = pool.accTokenPerShare.add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
+                pool.accTokenPerShare = pool.accTokenPerShare.add(
+                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
+                );
             }
 
             pool.lastRewardTimestamp = block.timestamp;
@@ -143,15 +179,21 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
-    function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ nonReentrant {
+    function onJoeReward(address _user, uint256 _lpAmount)
+        external
+        override
+        onlyMCJ
+        nonReentrant
+    {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
         uint256 pending;
         if (user.amount > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
-                user.unpaidRewards
-            );
+            pending = (user.amount.mul(pool.accTokenPerShare) /
+                ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
+                    user.unpaidRewards
+                );
 
             if (isNative) {
                 uint256 balance = address(this).balance;
@@ -177,14 +219,21 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         }
 
         user.amount = _lpAmount;
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+        user.rewardDebt =
+            user.amount.mul(pool.accTokenPerShare) /
+            ACC_TOKEN_PRECISION;
         emit OnReward(_user, pending - user.unpaidRewards);
     }
 
     /// @notice View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
-    function pendingTokens(address _user) external view override returns (uint256 pending) {
+    function pendingTokens(address _user)
+        external
+        view
+        override
+        returns (uint256 pending)
+    {
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
 
@@ -194,12 +243,14 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 tokenReward = timeElapsed.mul(tokenPerSec);
-            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
+            accTokenPerShare = accTokenPerShare.add(
+                tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)
+            );
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
-            user.unpaidRewards
-        );
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION)
+            .sub(user.rewardDebt)
+            .add(user.unpaidRewards);
     }
 
     /// @notice In case rewarder is stopped before emissions finished, this function allows
@@ -209,7 +260,10 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
             (bool success, ) = msg.sender.call.value(address(this).balance)("");
             require(success, "Transfer failed");
         } else {
-            rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
+            rewardToken.safeTransfer(
+                address(msg.sender),
+                rewardToken.balanceOf(address(this))
+            );
         }
     }
 
