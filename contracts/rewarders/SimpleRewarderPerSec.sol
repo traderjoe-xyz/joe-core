@@ -56,6 +56,14 @@ interface IMasterChefJoe {
  * E.g. say you've allocated 100,000 XYZ to the JOE-XYZ farm over 30 days. Then you would need to transfer
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
+ *
+ * Issue with previous version is that this can return 0 or be very inacurate with some tokens:
+ *      uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
+ *      uint256 tokenReward = timeElapsed.mul(tokenPerSec);
+ *      accTokenPerShare = accTokenPerShare.add(
+ *          tokenReward.mul(accTokenPrecision).div(lpSupply)
+ *      );
+ *  The goal with those changes is to prevent this, without any overflow too.
  */
 contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -89,7 +97,12 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     mapping(address => UserInfo) public userInfo;
 
     uint256 public tokenPerSec;
-    uint256 private ACC_TOKEN_PRECISION;
+
+    uint256 private accTokenPrecision;
+    // @dev decimals of pair
+    uint256 private pairDecimals;
+    // @dev decimals of reward token
+    uint256 private rewardDecimals;
 
     event OnReward(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
@@ -135,11 +148,51 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         JoePair pair = JoePair(address(_lpToken));
         IERC20Metadata token0 = IERC20Metadata(pair.token0());
         IERC20Metadata token1 = IERC20Metadata(pair.token1());
+        pairDecimals = (token0.decimals() + token1.decimals()) / 2;
+        rewardDecimals = IERC20Metadata(address(_rewardToken)).decimals();
 
-        if (_tokenPerSec > 10**6)
-            ACC_TOKEN_PRECISION =
-                10**(36 - (token0.decimals() + token1.decimals()) / 2);
-        else ACC_TOKEN_PRECISION = 10**30;
+        // Edge case n1:
+        // `lpSupply` is in 18 decimals and is very tiny, 1 WEI
+        // `tokenPerSec` is in 18 decimals, and we expect it to not be greater than 1e(12 + 18)
+        // `updatePool` is updated every at least every 31 years, i.e. 1e9 seconds
+        // decimals of result:
+        // result = 1e9 * 1e30 * 1e12 / 1
+        //        = 1e51
+        //
+        // Edge case n2:
+        // `lpSupply` is in 18 decimals and is very tiny, and is very big, i.e. 1e(18 + 12)
+        // `tokenPerSec` is equal to 1e(18 + 6)
+        // `updatePool` is updated every 1s, i.e. 1 seconds
+        // decimals of result:
+        // result = 1 * 1e24 * 1e12 / 1e30
+        //        = 1e6
+        //
+        // Edge case n3:
+        // `lpSupply` is in 18 decimals and is very tiny, 1 WEI
+        // `rewardToken` is in 18 decimals, and is very big, 1e(18+6)-1
+        // `updatePool` is updated every at least every 31 years, i.e. 1e9 seconds
+        // decimals of result:
+        // result = 1e9 * 1e24 * 1e(19 + 18 - 24) / 1
+        //        = 1e9 * 1e24 * 1e(13) / 1
+        //        = 1e46
+        //
+        // Edge case n4:
+        // `lpSupply` is in 18 decimals and is very big, 1e(12+18)
+        // `tokenPerSec` is very small, i.e 1 WEI
+        // `updatePool` is updated every 1s, i.e. 1 seconds
+        // decimals of result:
+        // result = 1 * 1 * 1e(19 + 18 - 1) / 1e30
+        //        = 1 * 1 * 1e36 / 1e30
+        //        = 1e6
+        uint256 tokenPerSecDecimals;
+        for (; _tokenPerSec != 0; _tokenPerSec /= 10) tokenPerSecDecimals++;
+
+        // We want at least 6 decimals and as we expect lpSupply to to not be greater than 10**(12 + pairDecimals)
+        if (tokenPerSecDecimals >= pairDecimals + 6) {
+            accTokenPrecision = 1e12;
+        } else {
+            accTokenPrecision = 10**(19 + pairDecimals - tokenPerSecDecimals);
+        }
     }
 
     /// @notice Update reward variables of the given poolInfo.
@@ -156,7 +209,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
                 );
                 uint256 tokenReward = timeElapsed.mul(tokenPerSec);
                 pool.accTokenPerShare = pool.accTokenPerShare.add(
-                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
+                    (tokenReward.mul(accTokenPrecision) / lpSupply)
                 );
             }
 
@@ -170,8 +223,34 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     function setRewardRate(uint256 _tokenPerSec) external onlyOwner {
         updatePool();
 
+        PoolInfo memory pool = poolInfo;
+        uint256 oldAccTokenPrecision = accTokenPrecision;
+
         uint256 oldRate = tokenPerSec;
         tokenPerSec = _tokenPerSec;
+
+        uint256 tokenPerSecDecimals;
+        uint256 newTokenPerSec = _tokenPerSec;
+        for (; newTokenPerSec != 0; newTokenPerSec /= 10) tokenPerSecDecimals++;
+
+        // We want at least 6 decimals and as we expect lpSupply to to not be greater than 10**(12 + pairDecimals)
+        if (tokenPerSecDecimals >= pairDecimals + 6) {
+            accTokenPrecision = 1e12;
+        } else {
+            accTokenPrecision = 10**(19 + pairDecimals - tokenPerSecDecimals);
+        }
+
+        // We need to update `accTokenPerShare` to have the right precision
+        if (oldAccTokenPrecision != accTokenPrecision) {
+            if (oldAccTokenPrecision > accTokenPrecision)
+                poolInfo.accTokenPerShare.div(
+                    oldAccTokenPrecision / accTokenPrecision
+                );
+            else
+                poolInfo.accTokenPerShare.mul(
+                    oldAccTokenPrecision / accTokenPrecision
+                );
+        }
 
         emit RewardRateUpdated(oldRate, _tokenPerSec);
     }
@@ -191,9 +270,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         uint256 pending;
         if (user.amount > 0) {
             pending = (user.amount.mul(pool.accTokenPerShare) /
-                ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
-                    user.unpaidRewards
-                );
+                accTokenPrecision).sub(user.rewardDebt).add(user.unpaidRewards);
 
             if (isNative) {
                 uint256 balance = address(this).balance;
@@ -221,7 +298,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         user.amount = _lpAmount;
         user.rewardDebt =
             user.amount.mul(pool.accTokenPerShare) /
-            ACC_TOKEN_PRECISION;
+            accTokenPrecision;
         emit OnReward(_user, pending - user.unpaidRewards);
     }
 
@@ -244,11 +321,11 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
             uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 tokenReward = timeElapsed.mul(tokenPerSec);
             accTokenPerShare = accTokenPerShare.add(
-                tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)
+                tokenReward.mul(accTokenPrecision).div(lpSupply)
             );
         }
 
-        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION)
+        pending = (user.amount.mul(accTokenPerShare) / accTokenPrecision)
             .sub(user.rewardDebt)
             .add(user.unpaidRewards);
     }
