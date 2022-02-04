@@ -1,9 +1,10 @@
+// @ts-nocheck
 const { ethers, network } = require("hardhat");
 const { expect } = require("chai");
 const { describe } = require("mocha");
 const hre = require("hardhat");
 
-describe("Stable Joe Staking", function () {
+describe.only("Stable Joe Staking", function () {
   before(async function () {
     this.StableJoeStakingCF = await ethers.getContractFactory(
       "StableJoeStaking"
@@ -559,6 +560,20 @@ describe("Stable Joe Staking", function () {
         ethers.utils.parseEther("0.5")
       );
       expect(balBob).to.be.equal(ethers.utils.parseEther("2.5"));
+    });
+
+    it("should allow adding and removing a rewardToken, only by owner", async function () {
+      let token;
+      for (let i = 0; i < 24; i++) {
+        await this.sJoe.addRewardToken(
+          (
+            await this.JoeTokenCF.deploy()
+          ).address
+        );
+      }
+      await expect(
+        this.sJoe.addRewardToken((await this.JoeTokenCF.deploy()).address)
+      ).to.be.revertedWith("StableJoeStaking: list of token too big");
     });
 
     it("should allow adding and removing a rewardToken, only by owner", async function () {
