@@ -12,11 +12,11 @@ import "./traderjoe/interfaces/IJoeFactory.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title Joe Maker V4
+/// @title Money Maker
 /// @author Trader Joe
-/// @notice JoeMaker receives 0.05% of the swaps done on TraderJoe in the form of an LP. It swaps those LPs
+/// @notice MoneyMaker receives 0.05% of the swaps done on Trader Joe in the form of an LP. It swaps those LPs
 /// to a token of choice and sends it to the JoeBar
-contract JoeMakerV4 is Ownable {
+contract MoneyMaker is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -36,7 +36,7 @@ contract JoeMakerV4 is Ownable {
     bool public anyAuth = false;
 
     modifier onlyAuth() {
-        require(isAuth[msg.sender] || anyAuth, "JoeMakerV4: FORBIDDEN");
+        require(isAuth[msg.sender] || anyAuth, "MoneyMaker: FORBIDDEN");
         _;
     }
 
@@ -101,7 +101,7 @@ contract JoeMakerV4 is Ownable {
     /// @param bridge The address of the tokenTo
     function setBridge(address token, address bridge) external onlyAuth {
         // Checks
-        require(token != tokenTo && token != wavax && token != bridge, "JoeMakerV4: Invalid bridge");
+        require(token != tokenTo && token != wavax && token != bridge, "MoneyMaker: Invalid bridge");
 
         // Effects
         _bridges[token] = bridge;
@@ -148,7 +148,7 @@ contract JoeMakerV4 is Ownable {
     // C6: It's not a fool proof solution, but it prevents flash loans, so here it's ok to use tx.origin
     modifier onlyEOA() {
         // Try to make flash-loan exploit harder to do by only allowing externally owned addresses.
-        require(msg.sender == tx.origin, "JoeMakerV4: must use EOA");
+        require(msg.sender == tx.origin, "MoneyMaker: must use EOA");
         _;
     }
 
@@ -162,7 +162,7 @@ contract JoeMakerV4 is Ownable {
         address token1,
         uint256 slippage
     ) external onlyEOA onlyAuth {
-        require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 50%");
+        require(slippage < 5_000, "MoneyMaker: slippage needs to be lower than 50%");
         _convert(token0, token1, slippage);
     }
 
@@ -177,7 +177,7 @@ contract JoeMakerV4 is Ownable {
         uint256 slippage
     ) external onlyEOA onlyAuth {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
-        require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 50%");
+        require(slippage < 5_000, "MoneyMaker: slippage needs to be lower than 50%");
 
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
@@ -204,7 +204,7 @@ contract JoeMakerV4 is Ownable {
             amount1 = 0;
         } else {
             IJoePair pair = IJoePair(factory.getPair(token0, token1));
-            require(address(pair) != address(0), "JoeMakerV4: Invalid pair");
+            require(address(pair) != address(0), "MoneyMaker: Invalid pair");
 
             IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
 
@@ -322,7 +322,7 @@ contract JoeMakerV4 is Ownable {
         // Checks
         // X1 - X5: OK
         IJoePair pair = IJoePair(factory.getPair(fromToken, toToken));
-        require(address(pair) != address(0), "JoeMakerV4: Cannot convert");
+        require(address(pair) != address(0), "MoneyMaker: Cannot convert");
 
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         (uint256 reserveInput, uint256 reserveOutput) = fromToken == pair.token0()
@@ -341,7 +341,7 @@ contract JoeMakerV4 is Ownable {
             require(
                 getAmountOut(amountOut, reserveOutput, reserveInput) >=
                     amountInput.mul(rest).mul(rest).div(100_000_000),
-                "JoeMakerV4: Slippage caught"
+                "MoneyMaker: Slippage caught"
             );
         }
 
@@ -381,8 +381,8 @@ contract JoeMakerV4 is Ownable {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        require(amountIn > 0, "JoeMakerV4: INSUFFICIENT_INPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "JoeMakerV4: INSUFFICIENT_LIQUIDITY");
+        require(amountIn > 0, "MoneyMaker: INSUFFICIENT_INPUT_AMOUNT");
+        require(reserveIn > 0 && reserveOut > 0, "MoneyMaker: INSUFFICIENT_LIQUIDITY");
         uint256 amountInWithFee = amountIn.mul(997);
         uint256 numerator = amountInWithFee.mul(reserveOut);
         uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);

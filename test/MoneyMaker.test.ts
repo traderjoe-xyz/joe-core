@@ -29,10 +29,10 @@ const BAR_ADDRESS = "0x57319d41F71E81F3c65F2a47CA4e001EbAFd4F33"
 
 const DEADLINE = "111111111111111111"
 
-describe("joeMakerV4", function () {
+describe("moneyMaker", function () {
   before(async function () {
     // ABIs
-    this.joeMakerV4CF = await ethers.getContractFactory("JoeMakerV4")
+    this.moneyMakerCF = await ethers.getContractFactory("MoneyMaker")
     this.joeMakerCF = await ethers.getContractFactory("JoeMaker")
     this.ERC20CF = await ethers.getContractFactory("JoeERC20")
     this.ZapCF = await ethers.getContractFactory("Zap")
@@ -88,27 +88,27 @@ describe("joeMakerV4", function () {
       ],
     })
 
-    // We redeploy joeMakerV4 for each tests too
-    this.joeMakerV4 = await this.joeMakerV4CF.deploy(FACTORY_ADDRESS, BAR_ADDRESS, USDC_ADDRESS, WAVAX_ADDRESS)
-    await this.joeMakerV4.deployed()
+    // We redeploy moneyMaker for each tests too
+    this.moneyMaker = await this.moneyMakerCF.deploy(FACTORY_ADDRESS, BAR_ADDRESS, USDC_ADDRESS, WAVAX_ADDRESS)
+    await this.moneyMaker.deployed()
   })
 
   describe("setBridge", function () {
     it("does not allow to set bridge for Token", async function () {
-      await expect(this.joeMakerV4.setBridge(this.joeMakerV4.tokenTo(), this.wavax.address)).to.be.revertedWith("JoeMakerV4: Invalid bridge")
+      await expect(this.moneyMaker.setBridge(this.moneyMaker.tokenTo(), this.wavax.address)).to.be.revertedWith("MoneyMaker: Invalid bridge")
     })
 
     it("does not allow to set bridge for WAVAX", async function () {
-      await expect(this.joeMakerV4.setBridge(this.wavax.address, this.joe.address)).to.be.revertedWith("JoeMakerV4: Invalid bridge")
+      await expect(this.moneyMaker.setBridge(this.wavax.address, this.joe.address)).to.be.revertedWith("MoneyMaker: Invalid bridge")
     })
 
     it("does not allow to set bridge to itself", async function () {
-      await expect(this.joeMakerV4.setBridge(this.dai.address, this.dai.address)).to.be.revertedWith("JoeMakerV4: Invalid bridge")
+      await expect(this.moneyMaker.setBridge(this.dai.address, this.dai.address)).to.be.revertedWith("MoneyMaker: Invalid bridge")
     })
 
     it("emits correct event on bridge", async function () {
-      await expect(this.joeMakerV4.setBridge(this.dai.address, this.joe.address))
-        .to.emit(this.joeMakerV4, "LogBridgeSet")
+      await expect(this.moneyMaker.setBridge(this.dai.address, this.joe.address))
+        .to.emit(this.moneyMaker, "LogBridgeSet")
         .withArgs(this.dai.address, this.joe.address)
     })
   })
@@ -116,30 +116,30 @@ describe("joeMakerV4", function () {
   describe("convert Tokens", function () {
     it("should convert WAVAX", async function () {
       await this.wavax.deposit({ value: ethers.utils.parseEther("2") })
-      await this.wavax.transfer(this.joeMakerV4.address, await this.wavaxERC20.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.wavax.address, this.wavax.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.wavaxERC20.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.wavax.transfer(this.moneyMaker.address, await this.wavaxERC20.balanceOf(this.dev.address))
+      await this.moneyMaker.convert(this.wavax.address, this.wavax.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.wavaxERC20.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("215434297")
     })
 
     it("should convert USDC", async function () {
-      await this.router.swapExactAVAXForTokens("0", [this.wavax.address, this.usdc.address], this.joeMakerV4.address, DEADLINE, {
+      await this.router.swapExactAVAXForTokens("0", [this.wavax.address, this.usdc.address], this.moneyMaker.address, DEADLINE, {
         value: ethers.utils.parseEther("2"),
       })
-      await this.joeMakerV4.convert(this.usdc.address, this.usdc.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.wavaxERC20.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.moneyMaker.convert(this.usdc.address, this.usdc.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.wavaxERC20.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("215434297")
     })
 
     it("should convert WBTC", async function () {
-      await this.router.swapExactAVAXForTokens("0", [this.wavax.address, this.wbtc.address], this.joeMakerV4.address, DEADLINE, {
+      await this.router.swapExactAVAXForTokens("0", [this.wavax.address, this.wbtc.address], this.moneyMaker.address, DEADLINE, {
         value: ethers.utils.parseEther("2"),
       })
-      await this.joeMakerV4.convert(this.wbtc.address, this.wbtc.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.wavaxERC20.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.moneyMaker.convert(this.wbtc.address, this.wbtc.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.wavaxERC20.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214143468")
     })
   })
@@ -147,19 +147,19 @@ describe("joeMakerV4", function () {
   describe("convert Pairs", function () {
     it("should convert AVAX - USDC", async function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
-      await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.avaxUsdc.transfer(this.moneyMaker.address, await this.avaxUsdc.balanceOf(this.dev.address))
+      await this.moneyMaker.convert(this.usdc.address, this.wavax.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.avaxUsdc.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("215111242")
     })
 
     it("should convert USDC - DAI", async function () {
       await this.zap.zapIn(this.usdcDai.address, { value: ethers.utils.parseEther("2") })
-      await this.usdcDai.transfer(this.joeMakerV4.address, await this.usdcDai.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.dai.address, this.usdc.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.usdcDai.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.usdcDai.transfer(this.moneyMaker.address, await this.usdcDai.balanceOf(this.dev.address))
+      await this.moneyMaker.convert(this.dai.address, this.usdc.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.usdcDai.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("214878919")
     })
 
@@ -175,19 +175,19 @@ describe("joeMakerV4", function () {
       const swappedJoeToAvax = swapTo(joeAvax, (await joeAvax.token0) == this.joe.address, joeAmount, "9900")
       const swappedAvaxToUsdc = swapTo(avaxUsdc, (await avaxUsdc.token0) == this.wavax.address, avaxAmount.add(swappedJoeToAvax), "9900")
 
-      await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.joe.address, this.wavax.address, "100")
+      await this.joeAvax.transfer(this.moneyMaker.address, await this.joeAvax.balanceOf(this.dev.address))
+      await this.moneyMaker.convert(this.joe.address, this.wavax.address, "100")
 
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.joeAvax.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.joeAvax.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect((await this.usdc.balanceOf(BAR_ADDRESS)).sub(swappedAvaxToUsdc).toNumber()).to.be.above(0)
     })
 
     it("should convert MIM - TIME above slippage", async function () {
       await this.zap.zapIn(this.mimTime.address, { value: ethers.utils.parseEther("2") })
-      await this.mimTime.transfer(this.joeMakerV4.address, await this.mimTime.balanceOf(this.dev.address))
-      await this.joeMakerV4.setBridge(this.time.address, this.mim.address)
-      await this.joeMakerV4.setBridge(this.mim.address, this.wavax.address)
+      await this.mimTime.transfer(this.moneyMaker.address, await this.mimTime.balanceOf(this.dev.address))
+      await this.moneyMaker.setBridge(this.time.address, this.mim.address)
+      await this.moneyMaker.setBridge(this.mim.address, this.wavax.address)
 
       const mimTime = await getPairInfo(this.mimTime, this.dev.address)
       const mimAvax = await getPairInfo(this.mimAvax, this.dev.address)
@@ -200,9 +200,9 @@ describe("joeMakerV4", function () {
       const swappedMimToAvax = swapTo(mimAvax, (await mimAvax.token0) == this.mim.address, mimAmount.add(swappedTimeToMim), "9900")
       const swappedAvaxToUsdc = swapTo(avaxUsdc, (await avaxUsdc.token0) == this.wavax.address, swappedMimToAvax, "9900")
 
-      await this.joeMakerV4.convert(this.mim.address, this.time.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.mimTime.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.moneyMaker.convert(this.mim.address, this.time.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.mimTime.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect((await this.usdc.balanceOf(BAR_ADDRESS)).sub(swappedAvaxToUsdc).toNumber()).to.be.above(0)
     })
 
@@ -227,48 +227,48 @@ describe("joeMakerV4", function () {
 
       this.tractor.approve(this.router.address, ethers.utils.parseEther("100000000"))
 
-      this.router.addLiquidityAVAX(this.tractor.address, balance, "0", "0", this.joeMakerV4.address, DEADLINE, {
+      this.router.addLiquidityAVAX(this.tractor.address, balance, "0", "0", this.moneyMaker.address, DEADLINE, {
         value: ethers.utils.parseEther("1"),
       })
 
-      await this.joeMakerV4.convert(this.tractor.address, this.wavax.address, "100")
+      await this.moneyMaker.convert(this.tractor.address, this.wavax.address, "100")
 
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.usdcDai.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.usdcDai.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("186168809")
     })
 
     it("reverts if slippage is lower than 0.3% (fees for swap)", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
-      await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
-      await expect(this.joeMakerV4.convert(this.joe.address, this.wavax.address, "29")).to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 0.29% this will revert as the fee for a swap is 0.3%
+      await this.joeAvax.transfer(this.moneyMaker.address, await this.joeAvax.balanceOf(this.dev.address))
+      await expect(this.moneyMaker.convert(this.joe.address, this.wavax.address, "29")).to.be.revertedWith("MoneyMaker: Slippage caught") // slippage at 0.29% this will revert as the fee for a swap is 0.3%
     })
 
     it("reverts if using a pair with really low liquidity even with slippage at maximum", async function () {
       await this.zap.zapIn(this.mimTime.address, { value: "2000000000000000000" })
-      await this.mimTime.transfer(this.joeMakerV4.address, await this.mimTime.balanceOf(this.dev.address))
-      await this.joeMakerV4.setBridge(this.mim.address, this.joe.address)
-      await expect(this.joeMakerV4.convert(this.mim.address, this.time.address, "4999")).to.be.revertedWith("JoeMakerV4: Slippage caught") // slippage at 1% this will revert as the JOE/MIM pair has really low liquidity.
+      await this.mimTime.transfer(this.moneyMaker.address, await this.mimTime.balanceOf(this.dev.address))
+      await this.moneyMaker.setBridge(this.mim.address, this.joe.address)
+      await expect(this.moneyMaker.convert(this.mim.address, this.time.address, "4999")).to.be.revertedWith("MoneyMaker: Slippage caught") // slippage at 1% this will revert as the JOE/MIM pair has really low liquidity.
     })
 
     it("reverts if convert is called by non-authorised user", async function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
-      await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await expect(this.joeMakerV4.connect(this.alice).convert(this.usdc.address, this.wavax.address, "100")).to.be.revertedWith(
-        "JoeMakerV4: FORBIDDEN"
+      await this.avaxUsdc.transfer(this.moneyMaker.address, await this.avaxUsdc.balanceOf(this.dev.address))
+      await expect(this.moneyMaker.connect(this.alice).convert(this.usdc.address, this.wavax.address, "100")).to.be.revertedWith(
+        "MoneyMaker: FORBIDDEN"
       )
     })
 
     it("reverts if it loops back", async function () {
       await this.zap.zapIn(this.joeUsdt.address, { value: ethers.utils.parseEther("2") })
-      await this.joeUsdt.transfer(this.joeMakerV4.address, await this.joeUsdt.balanceOf(this.dev.address))
-      await this.joeMakerV4.setBridge(this.joe.address, this.usdt.address)
-      await this.joeMakerV4.setBridge(this.usdt.address, this.joe.address)
-      await expect(this.joeMakerV4.convert(this.usdt.address, this.joe.address, "100")).to.be.reverted
+      await this.joeUsdt.transfer(this.moneyMaker.address, await this.joeUsdt.balanceOf(this.dev.address))
+      await this.moneyMaker.setBridge(this.joe.address, this.usdt.address)
+      await this.moneyMaker.setBridge(this.usdt.address, this.joe.address)
+      await expect(this.moneyMaker.convert(this.usdt.address, this.joe.address, "100")).to.be.reverted
     })
 
     it("reverts if pair does not exist", async function () {
-      await expect(this.joeMakerV4.convert(this.usdc.address, this.avaxUsdc.address, "100")).to.be.revertedWith("JoeMakerV4: Invalid pair")
+      await expect(this.moneyMaker.convert(this.usdc.address, this.avaxUsdc.address, "100")).to.be.revertedWith("MoneyMaker: Invalid pair")
     })
   })
 
@@ -276,20 +276,20 @@ describe("joeMakerV4", function () {
     it("should allow to convert multiple", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: ethers.utils.parseEther("2") })
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
-      await this.joeAvax.transfer(this.joeMakerV4.address, await this.joeAvax.balanceOf(this.dev.address))
-      await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convertMultiple([this.joe.address, this.usdc.address], [this.wavax.address, this.wavax.address], "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.joeAvax.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.joeAvax.transfer(this.moneyMaker.address, await this.joeAvax.balanceOf(this.dev.address))
+      await this.avaxUsdc.transfer(this.moneyMaker.address, await this.avaxUsdc.balanceOf(this.dev.address))
+      await this.moneyMaker.convertMultiple([this.joe.address, this.usdc.address], [this.wavax.address, this.wavax.address], "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.joeAvax.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.avaxUsdc.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect(await this.usdc.balanceOf(BAR_ADDRESS)).to.equal("429576577")
     })
   })
 
   describe("devCut", function () {
     it("should redirect 50% of JOE to dev address", async function () {
-      await this.joeMakerV4.setDevAddr(this.dev.address)
-      await this.joeMakerV4.setDevCut("5000")
+      await this.moneyMaker.setDevAddr(this.dev.address)
+      await this.moneyMaker.setDevCut("5000")
 
       this.wavaxERC20 = await this.ERC20CF.attach(WAVAX_ADDRESS)
 
@@ -297,10 +297,10 @@ describe("joeMakerV4", function () {
       const devBalance = await this.wavaxERC20.balanceOf(this.dev.address)
 
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
-      await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address, "100")
-      expect(await this.usdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
-      expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      await this.avaxUsdc.transfer(this.moneyMaker.address, await this.avaxUsdc.balanceOf(this.dev.address))
+      await this.moneyMaker.convert(this.usdc.address, this.wavax.address, "100")
+      expect(await this.usdc.balanceOf(this.moneyMaker.address)).to.equal(0)
+      expect(await this.avaxUsdc.balanceOf(this.moneyMaker.address)).to.equal(0)
       expect((await this.usdc.balanceOf(BAR_ADDRESS)) - barBalance).to.be.above(0)
       expect((await this.wavaxERC20.balanceOf(this.dev.address)) - devBalance).to.be.above(0)
     })
@@ -308,7 +308,7 @@ describe("joeMakerV4", function () {
 
   describe("setToken", function () {
     it("should convert JOE - AVAX to JOE", async function () {
-      this.joeMakerV4.setTokenToAddress(this.joe.address)
+      this.moneyMaker.setTokenToAddress(this.joe.address)
 
       this.joeMaker = await this.joeMakerCF.deploy(FACTORY_ADDRESS, BAR_ADDRESS, JOE_ADDRESS, WAVAX_ADDRESS)
       await this.joeMaker.deployed()
@@ -322,13 +322,13 @@ describe("joeMakerV4", function () {
       expect((await this.joe.balanceOf(BAR_ADDRESS)).sub(previousBalance.add(ethers.utils.parseEther("50")))).to.be.above(0)
 
       previousBalance = await this.joe.balanceOf(BAR_ADDRESS)
-      await this.avaxUsdc.transfer(this.joeMakerV4.address, await this.avaxUsdc.balanceOf(this.dev.address))
-      await this.joeMakerV4.convert(this.usdc.address, this.wavax.address, "100")
+      await this.avaxUsdc.transfer(this.moneyMaker.address, await this.avaxUsdc.balanceOf(this.dev.address))
+      await this.moneyMaker.convert(this.usdc.address, this.wavax.address, "100")
       expect((await this.joe.balanceOf(BAR_ADDRESS)).sub(previousBalance.add(ethers.utils.parseEther("50")))).to.be.above(0)
 
       expect(await this.joe.balanceOf(this.joeMaker.address)).to.equal(0)
       expect(await this.avaxUsdc.balanceOf(this.joeMaker.address)).to.equal(0)
-      expect(await this.avaxUsdc.balanceOf(this.joeMakerV4.address)).to.equal(0)
+      expect(await this.avaxUsdc.balanceOf(this.moneyMaker.address)).to.equal(0)
     })
   })
 
