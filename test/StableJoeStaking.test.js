@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const { describe } = require("mocha");
 const hre = require("hardhat");
 
-describe.only("Stable Joe Staking", function () {
+describe("Stable Joe Staking", function () {
   before(async function () {
     this.StableJoeStakingCF = await ethers.getContractFactory(
       "StableJoeStaking"
@@ -16,7 +16,7 @@ describe.only("Stable Joe Staking", function () {
     this.bob = this.signers[2];
     this.carol = this.signers[3];
     this.joeMaker = this.signers[4];
-    this.treasury = this.signers[5];
+    this.penaltyCollector = this.signers[5];
   });
 
   beforeEach(async function () {
@@ -34,7 +34,7 @@ describe.only("Stable Joe Staking", function () {
     this.sJoe = await hre.upgrades.deployProxy(this.StableJoeStakingCF, [
       this.rewardToken.address,
       this.joe.address,
-      this.treasury.address,
+      this.penaltyCollector.address,
       ethers.utils.parseEther("0.03"),
     ]);
 
@@ -433,7 +433,7 @@ describe.only("Stable Joe Staking", function () {
       );
     });
 
-    it.only("should allow rewards in JOE and USDC", async function () {
+    it("should allow rewards in JOE and USDC", async function () {
       await this.sJoe
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("1000"));
@@ -462,37 +462,34 @@ describe.only("Stable Joe Staking", function () {
       await this.sJoe.addRewardToken(this.joe.address);
       await this.joe.mint(this.sJoe.address, ethers.utils.parseEther("6"));
 
-      await this.sJoe
-        .connect(this.bob)
-        .withdraw(ethers.utils.parseEther("970"));
+      await this.sJoe.connect(this.bob).connect(this.bob).withdraw(0);
 
       expect(await this.rewardToken.balanceOf(this.bob.address)).to.be.closeTo(
         ethers.utils.parseEther("1"),
         ethers.utils.parseEther("0.0001")
       );
-
-      expect(await this.joe.balanceOf(this.alice.address)).to.be.closeTo(
+      expect(await this.joe.balanceOf(this.bob.address)).to.be.closeTo(
         ethers.utils.parseEther("2"),
         ethers.utils.parseEther("0.0001")
       );
 
       await this.sJoe
         .connect(this.alice)
-        .withdraw(ethers.utils.parseEther("970"));
+        .withdraw(ethers.utils.parseEther("0"));
+
       expect(
         await this.rewardToken.balanceOf(this.alice.address)
       ).to.be.closeTo(
         ethers.utils.parseEther("1"),
         ethers.utils.parseEther("0.0001")
       );
-
       expect(await this.joe.balanceOf(this.alice.address)).to.be.closeTo(
         ethers.utils.parseEther("2"),
         ethers.utils.parseEther("0.0001")
       );
     });
 
-    it("test", async function () {
+    it("rewardDebt should be updated as expected, alice deposits before last reward is sent", async function () {
       let token1 = await this.JoeTokenCF.deploy();
       await this.sJoe.addRewardToken(token1.address);
 
@@ -527,6 +524,110 @@ describe.only("Stable Joe Staking", function () {
       expect(balBob).to.be.equal(ethers.utils.parseEther("2"));
 
       await this.sJoe.removeRewardToken(token1.address);
+    });
+
+    it("rewardDebt should be updated as expected, alice deposits after last reward is sent", async function () {
+      let token1 = await this.JoeTokenCF.deploy();
+      await this.sJoe.addRewardToken(token1.address);
+
+      await this.sJoe.connect(this.alice).deposit(1);
+      await this.sJoe.connect(this.bob).deposit(1);
+
+      await token1.mint(this.sJoe.address, ethers.utils.parseEther("1"));
+      await this.sJoe.connect(this.alice).withdraw(1);
+
+      let balAlice = await token1.balanceOf(this.alice.address);
+      let balBob = await token1.balanceOf(this.bob.address);
+      expect(balAlice).to.be.equal(ethers.utils.parseEther("0.5"));
+      expect(balBob).to.be.equal(0);
+
+      await token1.mint(this.sJoe.address, ethers.utils.parseEther("1"));
+      await this.sJoe.connect(this.bob).withdraw(0);
+
+      balBob = await token1.balanceOf(this.bob.address);
+      expect(await token1.balanceOf(this.alice.address)).to.be.equal(balAlice);
+      expect(balBob).to.be.equal(ethers.utils.parseEther("1.5"));
+
+      await token1.mint(this.sJoe.address, ethers.utils.parseEther("1"));
+      await this.sJoe.connect(this.alice).deposit(1);
+      await this.sJoe.connect(this.bob).withdraw(0);
+      await this.sJoe.connect(this.alice).withdraw(0);
+
+      balAlice = await token1.balanceOf(this.alice.address);
+      balBob = await token1.balanceOf(this.bob.address);
+      expect(await token1.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("0.5")
+      );
+      expect(balBob).to.be.equal(ethers.utils.parseEther("2.5"));
+    });
+
+    it("should allow adding and removing a rewardToken, only by owner", async function () {
+      let token1 = await this.JoeTokenCF.deploy();
+      await expect(
+        this.sJoe.connect(this.alice).addRewardToken(token1.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+      expect(await this.sJoe.isRewardToken(token1.address)).to.be.equal(false);
+      expect(await this.sJoe.rewardTokensLength()).to.be.equal(1);
+
+      await this.sJoe.connect(this.dev).addRewardToken(token1.address);
+      await expect(
+        this.sJoe.connect(this.dev).addRewardToken(token1.address)
+      ).to.be.revertedWith("StableJoeStaking: token can't be added");
+      expect(await this.sJoe.isRewardToken(token1.address)).to.be.equal(true);
+      expect(await this.sJoe.rewardTokensLength()).to.be.equal(2);
+
+      await this.sJoe.connect(this.dev).removeRewardToken(token1.address);
+      expect(await this.sJoe.isRewardToken(token1.address)).to.be.equal(false);
+      expect(await this.sJoe.rewardTokensLength()).to.be.equal(1);
+    });
+
+    it("should allow setting a new deposit fee, only by owner", async function () {
+      await this.sJoe
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("900")
+      );
+      expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(
+        ethers.utils.parseEther("97")
+      );
+      expect(
+        await this.joe.balanceOf(this.penaltyCollector.address)
+      ).to.be.equal(ethers.utils.parseEther("3"));
+
+      await expect(
+        this.sJoe.connect(this.alice).setdepositFeePercent("0")
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+      await expect(
+        this.sJoe
+          .connect(this.dev)
+          .setdepositFeePercent(ethers.utils.parseEther("0.5"))
+      ).to.be.revertedWith(
+        "StableJoeStaking: deposit fee can't be greater than 50%"
+      );
+
+      await this.sJoe
+        .connect(this.dev)
+        .setdepositFeePercent(ethers.utils.parseEther("0.49"));
+      expect(await this.sJoe.depositFeePercent()).to.be.equal(
+        ethers.utils.parseEther("0.49")
+      );
+
+      await this.sJoe
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("800")
+      );
+
+      expect(await this.joe.balanceOf(this.sJoe.address)).to.be.equal(
+        ethers.utils.parseEther("97").add(ethers.utils.parseEther("51"))
+      );
+      expect(
+        await this.joe.balanceOf(this.penaltyCollector.address)
+      ).to.be.equal(
+        ethers.utils.parseEther("3").add(ethers.utils.parseEther("49"))
+      );
     });
 
     it("should allow emergency withdraw", async function () {

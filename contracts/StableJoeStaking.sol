@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Stable JOE Staking
  * @author Trader Joe
@@ -50,7 +48,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     uint256 internalJoeBalance;
     /// @notice The array of token that people can claim to get reward
     IERC20Upgradeable[] public rewardTokens;
-    mapping(IERC20Upgradeable => bool) isRewardToken;
+    mapping(IERC20Upgradeable => bool) public isRewardToken;
     /// @notice Last reward balance of `token`
     mapping(IERC20Upgradeable => uint256) public lastRewardBalance;
 
@@ -95,9 +93,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             _feeCollector != address(0),
             "StableJoeStaking: fee collector can't be address 0"
         );
-        PRECISION = 1e18;
         require(
-            _depositFeePercent < PRECISION / 2,
+            _depositFeePercent < 5e17,
             "StableJoeStaking: max deposit fee can't be greater than 50%"
         );
 
@@ -107,6 +104,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
         isRewardToken[_rewardToken] = true;
         rewardTokens.push(_rewardToken);
+        PRECISION = 1e24;
     }
 
     /**
@@ -164,6 +162,14 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @notice get the number of reward tokens
+     * @return The length of the array
+     */
+    function rewardTokensLength() external view returns (uint256) {
+        return rewardTokens.length;
+    }
+
+    /**
      * @notice Set the reward token
      * @param _rewardToken The address of the reward token
      */
@@ -210,7 +216,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         onlyOwner
     {
         require(
-            _depositFeePercent < PRECISION / 2,
+            _depositFeePercent < 5e17,
             "StableJoeStaking: deposit fee can't be greater than 50%"
         );
         depositFeePercent = _depositFeePercent;
