@@ -99,9 +99,12 @@ contract JoeMakerV4 is Ownable {
     /// @notice Force using `pair/bridge` pair to convert `token`
     /// @param token The address of the tokenFrom
     /// @param bridge The address of the tokenTo
-    function setBridge(address token, address bridge) external onlyOwner {
+    function setBridge(address token, address bridge) external onlyAuth {
         // Checks
-        require(token != tokenTo && token != wavax && token != bridge, "JoeMakerV4: Invalid bridge");
+        require(
+            token != tokenTo && token != wavax && token != bridge,
+            "JoeMakerV4: Invalid bridge"
+        );
 
         // Effects
         _bridges[token] = bridge;
@@ -120,7 +123,10 @@ contract JoeMakerV4 is Ownable {
     /// @notice Sets `devAddr`, the address that will receive the `devCut`
     /// @param _addr The new dev address
     function setDevAddr(address _addr) external onlyOwner {
-        require(_addr != address(0), "setDevAddr, address cannot be zero address");
+        require(
+            _addr != address(0),
+            "setDevAddr, address cannot be zero address"
+        );
         devAddr = _addr;
 
         emit SetDevAddr(_addr);
@@ -129,7 +135,10 @@ contract JoeMakerV4 is Ownable {
     /// @notice Sets token that we're buying back
     /// @param _tokenTo The new token address
     function setTokenToAddress(address _tokenTo) external onlyOwner {
-        require(_tokenTo != address(0), "setTokenToAddress, address cannot be zero address");
+        require(
+            _tokenTo != address(0),
+            "setTokenToAddress, address cannot be zero address"
+        );
         tokenTo = _tokenTo;
 
         emit SetTokenTo(_tokenTo);
@@ -162,7 +171,10 @@ contract JoeMakerV4 is Ownable {
         address token1,
         uint256 slippage
     ) external onlyEOA onlyAuth {
-        require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 50%");
+        require(
+            slippage < 5_000,
+            "JoeMakerV4: slippage needs to be lower than 50%"
+        );
         _convert(token0, token1, slippage);
     }
 
@@ -177,7 +189,10 @@ contract JoeMakerV4 is Ownable {
         uint256 slippage
     ) external onlyEOA onlyAuth {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
-        require(slippage < 5_000, "JoeMakerV4: slippage needs to be lower than 50%");
+        require(
+            slippage < 5_000,
+            "JoeMakerV4: slippage needs to be lower than 50%"
+        );
 
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
@@ -206,7 +221,10 @@ contract JoeMakerV4 is Ownable {
             IJoePair pair = IJoePair(factory.getPair(token0, token1));
             require(address(pair) != address(0), "JoeMakerV4: Invalid pair");
 
-            IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
+            IERC20(address(pair)).safeTransfer(
+                address(pair),
+                pair.balanceOf(address(this))
+            );
 
             // take balance of tokens in this contract before burning the pair, incase there are already some here
             uint256 tok0bal = IERC20(token0).balanceOf(address(this));
@@ -266,10 +284,22 @@ contract JoeMakerV4 is Ownable {
             tokenOut = _toToken(token0, amount0, slippage).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            tokenOut = _toToken(wavax, _swap(token1, wavax, amount1, address(this), slippage).add(amount0), slippage);
+            tokenOut = _toToken(
+                wavax,
+                _swap(token1, wavax, amount1, address(this), slippage).add(
+                    amount0
+                ),
+                slippage
+            );
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            tokenOut = _toToken(wavax, _swap(token0, wavax, amount0, address(this), slippage).add(amount1), slippage);
+            tokenOut = _toToken(
+                wavax,
+                _swap(token0, wavax, amount0, address(this), slippage).add(
+                    amount1
+                ),
+                slippage
+            );
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
@@ -325,11 +355,14 @@ contract JoeMakerV4 is Ownable {
         require(address(pair) != address(0), "JoeMakerV4: Cannot convert");
 
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-        (uint256 reserveInput, uint256 reserveOutput) = fromToken == pair.token0()
+        (uint256 reserveInput, uint256 reserveOutput) = fromToken ==
+            pair.token0()
             ? (reserve0, reserve1)
             : (reserve1, reserve0);
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
-        uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(reserveInput); // calculate amount that was transferred, this accounts for transfer taxes
+        uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(
+            reserveInput
+        ); // calculate amount that was transferred, this accounts for transfer taxes
 
         amountOut = getAmountOut(amountInput, reserveInput, reserveOutput);
 
@@ -382,7 +415,10 @@ contract JoeMakerV4 is Ownable {
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
         require(amountIn > 0, "JoeMakerV4: INSUFFICIENT_INPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "JoeMakerV4: INSUFFICIENT_LIQUIDITY");
+        require(
+            reserveIn > 0 && reserveOut > 0,
+            "JoeMakerV4: INSUFFICIENT_LIQUIDITY"
+        );
         uint256 amountInWithFee = amountIn.mul(997);
         uint256 numerator = amountInWithFee.mul(reserveOut);
         uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
