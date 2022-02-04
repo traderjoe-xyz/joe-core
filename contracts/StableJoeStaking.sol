@@ -45,8 +45,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     IERC20Upgradeable public joe;
 
-    /// @notice Internal balance of a token, this gets updated on user deposits / withdrawals
-    mapping(IERC20Upgradeable => uint256) public internalBalance;
+    /// @notice Internal balance of $JOE, this gets updated on user deposits / withdrawals
+    /// @dev this allows to reward users with $JOE.
+    uint256 internalJoeBalance;
     /// @notice The array of token that people can claim to get reward
     IERC20Upgradeable[] public rewardTokens;
     mapping(IERC20Upgradeable => bool) isRewardToken;
@@ -104,32 +105,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         depositFeePercent = _depositFeePercent;
         feeCollector = _feeCollector;
 
-        isRewardToken[_joe] = true;
         isRewardToken[_rewardToken] = true;
-        rewardTokens.push(_joe);
         rewardTokens.push(_rewardToken);
-    }
-
-    /**
-     * @notice Claim reward
-     * @param _token The address of the token
-     */
-    function claimReward(IERC20Upgradeable _token) external {
-        UserInfo storage user = userInfo[msg.sender];
-        _claimReward(_token, user);
-    }
-
-    /**
-     * @notice Claim all token reward from the list
-     * @param _tokens The list addresses of the tokens
-     */
-    function claimRewards(IERC20Upgradeable[] memory _tokens) external {
-        uint256 len = _tokens.length;
-        UserInfo storage user = userInfo[msg.sender];
-
-        for (uint256 i; i < len; i++) {
-            _claimReward(_tokens[i], user);
-        }
     }
 
     /**
@@ -164,7 +141,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
                 .div(PRECISION);
         }
 
-        internalBalance[joe] = internalBalance[joe].add(amountMinusFee);
+        internalJoeBalance = internalJoeBalance.add(amountMinusFee);
         joe.safeTransferFrom(msg.sender, feeCollector, fee);
         joe.safeTransferFrom(msg.sender, address(this), amountMinusFee);
         emit Deposit(msg.sender, amountMinusFee);
@@ -201,6 +178,30 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @notice Remove a reward token
+     * @param _rewardToken The address of the reward token
+     */
+    function removeRewardToken(IERC20Upgradeable _rewardToken)
+        external
+        onlyOwner
+    {
+        require(
+            isRewardToken[_rewardToken],
+            "StableJoeStaking: token can't be removed"
+        );
+        updateReward(_rewardToken);
+        isRewardToken[_rewardToken] = false;
+        uint256 len = rewardTokens.length;
+        for (uint256 i; i < len; i++) {
+            if (rewardTokens[i] == _rewardToken) {
+                rewardTokens[i] = rewardTokens[len - 1];
+                rewardTokens.pop();
+                break;
+            }
+        }
+    }
+
+    /**
      * @notice Set the deposit fee percent
      * @param _depositFeePercent The new deposit fee percent
      */
@@ -227,12 +228,15 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     {
         require(isRewardToken[_token], "StableJoeStaking: wrong reward token");
         UserInfo storage user = userInfo[_user];
-        uint256 totalJoe = internalBalance[joe];
+        uint256 totalJoe = internalJoeBalance;
         uint256 _accRewardTokenPerShare = accRewardPerShare[_token];
 
-        uint256 rewardBalance = IERC20Upgradeable(_token)
-            .balanceOf(address(this))
-            .sub(internalBalance[_token]);
+        uint256 rewardBalance;
+        if (_token == joe)
+            rewardBalance = _token.balanceOf(address(this)).sub(
+                internalJoeBalance
+            );
+        else rewardBalance = _token.balanceOf(address(this));
         if (rewardBalance != lastRewardBalance[_token] && totalJoe != 0) {
             uint256 accruedReward = rewardBalance.sub(
                 lastRewardBalance[_token]
@@ -279,7 +283,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             }
         }
 
-        internalBalance[joe] = internalBalance[joe].sub(_amount);
+        internalJoeBalance = internalJoeBalance.sub(_amount);
         joe.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
@@ -308,11 +312,13 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      */
     function updateReward(IERC20Upgradeable _token) public {
         require(isRewardToken[_token], "StableJoeStaking: wrong reward token");
-        uint256 rewardBalance = _token.balanceOf(address(this)).sub(
-            internalBalance[_token]
-        );
-
-        uint256 totalJoe = internalBalance[joe];
+        uint256 rewardBalance;
+        if (_token == joe)
+            rewardBalance = _token.balanceOf(address(this)).sub(
+                internalJoeBalance
+            );
+        else rewardBalance = _token.balanceOf(address(this));
+        uint256 totalJoe = internalJoeBalance;
 
         // Did sJoe receive any token
         if (rewardBalance == lastRewardBalance[_token] || totalJoe == 0) {
@@ -328,30 +334,6 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Claim reward
-     * @param _token The address of the token
-     * @param _user The userInfo
-     */
-    function _claimReward(IERC20Upgradeable _token, UserInfo storage _user)
-        internal
-    {
-        updateReward(_token);
-
-        if (_user.amount > 0) {
-            uint256 pending = _user
-                .amount
-                .mul(accRewardPerShare[_token])
-                .div(PRECISION)
-                .sub(_user.rewardDebt[_token]);
-            _user.rewardDebt[_token] = _user
-                .amount
-                .mul(accRewardPerShare[_token])
-                .div(PRECISION);
-            if (pending != 0) safeTokenTransfer(_token, msg.sender, pending);
-        }
-    }
-
-    /**
      * @notice Safe token transfer function, just in case if rounding error
      * causes pool to not have enough reward tokens
      * @param _token The address of then token to transfer
@@ -363,9 +345,13 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         address _to,
         uint256 _amount
     ) internal {
-        uint256 rewardBalance = _token.balanceOf(address(this)).sub(
-            internalBalance[_token]
-        );
+        uint256 rewardBalance;
+        if (_token == joe)
+            rewardBalance = _token.balanceOf(address(this)).sub(
+                internalJoeBalance
+            );
+        else rewardBalance = _token.balanceOf(address(this));
+
         if (_amount > rewardBalance) {
             lastRewardBalance[_token] = lastRewardBalance[_token].sub(
                 rewardBalance
