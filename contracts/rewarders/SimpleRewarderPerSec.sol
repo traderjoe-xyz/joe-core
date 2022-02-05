@@ -121,14 +121,14 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         // Edge case n1: maximize the numerator, minimize the denominator.
         // `lpSupply` = 1 WEI
         // `tokenPerSec` = 1e(30)
-        // `ellapsedTime` = 31 years, i.e. 1e9 seconds
+        // `timeElapsed` = 31 years, i.e. 1e9 seconds
         // result = 1e9 * 1e30 * 1e36 / 1
         //        = 1e75
         //
         // Edge case n2: minimize the numerator, maximize the denominator.
         // `lpSupply` = 1e30
         // `tokenPerSec` = 1 WEI
-        // `ellapsedTime` = 1 second
+        // `timeElapsed` = 1 second
         // decimals of result:
         // result = 1 * 1 * 1e36 / 1e30
         //        = 1e36
