@@ -16,7 +16,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
  * the total deposited JOE. It is similar to a MasterChef, but we allow for claiming of different reward tokens
  * (in case at some point we wish to change the stablecoin rewarded).
  * Every time `updateReward(token)` is called, We distribute the balance of that tokens as rewards to users that are
- * currently staking inside this contract, and users can claim it using `withdraw(0)`.
+ * currently staking inside this contract, and they can claim it using `withdraw(0)`
  */
 contract StableJoeStaking is Initializable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
