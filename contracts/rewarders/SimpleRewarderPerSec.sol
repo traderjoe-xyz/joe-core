@@ -49,13 +49,14 @@ interface IMasterChefJoe {
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
  *
- * Issue with previous version is that this can return 0 or be very inacurate with some tokens:
+ * Issue with the previous version is that this fraction, `tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)`, 
+ * can return 0 or be very inacurate with some tokens:
  *      uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
  *      uint256 tokenReward = timeElapsed.mul(tokenPerSec);
  *      accTokenPerShare = accTokenPerShare.add(
  *          tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)
  *      );
- *  The goal with those changes is to prevent this, without any overflow too.
+ *  The goal is to set ACC_TOKEN_PRECISION high enough to prevent this without causing overflow too.
  */
 contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -110,6 +111,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         require(Address.isContract(address(_rewardToken)), "constructor: reward token must be a valid contract");
         require(Address.isContract(address(_lpToken)), "constructor: LP token must be a valid contract");
         require(Address.isContract(address(_MCJ)), "constructor: MasterChefJoe must be a valid contract");
+        require(_tokenPerSec <= 1e30, "constructor: token per seconds can't be greater than 1e30");
 
         rewardToken = _rewardToken;
         lpToken = _lpToken;
@@ -118,20 +120,26 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         isNative = _isNative;
         poolInfo = PoolInfo({lastRewardTimestamp: block.timestamp, accTokenPerShare: 0});
 
+        // Given the fraction, tokenReward * ACC_TOKEN_PRECISION / lpSupply, we consider
+        // several edge cases.
+
         // Edge case n1: maximize the numerator, minimize the denominator.
         // `lpSupply` = 1 WEI
         // `tokenPerSec` = 1e(30)
         // `timeElapsed` = 31 years, i.e. 1e9 seconds
         // result = 1e9 * 1e30 * 1e36 / 1
         //        = 1e75
+        // (No overflow as max uint256 is 1.15e77).
+        // PS: This will overflow when `timeElapsed` becomes greater than 1e11, i.e. in more than 3_000 years
+        // so it should be fine.
         //
         // Edge case n2: minimize the numerator, maximize the denominator.
-        // `lpSupply` = 1e30
+        // `lpSupply` = max(uint112) = 1e34
         // `tokenPerSec` = 1 WEI
         // `timeElapsed` = 1 second
-        // decimals of result:
-        // result = 1 * 1 * 1e36 / 1e30
-        //        = 1e36
+        // result = 1 * 1 * 1e36 / 1e34
+        //        = 1e2
+        // (Not rounded to zero, therefore ACC_TOKEN_PRECISION = 1e36 is safe)
         ACC_TOKEN_PRECISION = 1e36;
     }
 
