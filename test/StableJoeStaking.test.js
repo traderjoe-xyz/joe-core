@@ -32,22 +32,34 @@ describe("Stable Joe Staking", function () {
       ethers.utils.parseEther("1000000")
     ); // 1_000_000 tokens
 
-    this.stableJoeStaking = await hre.upgrades.deployProxy(this.StableJoeStakingCF, [
-      this.rewardToken.address,
-      this.joe.address,
-      this.penaltyCollector.address,
-      ethers.utils.parseEther("0.03"),
-    ]);
+    this.stableJoeStaking = await hre.upgrades.deployProxy(
+      this.StableJoeStakingCF,
+      [
+        this.rewardToken.address,
+        this.joe.address,
+        this.penaltyCollector.address,
+        ethers.utils.parseEther("0.03"),
+      ]
+    );
 
     await this.joe
       .connect(this.alice)
-      .approve(this.stableJoeStaking.address, ethers.utils.parseEther("100000"));
+      .approve(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("100000")
+      );
     await this.joe
       .connect(this.bob)
-      .approve(this.stableJoeStaking.address, ethers.utils.parseEther("100000"));
+      .approve(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("100000")
+      );
     await this.joe
       .connect(this.carol)
-      .approve(this.stableJoeStaking.address, ethers.utils.parseEther("100000"));
+      .approve(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("100000")
+      );
   });
 
   describe("should allow deposits and withdraws", function () {
@@ -58,24 +70,36 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("900")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("97")
-      );
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("97"));
       // 100 * 0.97 = 97
       expect(
-        (await this.stableJoeStaking.getUserInfo(this.alice.address, this.joe.address))[0]
+        (
+          await this.stableJoeStaking.getUserInfo(
+            this.alice.address,
+            this.joe.address
+          )
+        )[0]
       ).to.be.equal(ethers.utils.parseEther("97"));
 
-      await this.stableJoeStaking.connect(this.bob).deposit(ethers.utils.parseEther("200"));
+      await this.stableJoeStaking
+        .connect(this.bob)
+        .deposit(ethers.utils.parseEther("200"));
       expect(await this.joe.balanceOf(this.bob.address)).to.be.equal(
         ethers.utils.parseEther("800")
         // 97 + 200 * 0.97 = 291
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("291")
-      );
       expect(
-        (await this.stableJoeStaking.getUserInfo(this.bob.address, this.joe.address))[0]
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("291"));
+      expect(
+        (
+          await this.stableJoeStaking.getUserInfo(
+            this.bob.address,
+            this.joe.address
+          )
+        )[0]
       ).to.be.equal(ethers.utils.parseEther("194"));
 
       await this.stableJoeStaking
@@ -85,11 +109,16 @@ describe("Stable Joe Staking", function () {
         ethers.utils.parseEther("700")
       );
       // 291 + 300 * 0.97
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("582")
-      );
       expect(
-        (await this.stableJoeStaking.getUserInfo(this.carol.address, this.joe.address))[0]
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("582"));
+      expect(
+        (
+          await this.stableJoeStaking.getUserInfo(
+            this.carol.address,
+            this.joe.address
+          )
+        )[0]
       ).to.be.equal(ethers.utils.parseEther("291"));
 
       await this.stableJoeStaking
@@ -98,11 +127,16 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("997")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("485")
-      );
       expect(
-        (await this.stableJoeStaking.getUserInfo(this.alice.address, this.joe.address))[0]
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("485"));
+      expect(
+        (
+          await this.stableJoeStaking.getUserInfo(
+            this.alice.address,
+            this.joe.address
+          )
+        )[0]
       ).to.be.equal(0);
 
       await this.stableJoeStaking
@@ -111,22 +145,32 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.carol.address)).to.be.equal(
         ethers.utils.parseEther("800")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("385")
-      );
       expect(
-        (await this.stableJoeStaking.getUserInfo(this.carol.address, this.joe.address))[0]
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("385"));
+      expect(
+        (
+          await this.stableJoeStaking.getUserInfo(
+            this.carol.address,
+            this.joe.address
+          )
+        )[0]
       ).to.be.equal(ethers.utils.parseEther("191"));
 
       await this.stableJoeStaking.connect(this.bob).withdraw("1");
       expect(await this.joe.balanceOf(this.bob.address)).to.be.equal(
         ethers.utils.parseEther("800.000000000000000001")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("384.999999999999999999")
-      );
       expect(
-        (await this.stableJoeStaking.getUserInfo(this.bob.address, this.joe.address))[0]
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("384.999999999999999999"));
+      expect(
+        (
+          await this.stableJoeStaking.getUserInfo(
+            this.bob.address,
+            this.joe.address
+          )
+        )[0]
       ).to.be.equal(ethers.utils.parseEther("193.999999999999999999"));
     });
 
@@ -136,9 +180,9 @@ describe("Stable Joe Staking", function () {
       await this.rewardToken
         .connect(this.joeMaker)
         .transfer(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
-      expect(await this.rewardToken.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("1")
-      );
+      expect(
+        await this.rewardToken.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("1"));
       expect(
         await this.stableJoeStaking.lastRewardBalance(this.rewardToken.address)
       ).to.be.equal("0");
@@ -187,7 +231,9 @@ describe("Stable Joe Staking", function () {
       await this.stableJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
-      await this.stableJoeStaking.connect(this.bob).deposit(ethers.utils.parseEther("200"));
+      await this.stableJoeStaking
+        .connect(this.bob)
+        .deposit(ethers.utils.parseEther("200"));
       await this.stableJoeStaking
         .connect(this.carol)
         .deposit(ethers.utils.parseEther("300"));
@@ -281,7 +327,9 @@ describe("Stable Joe Staking", function () {
       // bobRewardDebt = accRewardBalance * bobShare / PRECISION
       //               = accRewardBalance * 194e18 / 1e24
       //               = 0.3999999999999999999e18
-      await this.stableJoeStaking.connect(this.bob).deposit(ethers.utils.parseEther("200")); // Bob enters
+      await this.stableJoeStaking
+        .connect(this.bob)
+        .deposit(ethers.utils.parseEther("200")); // Bob enters
 
       await this.stableJoeStaking
         .connect(this.carol)
@@ -346,9 +394,9 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("700")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("291")
-      );
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("291"));
 
       await this.rewardToken.mint(
         this.stableJoeStaking.address,
@@ -366,9 +414,9 @@ describe("Stable Joe Staking", function () {
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(
         pendingReward
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("291")
-      );
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("291"));
     });
 
     it("should allow rewards in JOE and USDC", async function () {
@@ -407,9 +455,15 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(0);
 
       await this.stableJoeStaking.addRewardToken(this.joe.address);
-      await this.joe.mint(this.stableJoeStaking.address, ethers.utils.parseEther("6"));
+      await this.joe.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("6")
+      );
 
-      await this.stableJoeStaking.connect(this.bob).connect(this.bob).withdraw(0);
+      await this.stableJoeStaking
+        .connect(this.bob)
+        .connect(this.bob)
+        .withdraw(0);
       // reward = accRewardBalance * bobShare / PRECISION
       //        = accRewardBalance * 970e18 / 1e24
       //        = 0.999999999999999999e18
@@ -454,7 +508,10 @@ describe("Stable Joe Staking", function () {
       await this.stableJoeStaking.connect(this.alice).deposit(1);
       await this.stableJoeStaking.connect(this.bob).deposit(1);
 
-      await token1.mint(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
+      await token1.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("1")
+      );
       await this.stableJoeStaking.connect(this.alice).withdraw(1);
 
       let balAlice = await token1.balanceOf(this.alice.address);
@@ -462,7 +519,10 @@ describe("Stable Joe Staking", function () {
       expect(balAlice).to.be.equal(ethers.utils.parseEther("0.5"));
       expect(balBob).to.be.equal(0);
 
-      await token1.mint(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
+      await token1.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("1")
+      );
       await this.stableJoeStaking.connect(this.bob).withdraw(0);
       await this.stableJoeStaking.connect(this.alice).deposit(1);
 
@@ -470,7 +530,10 @@ describe("Stable Joe Staking", function () {
       expect(await token1.balanceOf(this.alice.address)).to.be.equal(balAlice);
       expect(balBob).to.be.equal(ethers.utils.parseEther("1.5"));
 
-      await token1.mint(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
+      await token1.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("1")
+      );
       await this.stableJoeStaking.connect(this.bob).withdraw(0);
       await this.stableJoeStaking.connect(this.alice).withdraw(0);
 
@@ -491,7 +554,10 @@ describe("Stable Joe Staking", function () {
       await this.stableJoeStaking.connect(this.alice).deposit(1);
       await this.stableJoeStaking.connect(this.bob).deposit(1);
 
-      await token1.mint(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
+      await token1.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("1")
+      );
       await this.stableJoeStaking.connect(this.alice).withdraw(1);
 
       let balAlice = await token1.balanceOf(this.alice.address);
@@ -499,14 +565,20 @@ describe("Stable Joe Staking", function () {
       expect(balAlice).to.be.equal(ethers.utils.parseEther("0.5"));
       expect(balBob).to.be.equal(0);
 
-      await token1.mint(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
+      await token1.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("1")
+      );
       await this.stableJoeStaking.connect(this.bob).withdraw(0);
 
       balBob = await token1.balanceOf(this.bob.address);
       expect(await token1.balanceOf(this.alice.address)).to.be.equal(balAlice);
       expect(balBob).to.be.equal(ethers.utils.parseEther("1.5"));
 
-      await token1.mint(this.stableJoeStaking.address, ethers.utils.parseEther("1"));
+      await token1.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("1")
+      );
       await this.stableJoeStaking.connect(this.alice).deposit(1);
       await this.stableJoeStaking.connect(this.bob).withdraw(0);
       await this.stableJoeStaking.connect(this.alice).withdraw(0);
@@ -524,18 +596,28 @@ describe("Stable Joe Staking", function () {
       await expect(
         this.stableJoeStaking.connect(this.alice).addRewardToken(token1.address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
-      expect(await this.stableJoeStaking.isRewardToken(token1.address)).to.be.equal(false);
+      expect(
+        await this.stableJoeStaking.isRewardToken(token1.address)
+      ).to.be.equal(false);
       expect(await this.stableJoeStaking.rewardTokensLength()).to.be.equal(1);
 
-      await this.stableJoeStaking.connect(this.dev).addRewardToken(token1.address);
+      await this.stableJoeStaking
+        .connect(this.dev)
+        .addRewardToken(token1.address);
       await expect(
         this.stableJoeStaking.connect(this.dev).addRewardToken(token1.address)
       ).to.be.revertedWith("StableJoeStaking: token can't be added");
-      expect(await this.stableJoeStaking.isRewardToken(token1.address)).to.be.equal(true);
+      expect(
+        await this.stableJoeStaking.isRewardToken(token1.address)
+      ).to.be.equal(true);
       expect(await this.stableJoeStaking.rewardTokensLength()).to.be.equal(2);
 
-      await this.stableJoeStaking.connect(this.dev).removeRewardToken(token1.address);
-      expect(await this.stableJoeStaking.isRewardToken(token1.address)).to.be.equal(false);
+      await this.stableJoeStaking
+        .connect(this.dev)
+        .removeRewardToken(token1.address);
+      expect(
+        await this.stableJoeStaking.isRewardToken(token1.address)
+      ).to.be.equal(false);
       expect(await this.stableJoeStaking.rewardTokensLength()).to.be.equal(1);
     });
 
@@ -546,9 +628,9 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("900")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("97")
-      );
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("97"));
       expect(
         await this.joe.balanceOf(this.penaltyCollector.address)
       ).to.be.equal(ethers.utils.parseEther("3"));
@@ -578,7 +660,9 @@ describe("Stable Joe Staking", function () {
         ethers.utils.parseEther("800")
       );
 
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(
         ethers.utils.parseEther("97").add(ethers.utils.parseEther("51"))
       );
       expect(
@@ -595,9 +679,9 @@ describe("Stable Joe Staking", function () {
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("700")
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(
-        ethers.utils.parseEther("291")
-      );
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("291"));
 
       await this.rewardToken.mint(
         this.stableJoeStaking.address,
@@ -611,7 +695,9 @@ describe("Stable Joe Staking", function () {
       expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(
         0
       );
-      expect(await this.joe.balanceOf(this.stableJoeStaking.address)).to.be.equal(0);
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(0);
       const userInfo = await this.stableJoeStaking.getUserInfo(
         this.stableJoeStaking.address,
         this.rewardToken.address
