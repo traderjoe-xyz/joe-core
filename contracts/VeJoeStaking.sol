@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -49,9 +49,14 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     mapping(address => UserInfo) public userInfos;
 
-    event Deposit(address indexed user, uint256 amount);
-    event Withdraw(address indexed user, uint256 amount);
     event Claim(address indexed user, uint256 amount);
+    event Deposit(address indexed user, uint256 amount);
+    event UpdateBaseGenerationRate(address indexed user, uint256 baseGenerationRate);
+    event UpdateBoostedDuration(address indexed user, uint256 boostedDuration);
+    event UpdateBoostedGenerationRate(address indexed user, uint256 boostedGenerationRate);
+    event UpdateBoostedThreshold(address indexed user, uint256 boostedThreshold);
+    event UpdateMaxCap(address indexed user, uint256 maxCap);
+    event Withdraw(address indexed user, uint256 amount);
 
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
@@ -84,14 +89,20 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         baseGenerationRate = _baseGenerationRate;
         boostedGenerationRate = _boostedGenerationRate;
         boostedThreshold = _boostedThreshold;
+        // TODO: Align on what the upper limit of boostedDuration should be and add require check
         boostedDuration = _boostedDuration;
     }
 
     /// @notice Set maxCap
     /// @param _maxCap the new maxCap
     function setMaxCap(uint256 _maxCap) external onlyOwner {
-        require(_maxCap > 0, "VeJoeStaking: expected new _maxCap to be greater than 0");
+        // TODO: Align on what the upper limit of maxCap should be
+        require(
+            _maxCap > 0 && _maxCap <= 100000,
+            "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
+        );
         maxCap = _maxCap;
+        emit UpdateMaxCap(msg.sender, _maxCap);
     }
 
     /// @notice Set baseGenerationRate
@@ -102,6 +113,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _baseGenerationRate to be less than boostedGenerationRate"
         );
         baseGenerationRate = _baseGenerationRate;
+        UpdateBaseGenerationRate(msg.sender, _baseGenerationRate);
     }
 
     /// @notice Set boostedGenerationRate
@@ -112,6 +124,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _boostedGenerationRate to be greater than baseGenerationRate"
         );
         boostedGenerationRate = _boostedGenerationRate;
+        UpdateBoostedGenerationRate(msg.sender, _boostedGenerationRate);
     }
 
     /// @notice Set boostedThreshold
@@ -128,6 +141,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _boostedDuration the new boostedDuration
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
         boostedDuration = _boostedDuration;
+        UpdateBoostedDuration(msg.sender, _boostedDuration);
     }
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
@@ -140,14 +154,15 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If user already has staked JOE, we first send them any pending veJOE
             _claim();
 
+            uint256 userStakedJoe = userInfos[msg.sender].balance;
+
             userInfos[msg.sender].balance += _amount;
 
-            // User is eligible for boosted benefits if:
-            // 1. They are not already currently receiving boosted benefits
-            // 2. Their staked JOE is at least `boostedThreshold / 100 * totalStakedJoe`
+            // User is eligible for boosted benefits if and only if all of the following are true:
+            // 1. User is not already currently receiving boosted benefits
+            // 2. `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
             if (userInfos[msg.sender].boostEndTimestamp == 0) {
-                uint256 totalStakedJoe = joe.balanceOf(address(this));
-                if ((userInfos[msg.sender].balance * 100) / boostedThreshold >= totalStakedJoe) {
+                if (_amount * 100 >= boostedThreshold * userStakedJoe) {
                     userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
                 }
             }
@@ -208,7 +223,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             return 0;
         }
 
-        UserInfo storage user = userInfos[_user];
+        UserInfo memory user = userInfos[_user];
 
         // Calculate amount of pending veJOE based on:
         // 1. Seconds elapsed since last reward timestamp
@@ -256,10 +271,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     function _claim() private {
         uint256 veJoeToClaim = getPendingVeJoe(msg.sender);
 
-        // Update user's last reward timestamp
-        userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
-
         if (veJoeToClaim > 0) {
+            // Update user's last reward timestamp
+            userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
+
             veJoe.mint(msg.sender, veJoeToClaim);
             emit Claim(msg.sender, veJoeToClaim);
         }
