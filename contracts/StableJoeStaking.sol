@@ -11,8 +11,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
 /**
  * @title Stable JOE Staking
  * @author Trader Joe
- * @notice StableJoeStaking is a contract that allows JOE deposits and receives stablecoins sent by MoneyMakerV4's daily
- * harvests. Users deposit JOE and receive a share of what has been sent by MoneyMakerV4 based on their participation of
+ * @notice StableJoeStaking is a contract that allows JOE deposits and receives stablecoins sent by MoneyMaker's daily
+ * harvests. Users deposit JOE and receive a share of what has been sent by MoneyMaker based on their participation of
  * the total deposited JOE. It is similar to a MasterChef, but we allow for claiming of different reward tokens
  * (in case at some point we wish to change the stablecoin rewarded).
  * Every time `updateReward(token)` is called, We distribute the balance of that tokens as rewards to users that are
@@ -43,7 +43,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     IERC20Upgradeable public joe;
 
     /// @dev Internal balance of JOE, this gets updated on user deposits / withdrawals
-    /// this allows to reward users with JOE.
+    /// this allows to reward users with JOE
     uint256 internalJoeBalance;
     /// @notice Array of tokens that users can claim
     IERC20Upgradeable[] public rewardTokens;
@@ -73,7 +73,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Emitted when a user withdraws JOE
     event Withdraw(address indexed user, uint256 amount);
 
-    /// @notice Emitted when a user claim reward
+    /// @notice Emitted when a user claims reward
     event ClaimReward(address indexed user, address indexed rewardToken, uint256 amount);
 
     /// @notice Emitted when a user emergency withdraws its JOE
@@ -101,7 +101,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     ) external initializer {
         __Ownable_init();
         require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address 0");
-        require(_depositFeePercent < 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
+        require(_depositFeePercent <= 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
 
         joe = _joe;
         depositFeePercent = _depositFeePercent;
@@ -131,7 +131,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             IERC20Upgradeable _token = rewardTokens[i];
             updateReward(_token);
 
-            if (_previousAmount > 0) {
+            if (_previousAmount != 0) {
                 uint256 _pending = _previousAmount.mul(accRewardPerShare[_token]).div(PRECISION).sub(
                     user.rewardDebt[_token]
                 );
@@ -208,8 +208,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @notice Set the deposit fee percent
      * @param _depositFeePercent The new deposit fee percent
      */
-    function setdepositFeePercent(uint256 _depositFeePercent) external onlyOwner {
-        require(_depositFeePercent < 5e17, "StableJoeStaking: deposit fee can't be greater than 50%");
+    function setDepositFeePercent(uint256 _depositFeePercent) external onlyOwner {
+        require(_depositFeePercent <= 5e17, "StableJoeStaking: deposit fee can't be greater than 50%");
         uint256 oldFee = depositFeePercent;
         depositFeePercent = _depositFeePercent;
         emit DepositFeeChanged(_depositFeePercent, oldFee);
@@ -249,7 +249,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         user.amount = _newAmount;
 
         uint256 _len = rewardTokens.length;
-        if (_previousAmount > 0) {
+        if (_previousAmount != 0) {
             for (uint256 i; i < _len; i++) {
                 IERC20Upgradeable _token = rewardTokens[i];
                 updateReward(_token);
@@ -289,7 +289,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice  Update reward variables
+     * @notice Update reward variables
      * @param _token The address of the reward token
      * @dev Needs to be called before any deposit or withdrawal
      */
