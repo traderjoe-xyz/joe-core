@@ -37,10 +37,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Boosted rate of veJOE generated per sec per JOE staked
     uint256 public boostedGenerationRate;
 
-    /// @notice Percentage of total staked JOE user has to deposit in order to start
+    /// @notice Percentage of user's current staked JOE user has to deposit in order to start
     /// receiving boosted benefits, in parts per 100.
-    /// @dev Specifically, user has to deposit at least `boostedThreshold/100 * totalStakedJoe` JOE.
-    /// The only exception is the user will also receive boosted benefits if its their first
+    /// @dev Specifically, user has to deposit at least `boostedThreshold/100 * userStakedJoe` JOE.
+    /// The only exception is the user will also receive boosted benefits if it's their first
     /// time staking.
     uint256 public boostedThreshold;
 
@@ -160,12 +160,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             userInfos[msg.sender].balance += _amount;
 
             // User is eligible for boosted benefits if and only if all of the following are true:
-            // 1. User is not already currently receiving boosted benefits
-            // 2. `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
-            if (userInfos[msg.sender].boostEndTimestamp == 0) {
-                if (_amount * 100 >= boostedThreshold * userStakedJoe) {
-                    userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
-                }
+            // - User is not already currently receiving boosted benefits
+            // - `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
+            if (userInfos[msg.sender].boostEndTimestamp == 0 && _amount * 100 >= boostedThreshold * userStakedJoe) {
+                userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
             }
         } else {
             // If the user's `lastRewardTimestamp` is 0, i.e. if this is the user's first time staking,
