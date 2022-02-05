@@ -2,12 +2,11 @@
 
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-
+import "./openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "./openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "./openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "./openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./VeJoeToken.sol";
 
 /// @title Vote Escrow Joe Staking
@@ -114,7 +113,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _baseGenerationRate to be less than boostedGenerationRate"
         );
         baseGenerationRate = _baseGenerationRate;
-        UpdateBaseGenerationRate(msg.sender, _baseGenerationRate);
+        emit UpdateBaseGenerationRate(msg.sender, _baseGenerationRate);
     }
 
     /// @notice Set boostedGenerationRate
@@ -125,7 +124,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _boostedGenerationRate to be greater than baseGenerationRate"
         );
         boostedGenerationRate = _boostedGenerationRate;
-        UpdateBoostedGenerationRate(msg.sender, _boostedGenerationRate);
+        emit UpdateBoostedGenerationRate(msg.sender, _boostedGenerationRate);
     }
 
     /// @notice Set boostedThreshold
@@ -136,13 +135,14 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
         );
         boostedThreshold = _boostedThreshold;
+        emit UpdateBoostedThreshold(msg.sender, _boostedThreshold);
     }
 
     /// @notice Set boostedDuration
     /// @param _boostedDuration the new boostedDuration
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
         boostedDuration = _boostedDuration;
-        UpdateBoostedDuration(msg.sender, _boostedDuration);
+        emit UpdateBoostedDuration(msg.sender, _boostedDuration);
     }
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
