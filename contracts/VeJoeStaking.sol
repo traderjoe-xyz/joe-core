@@ -19,9 +19,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     struct UserInfo {
         uint256 balance; // Amount of JOE currently staked by user
-        uint256 lastRewardTimestamp; // Timestamp of last veJOE claim, or time of first deposit if user
-        // has not claimed any veJOE yet
-        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits
+        uint256 lastRewardTimestamp; // Timestamp of last non-zero veJOE claim, or time of first
+        // deposit if user has not claimed any veJOE yet
+        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits.
+        // Note that this will be reset to 0 after the end of a boost
     }
 
     IERC20Upgradeable public joe;
@@ -263,7 +264,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Checks to see if a given user currently has staked JOE
     /// @param _user the user address to check
     /// @return whether `_user` currently has staked JOE
-    function getUserHasNonZeroBalance(address _user) public view returns (bool) {
+    function getUserHasNonZeroBalance(address _user) private view returns (bool) {
         return userInfos[_user].balance > 0;
     }
 
