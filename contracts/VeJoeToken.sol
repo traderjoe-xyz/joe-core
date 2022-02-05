@@ -2,8 +2,7 @@
 
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
+import "./openzeppelin/contracts/access/Ownable.sol";
 import "./VeERC20.sol";
 
 /// @title Vote Escrow Joe Token - veJOE

@@ -2,8 +2,7 @@
 
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-
+import "./openzeppelin/contracts/utils/Context.sol";
 import "./interfaces/IVeERC20.sol";
 
 /// @title VeERC20
@@ -31,7 +30,7 @@ contract VeERC20 is Context, IVeERC20 {
      * All two of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory name_, string memory symbol_) internal {
+    constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
     }
