@@ -71,7 +71,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _baseGenerationRate,
         uint256 _boostedGenerationRate,
         uint256 _boostedThreshold,
-        uint256 _boostedDuration
+        uint256 _boostedDuration,
+        uint256 _maxCap
     ) public initializer {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
@@ -80,10 +81,15 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected _boostedGenerationRate to be greater than _baseGenerationRate"
         );
         require(_boostedThreshold <= 100, "VeJoeStaking: expected _boostedThreshold to be less than or equal to 100");
+        // TODO: Align on what the upper limit of maxCap should be
+        require(
+            _maxCap > 0 && _maxCap <= 100000,
+            "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
+        );
 
         __Ownable_init();
 
-        maxCap = 100;
+        maxCap = _maxCap;
         joe = _joe;
         veJoe = _veJoe;
         baseGenerationRate = _baseGenerationRate;
