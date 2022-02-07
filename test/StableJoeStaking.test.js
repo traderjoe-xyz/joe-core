@@ -636,19 +636,19 @@ describe("Stable Joe Staking", function () {
       ).to.be.equal(ethers.utils.parseEther("3"));
 
       await expect(
-        this.stableJoeStaking.connect(this.alice).setdepositFeePercent("0")
+        this.stableJoeStaking.connect(this.alice).setDepositFeePercent("0")
       ).to.be.revertedWith("Ownable: caller is not the owner");
       await expect(
         this.stableJoeStaking
           .connect(this.dev)
-          .setdepositFeePercent(ethers.utils.parseEther("0.5"))
+          .setDepositFeePercent(ethers.utils.parseEther("0.5"))
       ).to.be.revertedWith(
         "StableJoeStaking: deposit fee can't be greater than 50%"
       );
 
       await this.stableJoeStaking
         .connect(this.dev)
-        .setdepositFeePercent(ethers.utils.parseEther("0.49"));
+        .setDepositFeePercent(ethers.utils.parseEther("0.49"));
       expect(await this.stableJoeStaking.depositFeePercent()).to.be.equal(
         ethers.utils.parseEther("0.49")
       );

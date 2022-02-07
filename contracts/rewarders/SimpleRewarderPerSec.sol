@@ -49,7 +49,7 @@ interface IMasterChefJoe {
  * 100,000 XYZ and set the block reward accordingly so it's fully distributed after 30 days.
  *
  *
- * Issue with the previous version is that this fraction, `tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)`,
+ * Issue with the previous version is that this fraction, `tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply)`, 
  * can return 0 or be very inacurate with some tokens:
  *      uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
  *      uint256 tokenReward = timeElapsed.mul(tokenPerSec);
