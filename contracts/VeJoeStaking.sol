@@ -18,14 +18,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct UserInfo {
-        /// @notice Amount of JOE currently staked by user
-        uint256 balance;
-        /// @notice Timestamp of last non-zero veJOE claim, or time of first
-        /// deposit if user has not claimed any veJOE yet
-        uint256 lastRewardTimestamp;
-        /// @notice Timestamp of when user stops receiving boost benefits.
-        /// Note that this will be reset to 0 after the end of a boost
-        uint256 boostEndTimestamp;
+        uint256 balance; // Amount of JOE currently staked by user
+        uint256 lastRewardTimestamp; // Timestamp of last non-zero veJOE claim, or time of first
+        // deposit if user has not claimed any veJOE yet
+        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits.
+        // Note that this will be reset to 0 after the end of a boost
     }
 
     IERC20Upgradeable public joe;
