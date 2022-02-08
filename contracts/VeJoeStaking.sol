@@ -183,9 +183,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 userInfo.boostEndTimestamp = block.timestamp + boostedDuration;
             }
             userInfo.balance = _amount;
+            userInfo.lastRewardTimestamp = block.timestamp;
         }
-
-        userInfo.lastRewardTimestamp = block.timestamp;
 
         joe.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -207,6 +206,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         userInfo.balance -= _amount;
         userInfo.lastRewardTimestamp = block.timestamp;
+        userInfo.boostEndTimestamp = 0;
 
         // Burn the user's current veJOE balance
         uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
