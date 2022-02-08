@@ -18,11 +18,14 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct UserInfo {
-        uint256 balance; // Amount of JOE currently staked by user
-        uint256 lastRewardTimestamp; // Timestamp of last non-zero veJOE claim, or time of first
-        // deposit if user has not claimed any veJOE yet
-        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits.
-        // Note that this will be reset to 0 after the end of a boost
+        /// @notice Amount of JOE currently staked by user
+        uint256 balance;
+        /// @notice Timestamp of last non-zero veJOE claim, or time of first
+        /// deposit if user has not claimed any veJOE yet
+        uint256 lastRewardTimestamp;
+        /// @notice Timestamp of when user stops receiving boost benefits.
+        /// Note that this will be reset to 0 after the end of a boost
+        uint256 boostEndTimestamp;
     }
 
     IERC20Upgradeable public joe;
@@ -101,7 +104,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /// @notice Set maxCap
-    /// @param _maxCap the new maxCap
+    /// @param _maxCap The new maxCap
     function setMaxCap(uint256 _maxCap) external onlyOwner {
         // TODO: Align on what the upper limit of maxCap should be
         require(
@@ -113,7 +116,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /// @notice Set baseGenerationRate
-    /// @param _baseGenerationRate the new baseGenerationRate
+    /// @param _baseGenerationRate The new baseGenerationRate
     function setBaseGenerationRate(uint256 _baseGenerationRate) external onlyOwner {
         require(
             _baseGenerationRate < boostedGenerationRate,
@@ -124,7 +127,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /// @notice Set boostedGenerationRate
-    /// @param _boostedGenerationRate the new boostedGenerationRate
+    /// @param _boostedGenerationRate The new boostedGenerationRate
     function setBoostedGenerationRate(uint256 _boostedGenerationRate) external onlyOwner {
         require(
             _boostedGenerationRate > baseGenerationRate,
@@ -135,7 +138,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /// @notice Set boostedThreshold
-    /// @param _boostedThreshold the new boostedThreshold
+    /// @param _boostedThreshold The new boostedThreshold
     function setBoostedThreshold(uint256 _boostedThreshold) external onlyOwner {
         require(
             _boostedThreshold <= 100,
@@ -146,7 +149,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /// @notice Set boostedDuration
-    /// @param _boostedDuration the new boostedDuration
+    /// @param _boostedDuration The new boostedDuration
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
         boostedDuration = _boostedDuration;
         emit UpdateBoostedDuration(msg.sender, _boostedDuration);
@@ -154,11 +157,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
     /// will also be claimed in the process.
-    /// @param _amount the amount of JOE to deposit
+    /// @param _amount The amount of JOE to deposit
     function deposit(uint256 _amount) external {
         require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
 
-        if (getUserHasNonZeroBalance(msg.sender)) {
+        if (_getUserHasNonZeroBalance(msg.sender)) {
             // If user already has staked JOE, we first send them any pending veJOE
             _claim();
 
@@ -191,7 +194,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Withdraw staked JOE. Note that unstaking any amount of JOE means you will
     /// lose all of your current veJOE.
-    /// @param _amount the amount of JOE to unstake
+    /// @param _amount The amount of JOE to unstake
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "VeJoeStaking: expected to withdraw non-zero amount of JOE");
 
@@ -217,7 +220,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Claim any pending veJOE
     function claim() external {
-        require(getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
+        require(_getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
         _claim();
     }
 
@@ -225,7 +228,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _user The user to lookup
     /// @return The number of pending veJOE tokens for `_user`
     function getPendingVeJoe(address _user) public view returns (uint256) {
-        if (!getUserHasNonZeroBalance(_user)) {
+        if (!_getUserHasNonZeroBalance(_user)) {
             return 0;
         }
 
@@ -267,9 +270,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /// @notice Checks to see if a given user currently has staked JOE
-    /// @param _user the user address to check
-    /// @return whether `_user` currently has staked JOE
-    function getUserHasNonZeroBalance(address _user) private view returns (bool) {
+    /// @param _user The user address to check
+    /// @return Whether `_user` currently has staked JOE
+    function _getUserHasNonZeroBalance(address _user) private view returns (bool) {
         return userInfos[_user].balance > 0;
     }
 
