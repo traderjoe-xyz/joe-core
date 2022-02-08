@@ -2,7 +2,8 @@
 
 pragma solidity 0.7.6;
 
-import "./openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
+
 import "./interfaces/IVeERC20.sol";
 
 /// @title VeERC20
