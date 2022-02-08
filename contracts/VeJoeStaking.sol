@@ -161,30 +161,32 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     function deposit(uint256 _amount) external {
         require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
 
+        UserInfo storage userInfo = userInfos[msg.sender];
+
         if (_getUserHasNonZeroBalance(msg.sender)) {
             // If user already has staked JOE, we first send them any pending veJOE
             _claim();
 
             uint256 userStakedJoe = userInfos[msg.sender].balance;
 
-            userInfos[msg.sender].balance += _amount;
+            userInfo.balance += _amount;
 
             // User is eligible for boosted benefits if and only if all of the following are true:
             // - User is not already currently receiving boosted benefits
             // - `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
-            if (userInfos[msg.sender].boostEndTimestamp == 0 && _amount * 100 >= boostedThreshold * userStakedJoe) {
-                userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
+            if (userInfo.boostEndTimestamp == 0 && _amount * 100 >= boostedThreshold * userStakedJoe) {
+                userInfo.boostEndTimestamp = block.timestamp + boostedDuration;
             }
         } else {
             // If the user's `lastRewardTimestamp` is 0, i.e. if this is the user's first time staking,
             // then they will receive boosted benefits.
             // Note that it is important we perform this check **before** we update the user's `lastRewardTimestamp`
             // down below.
-            if (userInfos[msg.sender].lastRewardTimestamp == 0) {
-                userInfos[msg.sender].boostEndTimestamp = block.timestamp + boostedDuration;
+            if (userInfo.lastRewardTimestamp == 0) {
+                userInfo.boostEndTimestamp = block.timestamp + boostedDuration;
             }
-            userInfos[msg.sender].balance = _amount;
-            userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
+            userInfo.balance = _amount;
+            userInfo.lastRewardTimestamp = block.timestamp;
         }
 
         joe.safeTransferFrom(msg.sender, address(this), _amount);
@@ -281,8 +283,15 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 veJoeToClaim = getPendingVeJoe(msg.sender);
 
         if (veJoeToClaim > 0) {
+            UserInfo storage userInfo = userInfos[msg.sender];
+
             // Update user's last reward timestamp
-            userInfos[msg.sender].lastRewardTimestamp = block.timestamp;
+            userInfo.lastRewardTimestamp = block.timestamp;
+
+            // If user's boost period has ended, reset `boostEndTimestamp` to 0
+            if (userInfo.boostEndTimestamp != 0 && block.timestamp >= userInfo.boostEndTimestamp) {
+                userInfo.boostEndTimestamp = 0;
+            }
 
             veJoe.mint(msg.sender, veJoeToClaim);
             emit Claim(msg.sender, veJoeToClaim);
