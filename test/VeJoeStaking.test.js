@@ -46,13 +46,39 @@ describe("VeJoe Staking", function () {
       .approve(this.veJoeStaking.address, ethers.utils.parseEther("100000"));
   });
 
-  describe("setter methods", function () {
+  describe("setMaxCap", function () {
     it("should allow owner to setMaxCap", async function () {
       expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
 
       await this.veJoeStaking.connect(this.dev).setMaxCap(200);
 
       expect(await this.veJoeStaking.maxCap()).to.be.equal(200);
+    });
+
+    it("should not allow non-owner to setMaxCap", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).setMaxCap(200)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to set lower maxCap", async function () {
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
+
+      await expect(
+        this.veJoeStaking.connect(this.dev).setMaxCap(99)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected new _maxCap to be greater than existing maxCap"
+      );
+    });
+
+    it("should not allow owner to set maxCap greater than upper limit", async function () {
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
+
+      await expect(
+        this.veJoeStaking.connect(this.dev).setMaxCap(100001)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
+      );
     });
   });
 
