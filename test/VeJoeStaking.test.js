@@ -182,6 +182,22 @@ describe("VeJoe Staking", function () {
     });
   });
 
+  describe("setBoostedDuration", function () {
+    it("should not allow non-owner to setBoostedDuration", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).setBoostedDuration(100)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should allow owner to setBoostedThreshold", async function () {
+      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(300);
+
+      await this.veJoeStaking.connect(this.dev).setBoostedDuration(100);
+
+      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(100);
+    });
+  });
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
