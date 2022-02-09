@@ -276,16 +276,16 @@ describe("VeJoe Staking", function () {
       );
     });
 
-    it("should receive boosted benefits after depositing boostedThreshold", async function () {
+    it("should receive boosted benefits after depositing boostedThreshold with non-zero balance", async function () {
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
 
+      const block = await ethers.provider.getBlock();
+
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("5"));
-
-      const block = await ethers.provider.getBlock();
 
       const afterAliceUserInfo = await this.veJoeStaking.userInfos(
         this.alice.address
@@ -296,16 +296,16 @@ describe("VeJoe Staking", function () {
       );
     });
 
-    it("should not receive boosted benefits after depositing less than boostedThreshold", async function () {
+    it("should not receive boosted benefits after depositing less than boostedThreshold with non-zero balance", async function () {
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
 
+      await increase(this.boostedDuration);
+
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("1"));
-
-      const block = await ethers.provider.getBlock();
 
       const afterAliceUserInfo = await this.veJoeStaking.userInfos(
         this.alice.address
