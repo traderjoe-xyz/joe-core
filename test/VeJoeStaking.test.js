@@ -120,6 +120,44 @@ describe("VeJoe Staking", function () {
     });
   });
 
+  describe("setBoostedGenerationRate", function () {
+    it("should not allow non-owner to setBoostedGenerationRate", async function () {
+      await expect(
+        this.veJoeStaking
+          .connect(this.alice)
+          .setBoostedGenerationRate(ethers.utils.parseEther("11"))
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to setBoostedGenerationRate leq to baseGenerationRate", async function () {
+      expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
+        ethers.utils.parseEther("5")
+      );
+
+      await expect(
+        this.veJoeStaking
+          .connect(this.dev)
+          .setBoostedGenerationRate(ethers.utils.parseEther("5"))
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected new _boostedGenerationRate to be greater than baseGenerationRate"
+      );
+    });
+
+    it("should allow owner to setBoostedGenerationRate", async function () {
+      expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
+        ethers.utils.parseEther("10")
+      );
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBoostedGenerationRate(ethers.utils.parseEther("9"));
+
+      expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
+        ethers.utils.parseEther("9")
+      );
+    });
+  });
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
