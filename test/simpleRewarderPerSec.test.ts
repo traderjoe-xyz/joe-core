@@ -14,7 +14,7 @@ const USTWAVAX_ADDRESS = "0x7bf98bd74e19ad8eb5e14076140ee0103f8f872b"
 const SIMPLE_REWARDER_LUNAWAVAX_ADDRESS = "0xB8cFb907e3a41A5af5a40CAACBC1745e0CC829f5"
 const MCV3_ADDRESS = "0x188bED1968b795d5c9022F6a0bb5931Ac4c18F00"
 
-describe("simple rewarder per seconds", function () {
+xdescribe("simple rewarder per seconds", function () {
   before(async function () {
     // Forking main net
     await network.provider.request({
@@ -65,7 +65,7 @@ describe("simple rewarder per seconds", function () {
     await this.token6D.mint(this.simpleRewarderPerSec.address, ethers.utils.parseUnits("1000", 6))
   })
 
-  describe("Proof of Concept", function () {
+  xdescribe("Proof of Concept", function () {
     it("old rewarder rounds to 0", async function () {
       expect((await this.MCV3.poolInfo(45)).rewarder).to.be.equal(this.oldRewarder.address)
 

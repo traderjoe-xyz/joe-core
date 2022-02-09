@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat"
 import { expect } from "chai"
 
-describe("JoeToken", function () {
+xdescribe("JoeToken", function () {
   before(async function () {
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.signers = await ethers.getSigners()

@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const { describe } = require("mocha");
 const hre = require("hardhat");
 
-describe("Stable Joe Staking", function () {
+xdescribe("Stable Joe Staking", function () {
   before(async function () {
     this.StableJoeStakingCF = await ethers.getContractFactory(
       "StableJoeStaking"
@@ -62,7 +62,7 @@ describe("Stable Joe Staking", function () {
       );
   });
 
-  describe("should allow deposits and withdraws", function () {
+  xdescribe("should allow deposits and withdraws", function () {
     it("should allow deposits and withdraws of multiple users", async function () {
       await this.stableJoeStaking
         .connect(this.alice)

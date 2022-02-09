@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { encodeParameters, latest, duration, increase } from "./utilities"
 
-describe("Timelock", function () {
+xdescribe("Timelock", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]

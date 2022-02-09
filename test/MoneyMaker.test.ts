@@ -29,7 +29,7 @@ const BAR_ADDRESS = "0x57319d41F71E81F3c65F2a47CA4e001EbAFd4F33"
 
 const DEADLINE = "111111111111111111"
 
-describe("moneyMaker", function () {
+xdescribe("moneyMaker", function () {
   before(async function () {
     // ABIs
     this.moneyMakerCF = await ethers.getContractFactory("MoneyMaker")
@@ -93,7 +93,7 @@ describe("moneyMaker", function () {
     await this.moneyMaker.deployed()
   })
 
-  describe("setBridge", function () {
+  xdescribe("setBridge", function () {
     it("does not allow to set bridge for Token", async function () {
       await expect(this.moneyMaker.setBridge(this.moneyMaker.tokenTo(), this.wavax.address)).to.be.revertedWith("MoneyMaker: Invalid bridge")
     })
@@ -113,7 +113,7 @@ describe("moneyMaker", function () {
     })
   })
 
-  describe("convert Tokens", function () {
+  xdescribe("convert Tokens", function () {
     it("should convert WAVAX", async function () {
       await this.wavax.deposit({ value: ethers.utils.parseEther("2") })
       await this.wavax.transfer(this.moneyMaker.address, await this.wavaxERC20.balanceOf(this.dev.address))
@@ -144,7 +144,7 @@ describe("moneyMaker", function () {
     })
   })
 
-  describe("convert Pairs", function () {
+  xdescribe("convert Pairs", function () {
     it("should convert AVAX - USDC", async function () {
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
       await this.avaxUsdc.transfer(this.moneyMaker.address, await this.avaxUsdc.balanceOf(this.dev.address))
@@ -272,7 +272,7 @@ describe("moneyMaker", function () {
     })
   })
 
-  describe("convertMultiple", function () {
+  xdescribe("convertMultiple", function () {
     it("should allow to convert multiple", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: ethers.utils.parseEther("2") })
       await this.zap.zapIn(this.avaxUsdc.address, { value: ethers.utils.parseEther("2") })
@@ -286,7 +286,7 @@ describe("moneyMaker", function () {
     })
   })
 
-  describe("devCut", function () {
+  xdescribe("devCut", function () {
     it("should redirect 50% of JOE to dev address", async function () {
       await this.moneyMaker.setDevAddr(this.dev.address)
       await this.moneyMaker.setDevCut("5000")
@@ -306,7 +306,7 @@ describe("moneyMaker", function () {
     })
   })
 
-  describe("setToken", function () {
+  xdescribe("setToken", function () {
     it("should convert JOE - AVAX to JOE", async function () {
       this.moneyMaker.setTokenToAddress(this.joe.address)
 
