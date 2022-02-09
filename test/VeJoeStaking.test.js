@@ -47,14 +47,6 @@ describe("VeJoe Staking", function () {
   });
 
   describe("setMaxCap", function () {
-    it("should allow owner to setMaxCap", async function () {
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
-
-      await this.veJoeStaking.connect(this.dev).setMaxCap(200);
-
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(200);
-    });
-
     it("should not allow non-owner to setMaxCap", async function () {
       await expect(
         this.veJoeStaking.connect(this.alice).setMaxCap(200)
@@ -78,6 +70,52 @@ describe("VeJoe Staking", function () {
         this.veJoeStaking.connect(this.dev).setMaxCap(100001)
       ).to.be.revertedWith(
         "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
+      );
+    });
+
+    it("should allow owner to setMaxCap", async function () {
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
+
+      await this.veJoeStaking.connect(this.dev).setMaxCap(200);
+
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(200);
+    });
+  });
+
+  describe("setBaseGenerationRate", function () {
+    it("should not allow non-owner to setMaxCap", async function () {
+      await expect(
+        this.veJoeStaking
+          .connect(this.alice)
+          .setBaseGenerationRate(ethers.utils.parseEther("6"))
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to setBaseGenerationRate greater than boostedGenerationRate", async function () {
+      expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
+        ethers.utils.parseEther("10")
+      );
+
+      await expect(
+        this.veJoeStaking
+          .connect(this.dev)
+          .setBaseGenerationRate(ethers.utils.parseEther("11"))
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected new _baseGenerationRate to be less than boostedGenerationRate"
+      );
+    });
+
+    it("should allow owner to setBaseGenerationRate", async function () {
+      expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
+        ethers.utils.parseEther("5")
+      );
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBaseGenerationRate(ethers.utils.parseEther("6"));
+
+      expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
+        ethers.utils.parseEther("6")
       );
     });
   });
