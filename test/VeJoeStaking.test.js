@@ -226,8 +226,18 @@ describe("VeJoe Staking", function () {
       // boostEndTimestamp
       expect(beforeAliceUserInfo[2]).to.be.equal(0);
 
+      // Check joe balance before deposit
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("1000")
+      );
+
       const depositAmount = ethers.utils.parseEther("100");
       await this.veJoeStaking.connect(this.alice).deposit(depositAmount);
+
+      // Check joe balance after deposit
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("900")
+      );
 
       const block = await ethers.provider.getBlock();
 
