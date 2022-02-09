@@ -28,7 +28,7 @@ describe("VeJoe Staking", function () {
     this.boostedGenerationRate = ethers.utils.parseEther("2");
     this.boostedThreshold = 5;
     this.boostedDuration = 50;
-    this.maxCap = 100;
+    this.maxCap = 200;
 
     this.veJoeStaking = await upgrades.deployProxy(this.VeJoeStakingCF, [
       this.joe.address, // _joe
@@ -80,9 +80,9 @@ describe("VeJoe Staking", function () {
     it("should allow owner to setMaxCap", async function () {
       expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap);
 
-      await this.veJoeStaking.connect(this.dev).setMaxCap(200);
+      await this.veJoeStaking.connect(this.dev).setMaxCap(this.maxCap + 100);
 
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(200);
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap + 100);
     });
   });
 
@@ -284,10 +284,9 @@ describe("VeJoe Staking", function () {
         .deposit(ethers.utils.parseEther("1"));
 
       // Check veJoe balance after deposit
-      // Should be calculated as `boostedGenerationRate * userInfo.balance * timeElapsed`
-      const expectedVeJoe = ethers.utils.parseEther("6000");
+      // Should have 100 * 30 * 2 = 6000 veJOE
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
-        expectedVeJoe
+        ethers.utils.parseEther("6000")
       );
     });
 
@@ -449,7 +448,7 @@ describe("VeJoe Staking", function () {
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
 
-      await increase(this.boostedDuration);
+      await increase(this.boostedDuration - 1);
 
       // Check veJoe balance before claim
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
@@ -459,6 +458,37 @@ describe("VeJoe Staking", function () {
       // Check veJoe balance after claim
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("10000")
+      );
+    });
+
+    it("should receive correct veJOE amount on claim when lastRewardTimestamp < boostEndTimestamp < now", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      // Increase by some duration before boost period ends
+      await increase(this.boostedDuration / 2 - 1);
+
+      // Ensure user has 0 veJoe balance before first claim
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
+
+      // Perform first claim before boost period ends
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      // Ensure user has 100 * 25 * 2 = 5000 veJOE
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("5000")
+      );
+
+      // Increase by some duration after boost period ends
+      await increase(this.boostedDuration - 1);
+
+      // Perform claim after boost period ended
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      // Ensure user has 5000 + 100 * 25 * 2 + 100 * 25 * 1 = 12500 veJoe
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("12500")
       );
     });
   });

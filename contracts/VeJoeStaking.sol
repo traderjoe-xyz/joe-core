@@ -9,8 +9,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "hardhat/console.sol";
-
 import "./VeJoeToken.sol";
 
 /// @title Vote Escrow Joe Staking
@@ -274,6 +272,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 // 3. This means that `user.boostEndTimestamp` should be `0` but that contradicts our
                 //    assumption that `user.boostEndTimestamp != 0`
                 // QED.
+                // With this, we now know `0 < user.lastRewardTimestamp <= user.boostEndTimestamp < block.timestamp`,
+                // which will allow us to perform the following logic safely.
 
                 // If the `block.timestamp > user.boostEndTimestamp` and `boostEndTimestamp != 0`,
                 // that means the user's boosted benefits ended sometime between their `lastRewardTimestamp`
