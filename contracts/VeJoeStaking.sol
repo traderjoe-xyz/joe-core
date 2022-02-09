@@ -42,6 +42,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Boosted rate of veJOE generated per sec per JOE staked, in parts per 1e18
     uint256 public boostedGenerationRate;
 
+    /// @notice Precision of `baseGenerationRate` and `boostedGenerationRate`
+    uint256 public PRECISION;
+
     /// @notice Percentage of user's current staked JOE user has to deposit in order to start
     /// receiving boosted benefits, in parts per 100.
     /// @dev Specifically, user has to deposit at least `boostedThreshold/100 * userStakedJoe` JOE.
@@ -102,6 +105,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         boostedThreshold = _boostedThreshold;
         // TODO: Align on what the upper limit of boostedDuration should be and add require check
         boostedDuration = _boostedDuration;
+        PRECISION = 1e18;
     }
 
     /// @notice Set maxCap
@@ -254,7 +258,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
             // that means the user is currently receiving boosted benefits so they should receive
             // `boostedGenerationRate`.
-            uint256 accVeJoePerJoe = secondsElapsed.mul(boostedGenerationRate);
+            uint256 accVeJoePerJoe = secondsElapsed.mul(boostedGenerationRate).div(PRECISION);
             pendingVeJoe = accVeJoePerJoe.mul(user.balance);
         } else {
             if (user.boostEndTimestamp != 0) {
@@ -276,15 +280,17 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 // and now.
                 // In this case, we need to properly provide them the boosted generation rate for
                 // those `boostEndTimestamp - lastRewardTimestamp` seconds.
-                uint256 boostedAccVeJoePerJoe = user.boostEndTimestamp.sub(user.lastRewardTimestamp);
+                uint256 boostedTimeElapsed = user.boostEndTimestamp.sub(user.lastRewardTimestamp);
+                uint256 boostedAccVeJoePerJoe = boostedTimeElapsed.mul(boostedGenerationRate).div(PRECISION);
                 uint256 boostedPendingVeJoe = boostedAccVeJoePerJoe.mul(user.balance);
 
-                uint256 baseAccVeJoePerVeJoe = block.timestamp.sub(user.boostEndTimestamp);
+                uint256 baseTimeElapsed = block.timestamp.sub(user.boostEndTimestamp);
+                uint256 baseAccVeJoePerVeJoe = baseTimeElapsed.mul(baseGenerationRate).div(PRECISION);
                 uint256 basePendingVeJoe = baseAccVeJoePerVeJoe.mul(user.balance);
 
                 pendingVeJoe = boostedPendingVeJoe.add(basePendingVeJoe);
             } else {
-                uint256 accVeJoePerJoe = secondsElapsed.mul(baseGenerationRate);
+                uint256 accVeJoePerJoe = secondsElapsed.mul(baseGenerationRate).div(PRECISION);
                 pendingVeJoe = accVeJoePerJoe.mul(user.balance);
             }
         }

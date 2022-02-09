@@ -24,8 +24,8 @@ describe("VeJoe Staking", function () {
     await this.joe.mint(this.bob.address, ethers.utils.parseEther("1000"));
     await this.joe.mint(this.carol.address, ethers.utils.parseEther("1000"));
 
-    this.baseGenerationRate = ethers.utils.parseEther("5");
-    this.boostedGenerationRate = ethers.utils.parseEther("10");
+    this.baseGenerationRate = ethers.utils.parseEther("1");
+    this.boostedGenerationRate = ethers.utils.parseEther("2");
     this.boostedThreshold = 5;
     this.boostedDuration = 300;
     this.maxCap = 100;
@@ -91,7 +91,7 @@ describe("VeJoe Staking", function () {
       await expect(
         this.veJoeStaking
           .connect(this.alice)
-          .setBaseGenerationRate(ethers.utils.parseEther("6"))
+          .setBaseGenerationRate(ethers.utils.parseEther("1.5"))
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
@@ -103,7 +103,7 @@ describe("VeJoe Staking", function () {
       await expect(
         this.veJoeStaking
           .connect(this.dev)
-          .setBaseGenerationRate(ethers.utils.parseEther("11"))
+          .setBaseGenerationRate(ethers.utils.parseEther("3"))
       ).to.be.revertedWith(
         "VeJoeStaking: expected new _baseGenerationRate to be less than boostedGenerationRate"
       );
@@ -116,10 +116,10 @@ describe("VeJoe Staking", function () {
 
       await this.veJoeStaking
         .connect(this.dev)
-        .setBaseGenerationRate(ethers.utils.parseEther("6"));
+        .setBaseGenerationRate(ethers.utils.parseEther("1.5"));
 
       expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("6")
+        ethers.utils.parseEther("1.5")
       );
     });
   });
@@ -141,7 +141,7 @@ describe("VeJoe Staking", function () {
       await expect(
         this.veJoeStaking
           .connect(this.dev)
-          .setBoostedGenerationRate(ethers.utils.parseEther("5"))
+          .setBoostedGenerationRate(ethers.utils.parseEther("0.99"))
       ).to.be.revertedWith(
         "VeJoeStaking: expected new _boostedGenerationRate to be greater than baseGenerationRate"
       );
@@ -154,10 +154,10 @@ describe("VeJoe Staking", function () {
 
       await this.veJoeStaking
         .connect(this.dev)
-        .setBoostedGenerationRate(ethers.utils.parseEther("9"));
+        .setBoostedGenerationRate(ethers.utils.parseEther("3"));
 
       expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("9")
+        ethers.utils.parseEther("3")
       );
     });
   });
@@ -258,8 +258,7 @@ describe("VeJoe Staking", function () {
       const depositAmount = ethers.utils.parseEther("100");
       await this.veJoeStaking.connect(this.alice).deposit(depositAmount);
 
-      const timeIncrease = 30;
-      await increase(timeIncrease);
+      await increase(29);
 
       // Check veJoe balance before deposit
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
@@ -270,7 +269,7 @@ describe("VeJoe Staking", function () {
 
       // Check veJoe balance after deposit
       // Should be calculated as `boostedGenerationRate * userInfo.balance * timeElapsed`
-      const expectedVeJoe = ethers.utils.parseEther("30000");
+      const expectedVeJoe = ethers.utils.parseEther("6000");
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
         expectedVeJoe
       );
