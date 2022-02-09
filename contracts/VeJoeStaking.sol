@@ -235,24 +235,55 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo memory user = userInfos[_user];
 
-        // Calculate amount of pending veJOE based on:
-        // 1. Seconds elapsed since last reward timestamp
-        // 2. Generation rate that the user is receiving
-        // 3. Current amount of user's staked JOE
         uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
         if (secondsElapsed == 0) {
             return 0;
         }
 
-        // Calculate the generation rate the user should receive (in units of veJOE per sec per JOE).
-        // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
-        // that means the user is currently receiving boosted benefits so they should receive
-        // `boostedGenerationRate`, otherwise `baseGenerationRate`.
-        uint256 generationRate = block.timestamp <= user.boostEndTimestamp ? boostedGenerationRate : baseGenerationRate;
+        // Calculate amount of pending veJOE based on:
+        // 1. Seconds elapsed since last reward timestamp
+        // 2. Generation rate that the user is receiving
+        // 3. Current amount of user's staked JOE
+        uint256 pendingVeJoe;
 
-        uint256 accVeJoePerJoe = secondsElapsed * generationRate;
+        if (block.timestamp <= user.boostEndTimestamp) {
+            // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
+            // that means the user is currently receiving boosted benefits so they should receive
+            // `boostedGenerationRate`.
+            uint256 accVeJoePerJoe = secondsElapsed * boostedGenerationRate;
+            pendingVeJoe = accVeJoePerJoe * user.balance;
+        } else {
+            if (user.boostEndTimestamp != 0) {
+                // If `user.boostEndTimestamp != 0` then, we know for certain that
+                // `user.boostEndTimestamp >= user.lastRewardTimestamp`.
+                // Proof by contradiction:
+                // 1. Assume that `user.boostEndTimestamp != 0` and
+                //    `user.boostEndTimestamp < user.lastRewardTimestamp`.
+                // 2. That means that at time `user.lastRewardTimestamp`, the user claimed
+                //    some veJOE. Furthermore, we know that anytime a user claims some veJOE,
+                //    if the current timestamp is greater than or equal to `user.boostEndTimestamp`,
+                //    we will update `user.boostEndTimestamp` to be `0` (see `_claim` method).
+                // 3. This means that `user.boostEndTimestamp` should be `0` but that contradicts our
+                //    assumption that `user.boostEndTimestamp != 0`
+                // QED.
 
-        uint256 pendingVeJoe = accVeJoePerJoe * user.balance;
+                // If the `block.timestamp > user.boostEndTimestamp` and `boostEndTimestamp != 0`,
+                // that means the user's boosted benefits ended sometime between their `lastRewardTimestamp`
+                // and now.
+                // In this case, we need to properly provide them the boosted generation rate for
+                // those `boostEndTimestamp - lastRewardTimestamp` seconds.
+                uint256 boostedAccVeJoePerJoe = user.boostEndTimestamp - user.lastRewardTimestamp;
+                uint256 boostedPendingVeJoe = boostedAccVeJoePerJoe * user.balance;
+
+                uint256 baseAccVeJoePerVeJoe = block.timestamp - user.boostEndTimestamp;
+                uint256 basePendingVeJoe = baseAccVeJoePerVeJoe * user.balance;
+
+                pendingVeJoe = boostedPendingVeJoe + basePendingVeJoe;
+            } else {
+                uint256 accVeJoePerJoe = secondsElapsed * baseGenerationRate;
+                pendingVeJoe = accVeJoePerJoe * user.balance;
+            }
+        }
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
