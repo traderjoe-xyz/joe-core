@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { ADDRESS_ZERO, advanceTimeAndBlock, advanceBlockTo, latest, duration, increase } from "./utilities"
 
-xdescribe("MasterChefJoeV2", function () {
+describe("MasterChefJoeV2", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]

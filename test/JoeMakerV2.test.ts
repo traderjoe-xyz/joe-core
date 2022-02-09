@@ -31,7 +31,7 @@ const BAR_ADDRESS = "0x57319d41F71E81F3c65F2a47CA4e001EbAFd4F33"
 const barBalanceJOEAVAX = "67845624860978841228702792"
 const barBalanceDAIUSDC = "67845624656456566165626771"
 
-xdescribe("joeMakerV2", function () {
+describe("joeMakerV2", function () {
   before(async function () {
     // ABIs
     this.joeMakerV2CF = await ethers.getContractFactory("JoeMakerV2")
@@ -94,7 +94,7 @@ xdescribe("joeMakerV2", function () {
     await this.joeMakerV2.deployed()
   })
 
-  xdescribe("setBridge", function () {
+  describe("setBridge", function () {
     it("does not allow to set bridge for Joe", async function () {
       await expect(this.joeMakerV2.setBridge(this.joe.address, this.wavax.address)).to.be.revertedWith("JoeMakerV2: Invalid bridge")
     })
@@ -114,7 +114,7 @@ xdescribe("joeMakerV2", function () {
     })
   })
 
-  xdescribe("convert", function () {
+  describe("convert", function () {
     it("should convert JOE - AVAX", async function () {
       await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })
       await this.joeAvax.transfer(this.joeMakerV2.address, await this.joeAvax.balanceOf(this.alice.address))
@@ -263,7 +263,7 @@ xdescribe("joeMakerV2", function () {
     })
   })
 
-  xdescribe("convertMultiple", function () {
+  describe("convertMultiple", function () {
     it("should allow to convert multiple", async function () {
       await this.zap.zapIn(this.daiAvax.address, { value: "2000000000000000000" })
       await this.zap.zapIn(this.joeAvax.address, { value: "2000000000000000000" })

@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { duration, increase } from "./utilities"
 
-xdescribe("Cliff", function () {
+describe("Cliff", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]

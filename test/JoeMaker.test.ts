@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat"
 import { expect } from "chai"
 import { prepare, deploy, getBigNumber, createSLP } from "./utilities"
 
-xdescribe("JoeMaker", function () {
+describe("JoeMaker", function () {
   before(async function () {
     await prepare(this, ["JoeMaker", "JoeBar", "JoeMakerExploitMock", "ERC20Mock", "JoeFactory", "JoePair"])
   })
@@ -29,7 +29,7 @@ xdescribe("JoeMaker", function () {
     await createSLP(this, "daiUSDC", this.dai, this.usdc, getBigNumber(10))
     await createSLP(this, "daiMIC", this.dai, this.mic, getBigNumber(10))
   })
-  xdescribe("setBridge", function () {
+  describe("setBridge", function () {
     it("does not allow to set bridge for Joe", async function () {
       await expect(this.joeMaker.setBridge(this.joe.address, this.weth.address)).to.be.revertedWith("JoeMaker: Invalid bridge")
     })
@@ -48,7 +48,7 @@ xdescribe("JoeMaker", function () {
         .withArgs(this.dai.address, this.joe.address)
     })
   })
-  xdescribe("convert", function () {
+  describe("convert", function () {
     it("should convert JOE - ETH", async function () {
       await this.joeEth.transfer(this.joeMaker.address, getBigNumber(1))
       await this.joeMaker.convert(this.joe.address, this.weth.address)
@@ -144,7 +144,7 @@ xdescribe("JoeMaker", function () {
     })
   })
 
-  xdescribe("convertMultiple", function () {
+  describe("convertMultiple", function () {
     it("should allow to convert multiple", async function () {
       await this.daiEth.transfer(this.joeMaker.address, getBigNumber(1))
       await this.joeEth.transfer(this.joeMaker.address, getBigNumber(1))
