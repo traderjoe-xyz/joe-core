@@ -254,6 +254,22 @@ describe("VeJoe Staking", function () {
       );
     });
 
+    it("should have correct updated user balance after deposit with non-zero balance", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // balance
+      expect(afterAliceUserInfo[0]).to.be.equal(ethers.utils.parseEther("105"));
+    });
+
     it("should claim pending veJOE upon depositing with non-zero balance", async function () {
       await this.veJoeStaking
         .connect(this.alice)
