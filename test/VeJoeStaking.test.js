@@ -255,8 +255,9 @@ describe("VeJoe Staking", function () {
     });
 
     it("should claim pending veJOE upon depositing with non-zero balance", async function () {
-      const depositAmount = ethers.utils.parseEther("100");
-      await this.veJoeStaking.connect(this.alice).deposit(depositAmount);
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
 
       await increase(29);
 
@@ -273,6 +274,44 @@ describe("VeJoe Staking", function () {
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
         expectedVeJoe
       );
+    });
+
+    it("should receive boosted benefits after depositing boostedThreshold", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const block = await ethers.provider.getBlock();
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // boostEndTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(
+        block.timestamp + this.boostedDuration
+      );
+    });
+
+    it("should not receive boosted benefits after depositing less than boostedThreshold", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("1"));
+
+      const block = await ethers.provider.getBlock();
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // boostEndTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(0);
     });
   });
 
