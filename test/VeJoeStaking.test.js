@@ -402,6 +402,49 @@ describe("VeJoe Staking", function () {
     });
   });
 
+  describe("claim", function () {
+    it("should not be able to claim with zero balance", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).claim()
+      ).to.be.revertedWith(
+        "VeJoeStaking: cannot claim veJOE when no JOE is staked"
+      );
+    });
+
+    it("should update lastRewardTimestamp on claim", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(100);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+      const claimBlock = await ethers.provider.getBlock();
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // lastRewardTimestamp
+      expect(afterAliceUserInfo[1]).to.be.equal(claimBlock.timestamp);
+    });
+
+    it("should reset boostEndTimestamp on claim after boost period ends", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(this.boostedDuration);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // boostEndTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(0);
+    });
+  });
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",

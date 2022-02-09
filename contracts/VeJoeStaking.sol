@@ -229,7 +229,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Claim any pending veJOE
     function claim() external {
-        require(_getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim any veJOE when no JOE is staked");
+        require(_getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim veJOE when no JOE is staked");
         _claim();
     }
 
