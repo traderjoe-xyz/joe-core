@@ -24,14 +24,20 @@ describe("VeJoe Staking", function () {
     await this.joe.mint(this.bob.address, ethers.utils.parseEther("1000"));
     await this.joe.mint(this.carol.address, ethers.utils.parseEther("1000"));
 
+    this.baseGenerationRate = ethers.utils.parseEther("5");
+    this.boostedGenerationRate = ethers.utils.parseEther("10");
+    this.boostedThreshold = 5;
+    this.boostedDuration = 300;
+    this.maxCap = 100;
+
     this.veJoeStaking = await upgrades.deployProxy(this.VeJoeStakingCF, [
       this.joe.address, // _joe
       this.veJoe.address, // _veJoe
-      ethers.utils.parseEther("5"), // _baseGenerationRate
-      ethers.utils.parseEther("10"), // _boostedGenerationRate
-      5, // _boostedThreshold
-      300, // _boostedDuration
-      100, // _maxCap
+      this.baseGenerationRate, // _baseGenerationRate
+      this.boostedGenerationRate, // _boostedGenerationRate
+      this.boostedThreshold, // _boostedThreshold
+      this.boostedDuration, // _boostedDuration
+      this.maxCap, // _maxCap
     ]);
     await this.veJoe.transferOwnership(this.veJoeStaking.address);
 
@@ -54,7 +60,7 @@ describe("VeJoe Staking", function () {
     });
 
     it("should not allow owner to set lower maxCap", async function () {
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap);
 
       await expect(
         this.veJoeStaking.connect(this.dev).setMaxCap(99)
@@ -64,8 +70,6 @@ describe("VeJoe Staking", function () {
     });
 
     it("should not allow owner to set maxCap greater than upper limit", async function () {
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
-
       await expect(
         this.veJoeStaking.connect(this.dev).setMaxCap(100001)
       ).to.be.revertedWith(
@@ -74,7 +78,7 @@ describe("VeJoe Staking", function () {
     });
 
     it("should allow owner to setMaxCap", async function () {
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(100);
+      expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap);
 
       await this.veJoeStaking.connect(this.dev).setMaxCap(200);
 
@@ -93,7 +97,7 @@ describe("VeJoe Staking", function () {
 
     it("should not allow owner to setBaseGenerationRate greater than boostedGenerationRate", async function () {
       expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("10")
+        this.boostedGenerationRate
       );
 
       await expect(
@@ -107,7 +111,7 @@ describe("VeJoe Staking", function () {
 
     it("should allow owner to setBaseGenerationRate", async function () {
       expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("5")
+        this.baseGenerationRate
       );
 
       await this.veJoeStaking
@@ -131,7 +135,7 @@ describe("VeJoe Staking", function () {
 
     it("should not allow owner to setBoostedGenerationRate leq to baseGenerationRate", async function () {
       expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("5")
+        this.baseGenerationRate
       );
 
       await expect(
@@ -145,7 +149,7 @@ describe("VeJoe Staking", function () {
 
     it("should allow owner to setBoostedGenerationRate", async function () {
       expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("10")
+        this.boostedGenerationRate
       );
 
       await this.veJoeStaking
@@ -174,7 +178,9 @@ describe("VeJoe Staking", function () {
     });
 
     it("should allow owner to setBoostedThreshold", async function () {
-      expect(await this.veJoeStaking.boostedThreshold()).to.be.equal(5);
+      expect(await this.veJoeStaking.boostedThreshold()).to.be.equal(
+        this.boostedThreshold
+      );
 
       await this.veJoeStaking.connect(this.dev).setBoostedThreshold(10);
 
@@ -190,11 +196,52 @@ describe("VeJoe Staking", function () {
     });
 
     it("should allow owner to setBoostedThreshold", async function () {
-      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(300);
+      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(
+        this.boostedDuration
+      );
 
       await this.veJoeStaking.connect(this.dev).setBoostedDuration(100);
 
       expect(await this.veJoeStaking.boostedDuration()).to.be.equal(100);
+    });
+  });
+
+  describe("deposit", function () {
+    it("should not allow deposit 0", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).deposit(0)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected deposit amount to be greater than zero"
+      );
+    });
+
+    it("should have correct updated user info after first time deposit", async function () {
+      const beforeAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // balance
+      expect(beforeAliceUserInfo[0]).to.be.equal(0);
+      // lastRewardTimestamp
+      expect(beforeAliceUserInfo[1]).to.be.equal(0);
+      // boostEndTimestamp
+      expect(beforeAliceUserInfo[2]).to.be.equal(0);
+
+      const depositAmount = ethers.utils.parseEther("100");
+      await this.veJoeStaking.connect(this.alice).deposit(depositAmount);
+
+      const block = await ethers.provider.getBlock();
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // balance
+      expect(afterAliceUserInfo[0]).to.be.equal(depositAmount);
+      // lastRewardTimestamp
+      expect(afterAliceUserInfo[1]).to.be.equal(block.timestamp);
+      // boostEndTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(
+        block.timestamp + this.boostedDuration
+      );
     });
   });
 
