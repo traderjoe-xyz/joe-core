@@ -3,10 +3,13 @@
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+
+import "hardhat/console.sol";
 
 import "./VeJoeToken.sol";
 
@@ -15,6 +18,7 @@ import "./VeJoeToken.sol";
 /// @notice Stake JOE to earn veJOE, which you can use to earn higher farm yields and gain
 /// voting power. Note that unstaking any amount of JOE will burn all of your existing veJOE.
 contract VeJoeStaking is Initializable, OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct UserInfo {
@@ -32,10 +36,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// For example, if user has `n` JOE staked, they can own a maximum of `n * maxCap` veJOE.
     uint256 public maxCap;
 
-    /// @notice Rate of veJOE generated per sec per JOE staked
+    /// @notice Rate of veJOE generated per sec per JOE staked, in parts per 1e18
     uint256 public baseGenerationRate;
 
-    /// @notice Boosted rate of veJOE generated per sec per JOE staked
+    /// @notice Boosted rate of veJOE generated per sec per JOE staked, in parts per 1e18
     uint256 public boostedGenerationRate;
 
     /// @notice Percentage of user's current staked JOE user has to deposit in order to start
@@ -167,13 +171,13 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
             uint256 userStakedJoe = userInfos[msg.sender].balance;
 
-            userInfo.balance += _amount;
+            userInfo.balance = userInfo.balance.add(_amount);
 
             // User is eligible for boosted benefits if and only if all of the following are true:
             // - User is not already currently receiving boosted benefits
             // - `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
-            if (userInfo.boostEndTimestamp == 0 && _amount * 100 >= boostedThreshold * userStakedJoe) {
-                userInfo.boostEndTimestamp = block.timestamp + boostedDuration;
+            if (userInfo.boostEndTimestamp == 0 && _amount.mul(100) >= boostedThreshold.mul(userStakedJoe)) {
+                userInfo.boostEndTimestamp = block.timestamp.add(boostedDuration);
             }
         } else {
             // If the user's `lastRewardTimestamp` is 0, i.e. if this is the user's first time staking,
@@ -181,7 +185,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // Note that it is important we perform this check **before** we update the user's `lastRewardTimestamp`
             // down below.
             if (userInfo.lastRewardTimestamp == 0) {
-                userInfo.boostEndTimestamp = block.timestamp + boostedDuration;
+                userInfo.boostEndTimestamp = block.timestamp.add(boostedDuration);
             }
             userInfo.balance = _amount;
             userInfo.lastRewardTimestamp = block.timestamp;
@@ -205,7 +209,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: cannot withdraw greater amount of JOE than currently staked"
         );
 
-        userInfo.balance -= _amount;
+        userInfo.balance = userInfo.balance.sub(_amount);
         userInfo.lastRewardTimestamp = block.timestamp;
         userInfo.boostEndTimestamp = 0;
 
@@ -235,7 +239,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo memory user = userInfos[_user];
 
-        uint256 secondsElapsed = block.timestamp - user.lastRewardTimestamp;
+        uint256 secondsElapsed = block.timestamp.sub(user.lastRewardTimestamp);
         if (secondsElapsed == 0) {
             return 0;
         }
@@ -250,8 +254,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
             // that means the user is currently receiving boosted benefits so they should receive
             // `boostedGenerationRate`.
-            uint256 accVeJoePerJoe = secondsElapsed * boostedGenerationRate;
-            pendingVeJoe = accVeJoePerJoe * user.balance;
+            uint256 accVeJoePerJoe = secondsElapsed.mul(boostedGenerationRate);
+            pendingVeJoe = accVeJoePerJoe.mul(user.balance);
         } else {
             if (user.boostEndTimestamp != 0) {
                 // If `user.boostEndTimestamp != 0` then, we know for certain that
@@ -272,26 +276,26 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 // and now.
                 // In this case, we need to properly provide them the boosted generation rate for
                 // those `boostEndTimestamp - lastRewardTimestamp` seconds.
-                uint256 boostedAccVeJoePerJoe = user.boostEndTimestamp - user.lastRewardTimestamp;
-                uint256 boostedPendingVeJoe = boostedAccVeJoePerJoe * user.balance;
+                uint256 boostedAccVeJoePerJoe = user.boostEndTimestamp.sub(user.lastRewardTimestamp);
+                uint256 boostedPendingVeJoe = boostedAccVeJoePerJoe.mul(user.balance);
 
-                uint256 baseAccVeJoePerVeJoe = block.timestamp - user.boostEndTimestamp;
-                uint256 basePendingVeJoe = baseAccVeJoePerVeJoe * user.balance;
+                uint256 baseAccVeJoePerVeJoe = block.timestamp.sub(user.boostEndTimestamp);
+                uint256 basePendingVeJoe = baseAccVeJoePerVeJoe.mul(user.balance);
 
-                pendingVeJoe = boostedPendingVeJoe + basePendingVeJoe;
+                pendingVeJoe = boostedPendingVeJoe.add(basePendingVeJoe);
             } else {
-                uint256 accVeJoePerJoe = secondsElapsed * baseGenerationRate;
-                pendingVeJoe = accVeJoePerJoe * user.balance;
+                uint256 accVeJoePerJoe = secondsElapsed.mul(baseGenerationRate);
+                pendingVeJoe = accVeJoePerJoe.mul(user.balance);
             }
         }
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
-        uint256 userMaxVeJoeCap = user.balance * maxCap;
+        uint256 userMaxVeJoeCap = user.balance.mul(maxCap);
 
         if (userVeJoeBalance < userMaxVeJoeCap) {
-            if (userVeJoeBalance + pendingVeJoe > userMaxVeJoeCap) {
-                return userMaxVeJoeCap - userVeJoeBalance;
+            if (userVeJoeBalance.add(pendingVeJoe) > userMaxVeJoeCap) {
+                return userMaxVeJoeCap.sub(userVeJoeBalance);
             } else {
                 return pendingVeJoe;
             }

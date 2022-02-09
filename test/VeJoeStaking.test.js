@@ -253,6 +253,28 @@ describe("VeJoe Staking", function () {
         block.timestamp + this.boostedDuration
       );
     });
+
+    it("should claim pending veJOE upon depositing with non-zero balance", async function () {
+      const depositAmount = ethers.utils.parseEther("100");
+      await this.veJoeStaking.connect(this.alice).deposit(depositAmount);
+
+      const timeIncrease = 30;
+      await increase(timeIncrease);
+
+      // Check veJoe balance before deposit
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("1"));
+
+      // Check veJoe balance after deposit
+      // Should be calculated as `boostedGenerationRate * userInfo.balance * timeElapsed`
+      const expectedVeJoe = ethers.utils.parseEther("30000");
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
+        expectedVeJoe
+      );
+    });
   });
 
   after(async function () {
