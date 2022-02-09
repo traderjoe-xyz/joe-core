@@ -233,13 +233,12 @@ describe("VeJoe Staking", function () {
 
       const depositAmount = ethers.utils.parseEther("100");
       await this.veJoeStaking.connect(this.alice).deposit(depositAmount);
+      const depositBlock = await ethers.provider.getBlock();
 
       // Check joe balance after deposit
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("900")
       );
-
-      const block = await ethers.provider.getBlock();
 
       const afterAliceUserInfo = await this.veJoeStaking.userInfos(
         this.alice.address
@@ -247,10 +246,10 @@ describe("VeJoe Staking", function () {
       // balance
       expect(afterAliceUserInfo[0]).to.be.equal(depositAmount);
       // lastRewardTimestamp
-      expect(afterAliceUserInfo[1]).to.be.equal(block.timestamp);
+      expect(afterAliceUserInfo[1]).to.be.equal(depositBlock.timestamp);
       // boostEndTimestamp
       expect(afterAliceUserInfo[2]).to.be.equal(
-        block.timestamp + this.boostedDuration
+        depositBlock.timestamp + this.boostedDuration
       );
     });
 
@@ -328,6 +327,78 @@ describe("VeJoe Staking", function () {
       );
       // boostEndTimestamp
       expect(afterAliceUserInfo[2]).to.be.equal(0);
+    });
+  });
+
+  describe("withdraw", function () {
+    it("should not allow withdraw 0", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).withdraw(0)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected withdraw amount to be greater than zero"
+      );
+    });
+
+    it("should not allow withdraw amount greater than user balance", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).withdraw(1)
+      ).to.be.revertedWith(
+        "VeJoeStaking: cannot withdraw greater amount of JOE than currently staked"
+      );
+    });
+
+    it("should have correct updated user info and balances after withdraw", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+      const depositBlock = await ethers.provider.getBlock();
+
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("900")
+      );
+
+      await increase(this.boostedDuration / 2);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+      const claimBlock = await ethers.provider.getBlock();
+
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.not.be.equal(0);
+
+      const beforeAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // balance
+      expect(beforeAliceUserInfo[0]).to.be.equal(
+        ethers.utils.parseEther("100")
+      );
+      // lastRewardTimestamp
+      expect(beforeAliceUserInfo[1]).to.be.equal(claimBlock.timestamp);
+      // boostEndTimestamp
+      expect(beforeAliceUserInfo[2]).to.be.equal(
+        depositBlock.timestamp + this.boostedDuration
+      );
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .withdraw(ethers.utils.parseEther("5"));
+      const withdrawBlock = await ethers.provider.getBlock();
+
+      // Check user info fields are updated correctly
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // balance
+      expect(afterAliceUserInfo[0]).to.be.equal(ethers.utils.parseEther("95"));
+      // lastRewardTimestamp
+      expect(afterAliceUserInfo[1]).to.be.equal(withdrawBlock.timestamp);
+      // boostEndTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(0);
+
+      // Check user token balances are updated correctly
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("905")
+      );
     });
   });
 

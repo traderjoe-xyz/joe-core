@@ -204,7 +204,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// lose all of your current veJOE.
     /// @param _amount The amount of JOE to unstake
     function withdraw(uint256 _amount) external {
-        require(_amount > 0, "VeJoeStaking: expected to withdraw non-zero amount of JOE");
+        require(_amount > 0, "VeJoeStaking: expected withdraw amount to be greater than zero");
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
