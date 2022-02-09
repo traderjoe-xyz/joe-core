@@ -158,6 +158,30 @@ describe("VeJoe Staking", function () {
     });
   });
 
+  describe("setBoostedThreshold", function () {
+    it("should not allow non-owner to setBoostedThreshold", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).setBoostedThreshold(10)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to setBoostedThreshold greater than 100", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.dev).setBoostedThreshold(101)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
+      );
+    });
+
+    it("should allow owner to setBoostedThreshold", async function () {
+      expect(await this.veJoeStaking.boostedThreshold()).to.be.equal(5);
+
+      await this.veJoeStaking.connect(this.dev).setBoostedThreshold(10);
+
+      expect(await this.veJoeStaking.boostedThreshold()).to.be.equal(10);
+    });
+  });
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
