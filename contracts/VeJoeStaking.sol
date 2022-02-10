@@ -171,9 +171,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If user already has staked JOE, we first send them any pending veJOE
             _claim();
 
-            uint256 userStakedJoe = userInfos[msg.sender].balance;
+            uint256 userStakedJoe = userInfo.balance;
 
-            userInfo.balance = userInfo.balance.add(_amount);
+            userInfo.balance = userStakedJoe.add(_amount);
 
             // User is eligible for boosted benefits if and only if all of the following are true:
             // - User is not already currently receiving boosted benefits
@@ -256,8 +256,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If the current timestamp is less than or equal to the user's `boostEndTimestamp`,
             // that means the user is currently receiving boosted benefits so they should receive
             // `boostedGenerationRate`.
-            uint256 accVeJoePerJoe = secondsElapsed.mul(boostedGenerationRate).div(PRECISION);
-            pendingVeJoe = accVeJoePerJoe.mul(user.balance);
+            uint256 accVeJoePerJoe = secondsElapsed.mul(boostedGenerationRate);
+            pendingVeJoe = accVeJoePerJoe.mul(user.balance).div(PRECISION);
         } else {
             if (user.boostEndTimestamp != 0) {
                 // If `user.boostEndTimestamp != 0` then, we know for certain that
@@ -281,17 +281,19 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 // In this case, we need to properly provide them the boosted generation rate for
                 // those `boostEndTimestamp - lastRewardTimestamp` seconds.
                 uint256 boostedTimeElapsed = user.boostEndTimestamp.sub(user.lastRewardTimestamp);
-                uint256 boostedAccVeJoePerJoe = boostedTimeElapsed.mul(boostedGenerationRate).div(PRECISION);
+                uint256 boostedAccVeJoePerJoe = boostedTimeElapsed.mul(boostedGenerationRate);
                 uint256 boostedPendingVeJoe = boostedAccVeJoePerJoe.mul(user.balance);
 
                 uint256 baseTimeElapsed = block.timestamp.sub(user.boostEndTimestamp);
-                uint256 baseAccVeJoePerVeJoe = baseTimeElapsed.mul(baseGenerationRate).div(PRECISION);
+                uint256 baseAccVeJoePerVeJoe = baseTimeElapsed.mul(baseGenerationRate);
                 uint256 basePendingVeJoe = baseAccVeJoePerVeJoe.mul(user.balance);
 
-                pendingVeJoe = boostedPendingVeJoe.add(basePendingVeJoe);
+                pendingVeJoe = boostedPendingVeJoe.add(basePendingVeJoe).div(PRECISION);
             } else {
-                uint256 accVeJoePerJoe = secondsElapsed.mul(baseGenerationRate).div(PRECISION);
-                pendingVeJoe = accVeJoePerJoe.mul(user.balance);
+                // In this case, the user is simply generating veJOE at `baseGenerationRate` for
+                // the duration of `secondsElapsed`.
+                uint256 accVeJoePerJoe = secondsElapsed.mul(baseGenerationRate);
+                pendingVeJoe = accVeJoePerJoe.mul(user.balance).div(PRECISION);
             }
         }
 
