@@ -42,7 +42,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     uint256 public maxCap;
 
     /// @notice The upper limit of `maxCap`
-    uint256 public MAX_MAX_CAP;
+    uint256 public UPPER_LIMIT_MAX_CAP;
 
     /// @notice Rate of veJOE generated per sec per JOE staked, in parts per 1e18
     uint256 public baseGenerationRate;
@@ -64,7 +64,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     uint256 public boostedDuration;
 
     /// @notice The upper limit of `boostedDuration`
-    uint256 public MAX_BOOSTED_DURATION;
+    uint256 public UPPER_LIMIT_BOOSTED_DURATION;
 
     mapping(address => UserInfo) public userInfos;
 
@@ -93,8 +93,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _boostedDuration,
         uint256 _maxCap
     ) public initializer {
-        MAX_BOOSTED_DURATION = 365 days;
-        MAX_MAX_CAP = 100000;
+        UPPER_LIMIT_BOOSTED_DURATION = 365 days;
+        UPPER_LIMIT_MAX_CAP = 100000;
 
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
@@ -106,9 +106,12 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             _boostedThreshold != 0 && _boostedThreshold <= 100,
             "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
         );
-        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 365 days");
         require(
-            _maxCap != 0 && _maxCap <= MAX_MAX_CAP,
+            _boostedDuration <= UPPER_LIMIT_BOOSTED_DURATION,
+            "VeJoeStaking: expected _boostedDuration to be <= 365 days"
+        );
+        require(
+            _maxCap != 0 && _maxCap <= UPPER_LIMIT_MAX_CAP,
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
         );
 
@@ -129,7 +132,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     function setMaxCap(uint256 _maxCap) external onlyOwner {
         require(_maxCap > maxCap, "VeJoeStaking: expected new _maxCap to be greater than existing maxCap");
         require(
-            _maxCap != 0 && _maxCap <= MAX_MAX_CAP,
+            _maxCap != 0 && _maxCap <= UPPER_LIMIT_MAX_CAP,
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
         );
         maxCap = _maxCap;
@@ -172,7 +175,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Set boostedDuration
     /// @param _boostedDuration The new boostedDuration
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
-        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 365 days");
+        require(
+            _boostedDuration <= UPPER_LIMIT_BOOSTED_DURATION,
+            "VeJoeStaking: expected _boostedDuration to be <= 365 days"
+        );
         boostedDuration = _boostedDuration;
         emit UpdateBoostedDuration(msg.sender, _boostedDuration);
     }
