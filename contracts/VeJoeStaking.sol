@@ -283,12 +283,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 //    c. User unstaked JOE: Whenever a user unstakes JOE, we reset `user.boostEndTimestamp`
                 //       to be 0. This contradicts our assumption that `user.boostEndTimestamp != 0`.
                 // QED.
-                // With this, we now know `0 < user.lastRewardTimestamp <= user.boostEndTimestamp < block.timestamp`,
-                // which will allow us to perform the following logic safely.
 
-                // If the `block.timestamp > user.boostEndTimestamp` and `boostEndTimestamp != 0`,
-                // that means the user's boosted benefits ended sometime between their `lastRewardTimestamp`
-                // and now.
+                // Now we know that `0 < user.lastRewardTimestamp <= user.boostEndTimestamp < block.timestamp`.
                 // In this case, we need to properly provide them the boosted generation rate for
                 // those `boostEndTimestamp - lastRewardTimestamp` seconds.
                 uint256 boostedTimeElapsed = user.boostEndTimestamp.sub(user.lastRewardTimestamp);
