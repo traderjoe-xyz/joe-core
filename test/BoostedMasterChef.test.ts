@@ -293,6 +293,25 @@ describe("BoostedMasterChefJoe", function () {
     expect(await this.joe.balanceOf(this.bob.address)).to.be.closeTo(pending[0], 100)
   })
 
+  it("should stop boosting if burn vejoe", async function () {
+    // Bob enters the pool
+    await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
+    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
+    await this.bmc.connect(this.bob).deposit(0, "1000")
+
+    await network.provider.send("evm_increaseTime", [3600])
+    await network.provider.send("evm_mine")
+    expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal("2500")
+
+    await this.veJoe.connect(this.dev).burnFrom(this.bob.address, "100")
+    expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal("1000")
+
+    let pending = await this.bmc.pendingTokens(0, this.bob.address)
+    let claimable = await this.bmc.claimableJoe(0, this.bob.address)
+    // Close to as 1 second passes after the mint.
+    expect(pending[0]).to.be.closeTo(claimable, 100)
+  })
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
