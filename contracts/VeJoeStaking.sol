@@ -41,6 +41,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// For example, if user has `n` JOE staked, they can own a maximum of `n * maxCap` veJOE.
     uint256 public maxCap;
 
+    /// @notice The upper limit of `maxCap`
+    uint256 public MAX_MAX_CAP;
+
     /// @notice Rate of veJOE generated per sec per JOE staked, in parts per 1e18
     uint256 public baseGenerationRate;
 
@@ -59,6 +62,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice The length of time a user receives boosted benefits
     uint256 public boostedDuration;
+
+    /// @notice The upper limit of `boostedDuration`
+    uint256 public MAX_BOOSTED_DURATION;
 
     mapping(address => UserInfo) public userInfos;
 
@@ -87,18 +93,21 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _boostedDuration,
         uint256 _maxCap
     ) public initializer {
+        MAX_BOOSTED_DURATION = 365 days;
+        MAX_MAX_CAP = 100000;
+
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
         require(
             _boostedGenerationRate > _baseGenerationRate,
             "VeJoeStaking: expected _boostedGenerationRate to be greater than _baseGenerationRate"
         );
-        require(_boostedThreshold <= 100, "VeJoeStaking: expected _boostedThreshold to be less than or equal to 100");
-        // TODO: Align on what the upper limit of maxCap should be
         require(
-            _maxCap > 0 && _maxCap <= 100000,
-            "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
+            _boostedThreshold != 0 && _boostedThreshold <= 100,
+            "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
         );
+        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 15 days");
+        require(_maxCap > 0 && _maxCap <= MAX_MAX_CAP, "VeJoeStaking: expected new _maxCap to be > 0 and <= 100000");
 
         __Ownable_init();
 
@@ -108,7 +117,6 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         baseGenerationRate = _baseGenerationRate;
         boostedGenerationRate = _boostedGenerationRate;
         boostedThreshold = _boostedThreshold;
-        // TODO: Align on what the upper limit of boostedDuration should be and add require check
         boostedDuration = _boostedDuration;
         PRECISION = 1e18;
     }
@@ -117,11 +125,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _maxCap The new maxCap
     function setMaxCap(uint256 _maxCap) external onlyOwner {
         require(_maxCap > maxCap, "VeJoeStaking: expected new _maxCap to be greater than existing maxCap");
-        // TODO: Align on what the upper limit of maxCap should be
-        require(
-            _maxCap > 0 && _maxCap <= 100000,
-            "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
-        );
+        require(_maxCap > 0 && _maxCap <= MAX_MAX_CAP, "VeJoeStaking: expected new _maxCap to be > 0 and <= 100000");
         maxCap = _maxCap;
         emit UpdateMaxCap(msg.sender, _maxCap);
     }
@@ -152,8 +156,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _boostedThreshold The new boostedThreshold
     function setBoostedThreshold(uint256 _boostedThreshold) external onlyOwner {
         require(
-            _boostedThreshold <= 100,
-            "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
+            _boostedThreshold != 0 && _boostedThreshold <= 100,
+            "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
         );
         boostedThreshold = _boostedThreshold;
         emit UpdateBoostedThreshold(msg.sender, _boostedThreshold);
@@ -162,6 +166,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Set boostedDuration
     /// @param _boostedDuration The new boostedDuration
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
+        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 15 days");
         boostedDuration = _boostedDuration;
         emit UpdateBoostedDuration(msg.sender, _boostedDuration);
     }
