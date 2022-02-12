@@ -270,12 +270,18 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 // Proof by contradiction:
                 // 1. Assume that `user.boostEndTimestamp != 0` and
                 //    `user.boostEndTimestamp < user.lastRewardTimestamp`.
-                // 2. That means that at time `user.lastRewardTimestamp`, the user claimed
-                //    some veJOE. Furthermore, we know that anytime a user claims some veJOE,
-                //    if the current timestamp is greater than or equal to `user.boostEndTimestamp`,
-                //    we will update `user.boostEndTimestamp` to be `0` (see `_claim` method).
-                // 3. This means that `user.boostEndTimestamp` should be `0` but that contradicts our
-                //    assumption that `user.boostEndTimestamp != 0`
+                // 2. There are 3 cases when a user's `lastRewardTimestamp` is updated:
+                //    a. User claimed pending veJOE: We know that anytime a user claims some veJOE,
+                //       if the current timestamp is greater than or equal to `user.boostEndTimestamp`,
+                //       we will update `user.boostEndTimestamp` to be `0` (see `_claim` method). This
+                //       means that `user.boostEndTimestamp` should be `0` but that contradicts our
+                //       assumption that `user.boostEndTimestamp != 0`.
+                //    b. User JOE for the first time: When a user stakes JOE for the first time, we set
+                //       `user.lastRewardTimestamp` to `block.timestamp` and `user.boostEndTimestamp` to
+                //       `block.timestamp + boostedDuration`. This contradicts our assumption that
+                //       `user.boostEndTimestamp < user.lastRewardTimestamp`.
+                //    c. User unstaked JOE: Whenever a user unstakes JOE, we reset `user.boostEndTimestamp`
+                //       to be 0. This contradicts our assumption that `user.boostEndTimestamp != 0`.
                 // QED.
                 // With this, we now know `0 < user.lastRewardTimestamp <= user.boostEndTimestamp < block.timestamp`,
                 // which will allow us to perform the following logic safely.
