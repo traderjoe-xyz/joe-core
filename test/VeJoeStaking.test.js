@@ -377,6 +377,47 @@ describe("VeJoe Staking", function () {
         secondDepositBlock.timestamp + this.boostedDuration
       );
     });
+
+    it("should have lastRewardTimestamp updated after depositing if holding max veJOE cap", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      // Increase by `maxCap` seconds to ensure that user will have max veJOE
+      // after claiming
+      await increase(this.maxCap);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      const claimBlock = await ethers.provider.getBlock();
+
+      const claimAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // lastRewardTimestamp
+      expect(claimAliceUserInfo[1]).to.be.equal(claimBlock.timestamp);
+
+      await increase(this.maxCap);
+
+      const pendingVeJoe = await this.veJoeStaking.getPendingVeJoe(
+        this.alice.address
+      );
+      expect(pendingVeJoe).to.be.equal(0);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const secondDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // lastRewardTimestamp
+      expect(secondDepositAliceUserInfo[1]).to.be.equal(
+        secondDepositBlock.timestamp
+      );
+    });
   });
 
   describe("withdraw", function () {
