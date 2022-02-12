@@ -19,12 +19,18 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /// @notice Info for each user
+    /// `balance`: Amount of JOE currently staked by user
+    /// `lastRewardTimestamp`: Latest timestamp that user performed one of the following actions:
+    ///     1. Claimed pending veJOE
+    ///     2. Staked JOE for the first time
+    ///     3. Unstaked JOE
+    /// `boostEndTimestamp`: Timestamp of when user stops receiving boost benefits. Note that
+    /// this will be reset to 0 after the end of a boost
     struct UserInfo {
-        uint256 balance; // Amount of JOE currently staked by user
-        uint256 lastRewardTimestamp; // Timestamp of last non-zero veJOE claim, or time of first
-        // deposit if user has not claimed any veJOE yet
-        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits.
-        // Note that this will be reset to 0 after the end of a boost
+        uint256 balance;
+        uint256 lastRewardTimestamp;
+        uint256 boostEndTimestamp;
     }
 
     IERC20Upgradeable public joe;
@@ -175,10 +181,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
             userInfo.balance = userStakedJoe.add(_amount);
 
-            // User is eligible for boosted benefits if and only if all of the following are true:
-            // - User is not already currently receiving boosted benefits
-            // - `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
-            if (userInfo.boostEndTimestamp == 0 && _amount.mul(100) >= boostedThreshold.mul(userStakedJoe)) {
+            // User is eligible for boosted benefits `_amount` is at least
+            // `boostedThreshold / 100 * userStakedJoe`
+            if (_amount.mul(100) >= boostedThreshold.mul(userStakedJoe)) {
                 userInfo.boostEndTimestamp = block.timestamp.add(boostedDuration);
             }
         } else {
