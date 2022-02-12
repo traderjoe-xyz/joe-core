@@ -295,18 +295,28 @@ describe("VeJoe Staking", function () {
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
 
-      const block = await ethers.provider.getBlock();
+      await increase(this.boostedDuration);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      const afterClaimAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // boostEndTimestamp
+      expect(afterClaimAliceUserInfo[2]).to.be.equal(0);
 
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("5"));
 
-      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const seconDepositAliceUserInfo = await this.veJoeStaking.userInfos(
         this.alice.address
       );
       // boostEndTimestamp
-      expect(afterAliceUserInfo[2]).to.be.equal(
-        block.timestamp + this.boostedDuration
+      expect(seconDepositAliceUserInfo[2]).to.be.equal(
+        secondDepositBlock.timestamp + this.boostedDuration
       );
     });
 
@@ -326,6 +336,46 @@ describe("VeJoe Staking", function () {
       );
       // boostEndTimestamp
       expect(afterAliceUserInfo[2]).to.be.equal(0);
+    });
+
+    it("should have boosted period extended after depositing boostedThreshold and currently receiving boosted benefits", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      const initialDepositBlock = await ethers.provider.getBlock();
+
+      const initialDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      const initialDepositBoostEndTimestamp = initialDepositAliceUserInfo[2];
+
+      expect(initialDepositBoostEndTimestamp).to.be.equal(
+        initialDepositBlock.timestamp + this.boostedDuration
+      );
+
+      // Increase by some amount of time less than boostedDuration
+      await increase(this.boostedDuration / 2);
+
+      // Deposit boostedThreshold amount so that boost period gets extended
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const secondDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // boostEndTimestamp
+      const secondDepositBoostEndTimestamp = secondDepositAliceUserInfo[2];
+
+      expect(
+        secondDepositBoostEndTimestamp.gt(initialDepositBoostEndTimestamp)
+      ).to.be.equal(true);
+      expect(secondDepositBoostEndTimestamp).to.be.equal(
+        secondDepositBlock.timestamp + this.boostedDuration
+      );
     });
   });
 

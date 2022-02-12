@@ -179,7 +179,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
             uint256 userStakedJoe = userInfo.balance;
 
-            uint256 userVeJoeBalance = veJoe.balanceOf(_user);
+            uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
             uint256 userMaxVeJoeCap = userStakedJoe.mul(maxCap);
 
             // If the user is currently at their max veJOE cap, we need to update
