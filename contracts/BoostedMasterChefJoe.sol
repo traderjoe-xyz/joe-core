@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IRewarder.sol";
 
 interface IMasterChef {
     struct UserInfo {
@@ -37,13 +38,6 @@ interface IMasterChef {
     function investorPercent() external view returns (uint256);
 }
 
-interface IRewarder {
-    function onJoeReward(address user, uint256 newLpAmount) external;
-
-    function pendingTokens(address user) external view returns (uint256 pending);
-
-    function rewardToken() external view returns (IERC20);
-}
 
 library BoringERC20 {
     bytes4 private constant SIG_SYMBOL = 0x95d89b41; // symbol()
