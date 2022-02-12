@@ -184,7 +184,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
             // If the user is currently at their max veJOE cap, we need to update
             // their `lastRewardTimestamp` to now to prevent passive veJOE accrual
-            // after hitting their max cap.
+            // after user hit their max cap.
             if (userVeJoeBalance >= userMaxVeJoeCap) {
                 userInfo.lastRewardTimestamp = block.timestamp;
             }
@@ -286,7 +286,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 //       we will update `user.boostEndTimestamp` to be `0` (see `_claim` method). This
                 //       means that `user.boostEndTimestamp` should be `0` but that contradicts our
                 //       assumption that `user.boostEndTimestamp != 0`.
-                //    b. User JOE for the first time: When a user stakes JOE for the first time, we set
+                //    b. User stakes JOE for the first time: When a user stakes JOE for the first time, we set
                 //       `user.lastRewardTimestamp` to `block.timestamp` and `user.boostEndTimestamp` to
                 //       `block.timestamp + boostedDuration`. This contradicts our assumption that
                 //       `user.boostEndTimestamp < user.lastRewardTimestamp`.
