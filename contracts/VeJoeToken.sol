@@ -14,7 +14,7 @@ interface IBoostedMasterChefJoe {
 /// @author Trader Joe
 /// @notice Infinite supply, used to receive extra farming yields and voting power
 contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
-    /// @notice the masterPlatypus contract
+    /// @notice the BoostedMasterChefJoe contract
     IBoostedMasterChefJoe public boostedMasterChef;
 
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (VeJoeStaking)
