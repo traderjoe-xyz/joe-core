@@ -185,7 +185,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If the user is currently at their max veJOE cap, we need to update
             // their `lastRewardTimestamp` to now to prevent passive veJOE accrual
             // after user hit their max cap.
-            if (userVeJoeBalance >= userMaxVeJoeCap) {
+            if (userVeJoeBalance == userMaxVeJoeCap) {
                 userInfo.lastRewardTimestamp = block.timestamp;
             }
 
