@@ -8,36 +8,9 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IMasterChefJoe.sol";
 import "./interfaces/IRewarder.sol";
 import "./libraries/BoringJoeERC20.sol";
-
-interface IMasterChef {
-    struct UserInfo {
-        uint256 amount; // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-    }
-
-    struct PoolInfo {
-        IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. JOE to distribute per block.
-        uint256 lastRewardTimestamp; // Last block number that JOE distribution occurs.
-        uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
-    }
-
-    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
-
-    function totalAllocPoint() external view returns (uint256);
-
-    function joePerSec() external view returns (uint256);
-
-    function deposit(uint256 _pid, uint256 _amount) external;
-
-    function devPercent() external view returns (uint256);
-
-    function treasuryPercent() external view returns (uint256);
-
-    function investorPercent() external view returns (uint256);
-}
 
 /// @notice The (older) MasterChefJoeV2 contract gives out a constant number of JOE
 /// tokens per block.  It is the only address with minting rights for JOE.  The idea
@@ -97,7 +70,7 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     }
 
     /// @notice Address of MCJV2 contract
-    IMasterChef public immutable MASTER_CHEF_V2;
+    IMasterChefJoe public immutable MASTER_CHEF_V2;
     /// @notice Address of JOE contract
     IERC20 public immutable JOE;
     /// @notice Address of veJOE contract
@@ -136,7 +109,7 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     /// @param _veJoe The veJOE token contract address
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCJV2 contract
     constructor(
-        IMasterChef _MASTER_CHEF_V2,
+        IMasterChefJoe _MASTER_CHEF_V2,
         IERC20 _joe,
         IERC20 _veJoe,
         uint256 _MASTER_PID
