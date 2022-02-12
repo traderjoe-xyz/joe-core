@@ -73,7 +73,7 @@ describe("VeJoe Staking", function () {
       await expect(
         this.veJoeStaking.connect(this.dev).setMaxCap(100001)
       ).to.be.revertedWith(
-        "VeJoeStaking: expected new _maxCap to be greater than 0 and leq to 100000"
+        "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
       );
     });
 
@@ -169,11 +169,19 @@ describe("VeJoe Staking", function () {
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
+    it("should not allow owner to setBoostedThreshold to 0", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.dev).setBoostedThreshold(0)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
+      );
+    });
+
     it("should not allow owner to setBoostedThreshold greater than 100", async function () {
       await expect(
         this.veJoeStaking.connect(this.dev).setBoostedThreshold(101)
       ).to.be.revertedWith(
-        "VeJoeStaking: expected new _boostedThreshold to be less than or equal to 100"
+        "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
       );
     });
 
@@ -195,14 +203,35 @@ describe("VeJoe Staking", function () {
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should allow owner to setBoostedThreshold", async function () {
+    it("should not allow non-owner to setBoostedDuration greater than 365 days", async function () {
+      const secondsInHour = 60 * 60;
+      const secondsInDay = secondsInHour * 24;
+      const secondsInYear = secondsInDay * 365;
+      await expect(
+        this.veJoeStaking
+          .connect(this.alice)
+          .setBoostedDuration(secondsInYear + 1)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected _boostedDuration to be <= 365 days"
+      );
+    });
+
+    it("should allow owner to setBoostedThreshold to upper limit", async function () {
+      const secondsInHour = 60 * 60;
+      const secondsInDay = secondsInHour * 24;
+      const secondsInYear = secondsInDay * 365;
+
       expect(await this.veJoeStaking.boostedDuration()).to.be.equal(
         this.boostedDuration
       );
 
-      await this.veJoeStaking.connect(this.dev).setBoostedDuration(100);
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBoostedDuration(secondsInYear);
 
-      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(100);
+      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(
+        secondsInYear
+      );
     });
   });
 

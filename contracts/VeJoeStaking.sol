@@ -106,7 +106,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             _boostedThreshold != 0 && _boostedThreshold <= 100,
             "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
         );
-        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 15 days");
+        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 365 days");
         require(
             _maxCap != 0 && _maxCap <= MAX_MAX_CAP,
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
@@ -172,7 +172,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Set boostedDuration
     /// @param _boostedDuration The new boostedDuration
     function setBoostedDuration(uint256 _boostedDuration) external onlyOwner {
-        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 15 days");
+        require(_boostedDuration <= MAX_BOOSTED_DURATION, "VeJoeStaking: expected _boostedDuration to be <= 365 days");
         boostedDuration = _boostedDuration;
         emit UpdateBoostedDuration(msg.sender, _boostedDuration);
     }
