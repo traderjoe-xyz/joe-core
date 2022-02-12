@@ -203,13 +203,13 @@ describe("VeJoe Staking", function () {
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should not allow non-owner to setBoostedDuration greater than 365 days", async function () {
+    it("should not allow owner to setBoostedDuration greater than 365 days", async function () {
       const secondsInHour = 60 * 60;
       const secondsInDay = secondsInHour * 24;
       const secondsInYear = secondsInDay * 365;
       await expect(
         this.veJoeStaking
-          .connect(this.alice)
+          .connect(this.dev)
           .setBoostedDuration(secondsInYear + 1)
       ).to.be.revertedWith(
         "VeJoeStaking: expected _boostedDuration to be <= 365 days"
