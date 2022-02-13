@@ -17,6 +17,8 @@ interface IMasterChefJoe {
         uint256 accJoePerShare; // Accumulated JOE per share, times 1e12. See below.
     }
 
+    function userInfo(uint256 _pid, address _user) external view returns (IMasterChefJoe.UserInfo memory);
+
     function poolInfo(uint256 pid) external view returns (IMasterChefJoe.PoolInfo memory);
 
     function totalAllocPoint() external view returns (uint256);

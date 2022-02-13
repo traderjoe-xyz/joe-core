@@ -126,6 +126,10 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     /// double incentives.
     /// @param _dummyToken The address of the ERC-20 token to deposit into MCJV2.
     function init(IERC20 _dummyToken) external onlyOwner {
+        require(
+            MASTER_CHEF_V2.userInfo(MASTER_PID, address(this)).amount == 0,
+            "BoostedMasterChefJoe: Already have a balance in dummy token pool"
+        );
         uint256 balance = _dummyToken.balanceOf(msg.sender);
         require(balance != 0, "BoostedMasterChefJoe: Balance must exceed 0");
         _dummyToken.safeTransferFrom(msg.sender, address(this), balance);
