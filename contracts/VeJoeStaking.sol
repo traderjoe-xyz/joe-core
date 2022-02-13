@@ -192,7 +192,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
             userInfo.balance = userStakedJoe.add(_amount);
 
-            // User is eligible for boosted benefits `_amount` is at least
+            // User is eligible for boosted benefits if `_amount` is at least
             // `boostedThreshold / 100 * userStakedJoe`
             if (_amount.mul(100) >= boostedThreshold.mul(userStakedJoe)) {
                 userInfo.boostEndTimestamp = block.timestamp.add(boostedDuration);
