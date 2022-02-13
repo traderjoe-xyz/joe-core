@@ -19,12 +19,19 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /// @notice Info for each user
+    /// `balance`: Amount of JOE currently staked by user
+    /// `lastRewardTimestamp`: Latest timestamp that user performed one of the following actions:
+    ///     1. Claimed pending veJOE
+    ///     2. Staked JOE with zero balance
+    ///     3. Staked JOE with non-zero balance and is at their max veJOE cap after claim
+    ///     4. Unstaked JOE
+    /// `boostEndTimestamp`: Timestamp of when user stops receiving boost benefits. Note that
+    /// this will be reset to 0 after the end of a boost
     struct UserInfo {
-        uint256 balance; // Amount of JOE currently staked by user
-        uint256 lastRewardTimestamp; // Timestamp of last non-zero veJOE claim, or time of first
-        // deposit if user has not claimed any veJOE yet
-        uint256 boostEndTimestamp; // Timestamp of when user stops receiving boost benefits.
-        // Note that this will be reset to 0 after the end of a boost
+        uint256 balance;
+        uint256 lastRewardTimestamp;
+        uint256 boostEndTimestamp;
     }
 
     IERC20Upgradeable public joe;
@@ -173,12 +180,21 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
             uint256 userStakedJoe = userInfo.balance;
 
+            uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
+            uint256 userMaxVeJoeCap = userStakedJoe.mul(maxCap);
+
+            // If the user is currently at their max veJOE cap, we need to update
+            // their `lastRewardTimestamp` to now to prevent passive veJOE accrual
+            // after user hit their max cap.
+            if (userVeJoeBalance == userMaxVeJoeCap) {
+                userInfo.lastRewardTimestamp = block.timestamp;
+            }
+
             userInfo.balance = userStakedJoe.add(_amount);
 
-            // User is eligible for boosted benefits if and only if all of the following are true:
-            // - User is not already currently receiving boosted benefits
-            // - `_amount` is at least `boostedThreshold / 100 * userStakedJoe`
-            if (userInfo.boostEndTimestamp == 0 && _amount.mul(100) >= boostedThreshold.mul(userStakedJoe)) {
+            // User is eligible for boosted benefits if `_amount` is at least
+            // `boostedThreshold / 100 * userStakedJoe`
+            if (_amount.mul(100) >= boostedThreshold.mul(userStakedJoe)) {
                 userInfo.boostEndTimestamp = block.timestamp.add(boostedDuration);
             }
         } else {
@@ -265,19 +281,28 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 // Proof by contradiction:
                 // 1. Assume that `user.boostEndTimestamp != 0` and
                 //    `user.boostEndTimestamp < user.lastRewardTimestamp`.
-                // 2. That means that at time `user.lastRewardTimestamp`, the user claimed
-                //    some veJOE. Furthermore, we know that anytime a user claims some veJOE,
-                //    if the current timestamp is greater than or equal to `user.boostEndTimestamp`,
-                //    we will update `user.boostEndTimestamp` to be `0` (see `_claim` method).
-                // 3. This means that `user.boostEndTimestamp` should be `0` but that contradicts our
-                //    assumption that `user.boostEndTimestamp != 0`
+                // 2. There are 4 cases when a user's `lastRewardTimestamp` is updated:
+                //    a. User claimed pending veJOE: We know that anytime a user claims some veJOE,
+                //       if the current timestamp is greater than or equal to `user.boostEndTimestamp`,
+                //       we will update `user.boostEndTimestamp` to be `0` (see `_claim` method). This
+                //       means that `user.boostEndTimestamp` should be `0` but that contradicts our
+                //       assumption that `user.boostEndTimestamp != 0`.
+                //    b. User staked JOE with zero balance: If a user is staking JOE with zero balance, it
+                //       either means 1) this is their first time staking or 2) their last action was performing
+                //       unstaking JOE.
+                //       For first time stakers, we set `user.lastRewardTimestamp` to `block.timestamp`
+                //       and `user.boostEndTimestamp` to `block.timestamp + boostedDuration`. This contradicts
+                //       our assumption that `user.boostEndTimestamp < user.lastRewardTimestamp`.
+                //       If the user's previous action was withdraw, that means that their `user.boostEndTimestamp`
+                //       was reset to `0`. This contradicts our assumption that `user.boostEndTimestamp != 0`.
+                //    c. User staked JOE with non-zero balance and is at their max veJOE cap after claim: Anytime
+                //       we perform a claim, if `user.boostEndTimestamp` is leq than the current timestamp, we
+                //       reset it to `0`. This contradicts our assumption that `user.boostEndTimestamp != 0`.
+                //    d. User unstaked JOE: Whenever a user unstakes JOE, we reset `user.boostEndTimestamp`
+                //       to be 0. This contradicts our assumption that `user.boostEndTimestamp != 0`.
                 // QED.
-                // With this, we now know `0 < user.lastRewardTimestamp <= user.boostEndTimestamp < block.timestamp`,
-                // which will allow us to perform the following logic safely.
 
-                // If the `block.timestamp > user.boostEndTimestamp` and `boostEndTimestamp != 0`,
-                // that means the user's boosted benefits ended sometime between their `lastRewardTimestamp`
-                // and now.
+                // Now we know that `0 < user.lastRewardTimestamp <= user.boostEndTimestamp < block.timestamp`.
                 // In this case, we need to properly provide them the boosted generation rate for
                 // those `boostEndTimestamp - lastRewardTimestamp` seconds.
                 uint256 boostedTimeElapsed = user.boostEndTimestamp.sub(user.lastRewardTimestamp);
@@ -324,16 +349,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     function _claim() private {
         uint256 veJoeToClaim = getPendingVeJoe(msg.sender);
 
-        if (veJoeToClaim > 0) {
-            UserInfo storage userInfo = userInfos[msg.sender];
+        UserInfo storage userInfo = userInfos[msg.sender];
 
+        // If user's boost period has ended, reset `boostEndTimestamp` to 0
+        if (userInfo.boostEndTimestamp != 0 && block.timestamp >= userInfo.boostEndTimestamp) {
+            userInfo.boostEndTimestamp = 0;
+        }
+
+        if (veJoeToClaim > 0) {
             // Update user's last reward timestamp
             userInfo.lastRewardTimestamp = block.timestamp;
-
-            // If user's boost period has ended, reset `boostEndTimestamp` to 0
-            if (userInfo.boostEndTimestamp != 0 && block.timestamp >= userInfo.boostEndTimestamp) {
-                userInfo.boostEndTimestamp = 0;
-            }
 
             veJoe.mint(msg.sender, veJoeToClaim);
             emit Claim(msg.sender, veJoeToClaim);
