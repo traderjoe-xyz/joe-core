@@ -317,6 +317,28 @@ describe("BoostedMasterChefJoe", function () {
     expect(pending[0]).to.be.closeTo(claimable, 100)
   })
 
+  it("should award rewards according to boosted liquidity", async function () {
+    await network.provider.send("evm_setAutomine", [false])
+
+    await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+
+    await this.bmc.connect(this.bob).deposit(0, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
+    await network.provider.send("evm_mine")
+
+    await network.provider.send("evm_increaseTime", [3600])
+    await network.provider.send("evm_mine")
+
+    // We use `closeTo` here with 2 Wei to account for rounding errors.
+    expect((await this.bmc.pendingTokens(0, this.bob.address))[0]).to.be.closeTo(
+      (await this.bmc.pendingTokens(0, this.alice.address))[0].mul(25).div(10),
+      2
+    )
+    await network.provider.send("evm_setAutomine", [true])
+  })
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
