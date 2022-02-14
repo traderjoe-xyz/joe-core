@@ -50,7 +50,7 @@ describe("BoostedMasterChefJoe", function () {
 
     this.dummyToken = await this.ERC20Mock.connect(this.alice).deploy("Joe Dummy", "DUMMY", 1)
     this.veJoe = await this.VeJoeToken.connect(this.dev).deploy()
-    await this.chef2.add("100", this.dummyToken.address, ADDRESS_ZERO)
+    await this.chef2.add(100, this.dummyToken.address, ADDRESS_ZERO)
 
     this.bmc = await this.BMC.deploy(this.chef2.address, this.joe.address, this.veJoe.address, 0)
     await this.bmc.deployed()
@@ -60,12 +60,12 @@ describe("BoostedMasterChefJoe", function () {
     await this.bmc.init(this.dummyToken.address)
 
     // TODO: Don't name this sushi.
-    this.lp = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000")
+    this.lp = await this.ERC20Mock.deploy("LPToken", "LP", 10000000000)
     await this.lp.deployed()
 
-    await this.lp.transfer(this.alice.address, "1000")
-    await this.lp.transfer(this.bob.address, "1000")
-    await this.lp.transfer(this.carol.address, "1000")
+    await this.lp.transfer(this.alice.address, 1000)
+    await this.lp.transfer(this.bob.address, 1000)
+    await this.lp.transfer(this.carol.address, 1000)
 
     this.bmc.add(100, this.lp.address, ADDRESS_ZERO)
   })
@@ -78,23 +78,23 @@ describe("BoostedMasterChefJoe", function () {
   it("should adjust boost balance when deposit", async function () {
     let pool
     // User has no veJoe
-    await this.lp.connect(this.alice).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.alice).deposit(0, "1000")
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(0)
-    expect(pool.totalBoostedAmount).to.equal("1000")
+    expect(pool.totalBoostedAmount).to.equal(1000)
     expect((await this.bmc.userInfo(0, this.alice.address)).veJoeBalance).to.equal(0)
 
     // Transfer some vejoe to bob
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
 
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("3500")
-    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("100")
+    expect(pool.totalBoostedAmount).to.equal(3500)
+    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal(100)
   })
 
   it("should adjust boost balance when deposit first", async function () {
@@ -102,12 +102,12 @@ describe("BoostedMasterChefJoe", function () {
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
 
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     const pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("2500")
-    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("100")
+    expect(pool.totalBoostedAmount).to.equal(2500)
+    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal(100)
   })
 
   it("should adjust boost balance on second deposit", async function () {
@@ -115,48 +115,48 @@ describe("BoostedMasterChefJoe", function () {
     // Transfer some vejoe to bob
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "500")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 500)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("1250")
-    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("100")
+    expect(pool.totalBoostedAmount).to.equal(1250)
+    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal(100)
 
-    await this.bmc.connect(this.bob).deposit(0, "500")
+    await this.bmc.connect(this.bob).deposit(0, 500)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("2500")
-    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("100")
+    expect(pool.totalBoostedAmount).to.equal(2500)
+    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal(100)
   })
 
   it("should adjust boost balance when withdraw", async function () {
-    await this.lp.connect(this.alice).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.alice).deposit(0, "1000")
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
     // Transfer some vejoe to bob
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
 
-    await this.bmc.connect(this.bob).withdraw(0, "1000")
+    await this.bmc.connect(this.bob).withdraw(0, 1000)
     const pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(0)
-    expect(pool.totalBoostedAmount).to.equal("1000")
+    expect(pool.totalBoostedAmount).to.equal(1000)
   })
 
   it("should adjust boost balance when partial withdraw", async function () {
-    await this.lp.connect(this.alice).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.alice).deposit(0, "1000")
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
     // Transfer some vejoe to bob
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
 
-    await this.bmc.connect(this.bob).withdraw(0, "500")
+    await this.bmc.connect(this.bob).withdraw(0, 500)
     const pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("2250")
+    expect(pool.totalBoostedAmount).to.equal(2250)
   })
 
   it("should return correct pending tokens according to boost", async function () {
@@ -164,10 +164,10 @@ describe("BoostedMasterChefJoe", function () {
     // Disable automining so both users can deposit at the same time.
     await network.provider.send("evm_setAutomine", [false])
 
-    await this.lp.connect(this.alice).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.alice).deposit(0, "1000")
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     await network.provider.send("evm_mine")
 
     // Make sure contract has to JOE to emit
@@ -186,9 +186,9 @@ describe("BoostedMasterChefJoe", function () {
 
   it("should record the correct reward debt on withdraw", async function () {
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
 
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     await network.provider.send("evm_setAutomine", [false])
     // Make sure contract has to JOE to emit
     await this.bmc.connect(this.dev).harvestFromMasterChef()
@@ -208,16 +208,16 @@ describe("BoostedMasterChefJoe", function () {
 
   it("should claim reward on deposit", async function () {
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
 
-    await this.bmc.connect(this.bob).deposit(0, "500")
+    await this.bmc.connect(this.bob).deposit(0, 500)
     await network.provider.send("evm_setAutomine", [false])
     // Make sure contract has to JOE to emit
     await this.bmc.connect(this.dev).harvestFromMasterChef()
     await network.provider.send("evm_increaseTime", [3600])
     await network.provider.send("evm_mine")
 
-    await this.bmc.connect(this.bob).deposit(0, "500")
+    await this.bmc.connect(this.bob).deposit(0, 500)
 
     await network.provider.send("evm_mine")
 
@@ -230,59 +230,59 @@ describe("BoostedMasterChefJoe", function () {
 
   it("should change rate when vjoe mints", async function () {
     let pool
-    await this.lp.connect(this.alice).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.alice).deposit(0, "1000")
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(0)
-    expect(pool.totalBoostedAmount).to.equal("1000")
+    expect(pool.totalBoostedAmount).to.equal(1000)
     expect((await this.bmc.userInfo(0, this.alice.address)).veJoeBalance).to.equal(0)
 
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(0)
-    expect(pool.totalBoostedAmount).to.equal("2000")
+    expect(pool.totalBoostedAmount).to.equal(2000)
     expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("0")
 
     // Mint some vejoe to bob
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("3500")
-    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("100")
+    expect(pool.totalBoostedAmount).to.equal(3500)
+    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal(100)
   })
 
   it("should change rate when vjoe burns", async function () {
     let pool
-    await this.lp.connect(this.alice).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.alice).deposit(0, "1000")
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.alice).deposit(0, 1000)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(0)
-    expect(pool.totalBoostedAmount).to.equal("1000")
+    expect(pool.totalBoostedAmount).to.equal(1000)
     expect((await this.bmc.userInfo(0, this.alice.address)).veJoeBalance).to.equal(0)
 
     // Bob enters the pool
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(100)
-    expect(pool.totalBoostedAmount).to.equal("3500")
-    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("100")
+    expect(pool.totalBoostedAmount).to.equal(3500)
+    expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal(100)
 
-    await this.veJoe.connect(this.dev).burnFrom(this.bob.address, "100")
+    await this.veJoe.connect(this.dev).burnFrom(this.bob.address, 100)
 
     pool = await this.bmc.poolInfo(0)
     expect(pool.totalVeJoe).to.equal(0)
-    expect(pool.totalBoostedAmount).to.equal("2000")
+    expect(pool.totalBoostedAmount).to.equal(2000)
     expect((await this.bmc.userInfo(0, this.bob.address)).veJoeBalance).to.equal("0")
   })
 
   it("should pay out rewards in claimable", async function () {
     // Bob enters the pool
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
 
     await network.provider.send("evm_increaseTime", [3600])
     await network.provider.send("evm_mine")
@@ -301,15 +301,15 @@ describe("BoostedMasterChefJoe", function () {
   it("should stop boosting if burn vejoe", async function () {
     // Bob enters the pool
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
-    await this.lp.connect(this.bob).approve(this.bmc.address, "1000")
-    await this.bmc.connect(this.bob).deposit(0, "1000")
+    await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
+    await this.bmc.connect(this.bob).deposit(0, 1000)
 
     await network.provider.send("evm_increaseTime", [3600])
     await network.provider.send("evm_mine")
-    expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal("2500")
+    expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal(2500)
 
-    await this.veJoe.connect(this.dev).burnFrom(this.bob.address, "100")
-    expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal("1000")
+    await this.veJoe.connect(this.dev).burnFrom(this.bob.address, 100)
+    expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal(1000)
 
     let pending = await this.bmc.pendingTokens(0, this.bob.address)
     let claimable = await this.bmc.claimableJoe(0, this.bob.address)
