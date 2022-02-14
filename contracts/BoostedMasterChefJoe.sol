@@ -196,7 +196,9 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
         if (_overwrite) {
-            _rewarder.onJoeReward(address(0), 0); // sanity check
+            if (address(_rewarder) != address(0)) {
+                _rewarder.onJoeReward(address(0), 0);
+            }
             pool.rewarder = _rewarder;
         }
         poolInfo[_pid] = pool;
