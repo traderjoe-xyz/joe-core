@@ -101,7 +101,7 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     event UpdatePool(uint256 indexed pid, uint256 lastRewardTimestamp, uint256 lpSupply, uint256 accJoePerShare);
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event Init();
+    event Init(uint256 amount);
     event MaxBoostFactorChanged(uint256 maxBoostFactor);
 
     /// @param _MASTER_CHEF_V2 The MCJV2 contract address
@@ -135,7 +135,7 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
         _dummyToken.safeTransferFrom(msg.sender, address(this), balance);
         _dummyToken.approve(address(MASTER_CHEF_V2), balance);
         MASTER_CHEF_V2.deposit(MASTER_PID, balance);
-        emit Init();
+        emit Init(balance);
     }
 
     /// @notice Returns the number of BMCJ pools.

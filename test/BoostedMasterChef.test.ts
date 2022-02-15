@@ -57,7 +57,7 @@ describe.only("BoostedMasterChefJoe", function () {
 
     await this.veJoe.setBoostedMasterChefJoe(this.bmc.address)
     await this.dummyToken.approve(this.bmc.address, 1)
-    await this.bmc.init(this.dummyToken.address)
+    expect(this.bmc.init(this.dummyToken.address)).to.emit(this.bmc, "Init").withArgs(1)
 
     // TODO: Don't name this sushi.
     this.lp = await this.ERC20Mock.deploy("LPToken", "LP", 10000000000)
