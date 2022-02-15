@@ -106,7 +106,6 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event Init(uint256 amount);
-    event MaxBoostFactorChanged(uint256 maxBoostFactor);
 
     /// @param _MASTER_CHEF_V2 The MCJV2 contract address
     /// @param _joe The JOE token contract address
