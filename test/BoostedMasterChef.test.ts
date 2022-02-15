@@ -1,4 +1,4 @@
-import { ethers, network } from "hardhat"
+import { ethers, network, upgrades } from "hardhat"
 import { expect } from "chai"
 import { ADDRESS_ZERO, advanceBlock, advanceBlockTo, latest, duration, increase } from "./utilities"
 
@@ -52,7 +52,7 @@ describe.only("BoostedMasterChefJoe", function () {
     this.veJoe = await this.VeJoeToken.connect(this.dev).deploy()
     await this.chef2.add(100, this.dummyToken.address, ADDRESS_ZERO)
 
-    this.bmc = await this.BMC.deploy(this.chef2.address, this.joe.address, this.veJoe.address, 0)
+    this.bmc = await upgrades.deployProxy(this.BMC, [this.chef2.address, this.joe.address, this.veJoe.address, 0])
     await this.bmc.deployed()
 
     await this.veJoe.setBoostedMasterChefJoe(this.bmc.address)

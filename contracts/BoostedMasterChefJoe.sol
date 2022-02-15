@@ -3,10 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IMasterChefJoe.sol";
 import "./interfaces/IRewarder.sol";
@@ -28,10 +29,10 @@ import "./libraries/BoringJoeERC20.sol";
 /// liquidity multiplied by a boost factor. The boost factor is calculated by the
 /// amount of veJOE held by the user over the total veJOE amount held by all pool
 /// participants. Total liquidity is the sum of all boosted liquidity.
-contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
-    using SafeMath for uint256;
+contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+    using SafeMathUpgradeable for uint256;
     using BoringJoeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     /// @notice Info of each BMCJ user
     /// `amount` LP token amount the user has provided
@@ -70,27 +71,27 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     }
 
     /// @notice Address of MCJV2 contract
-    IMasterChefJoe public immutable MASTER_CHEF_V2;
+    IMasterChefJoe public MASTER_CHEF_V2;
     /// @notice Address of JOE contract
-    IERC20 public immutable JOE;
+    IERC20 public JOE;
     /// @notice Address of veJOE contract
-    IERC20 public immutable VEJOE;
+    IERC20 public VEJOE;
     /// @notice The index of BMCJ master pool in MCJV2
-    uint256 public immutable MASTER_PID;
+    uint256 public MASTER_PID;
 
     /// @notice Info of each BMCJ pool
     PoolInfo[] public poolInfo;
     /// @dev Set of all LP tokens that have been added as pools
-    EnumerableSet.AddressSet private lpTokens;
+    EnumerableSetUpgradeable.AddressSet private lpTokens;
 
     /// @notice Info of each user that stakes LP tokens
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools
     uint256 public totalAllocPoint;
-    uint256 private constant ACC_TOKEN_PRECISION = 1e18;
+    uint256 private ACC_TOKEN_PRECISION;
 
     /// @dev A maximum scaling factor applied to boosted amounts
-    uint256 public maxBoostFactor = 1500;
+    uint256 public maxBoostFactor;
     /// @dev Amount of claimable Joe the user has, this is required as we
     /// need to update rewardDebt after a token operation but we don't
     /// want to send a reward at this point. This amount gets added onto
@@ -111,16 +112,20 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     /// @param _joe The JOE token contract address
     /// @param _veJoe The veJOE token contract address
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCJV2 contract
-    constructor(
+    function initialize(
         IMasterChefJoe _MASTER_CHEF_V2,
         IERC20 _joe,
         IERC20 _veJoe,
         uint256 _MASTER_PID
-    ) public {
+    ) public initializer {
+        __Ownable_init();
         MASTER_CHEF_V2 = _MASTER_CHEF_V2;
         JOE = _joe;
         VEJOE = _veJoe;
         MASTER_PID = _MASTER_PID;
+
+        ACC_TOKEN_PRECISION = 1e18;
+        maxBoostFactor = 1500;
     }
 
     /// @notice Deposits a dummy token to `MASTER_CHEF_V2` MCJV2. This is required because MCJV2
@@ -258,14 +263,14 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     }
 
     /// @notice Calculates and returns the `amount` of JOE per second
-    /// @return _amount The amount of JOE emitted per second
-    function joePerSec() public view returns (uint256 _amount) {
+    /// @return amount The amount of JOE emitted per second
+    function joePerSec() public view returns (uint256 amount) {
         uint256 total = 1000;
         uint256 lpPercent = total.sub(MASTER_CHEF_V2.devPercent()).sub(MASTER_CHEF_V2.treasuryPercent()).sub(
             MASTER_CHEF_V2.investorPercent()
         );
         uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
-        _amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
+        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
     }
 
     /// @notice Update reward variables of the given pool
