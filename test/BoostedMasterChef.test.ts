@@ -72,7 +72,7 @@ describe.only("BoostedMasterChefJoe", function () {
 
   it("should revert if init called twice", async function () {
     await this.dummyToken.approve(this.bmc.address, 1)
-    await expect(this.bmc.init(this.dummyToken.address)).to.be.revertedWith("BoostedMasterChefJoe: Already have a balance in dummy token pool")
+    expect(this.bmc.init(this.dummyToken.address)).to.be.revertedWith("BoostedMasterChefJoe: Already has a balance of dummy token")
   })
 
   it("should adjust boost balance when deposit", async function () {

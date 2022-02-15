@@ -77,15 +77,18 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     IERC20 public immutable VEJOE;
     /// @notice The index of BMCJ master pool in MCJV2
     uint256 public immutable MASTER_PID;
+
     /// @notice Info of each BMCJ pool
     PoolInfo[] public poolInfo;
-    // Set of all LP tokens that have been added as pools
+    /// @dev Set of all LP tokens that have been added as pools
     EnumerableSet.AddressSet private lpTokens;
+
     /// @notice Info of each user that stakes LP tokens
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools
     uint256 public totalAllocPoint;
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
+
     /// @dev A maximum scaling factor applied to boosted amounts
     uint256 public maxBoostFactor = 1500;
     /// @dev Amount of claimable Joe the user has, this is required as we
@@ -127,8 +130,8 @@ contract BoostedMasterChefJoe is Ownable, ReentrancyGuard {
     /// @param _dummyToken The address of the ERC-20 token to deposit into MCJV2.
     function init(IERC20 _dummyToken) external onlyOwner {
         require(
-            MASTER_CHEF_V2.userInfo(MASTER_PID, address(this)).amount == 0,
-            "BoostedMasterChefJoe: Already have a balance in dummy token pool"
+            _dummyToken.balanceOf(address(MASTER_CHEF_V2)) == 0,
+            "BoostedMasterChefJoe: Already has a balance of dummy token"
         );
         uint256 balance = _dummyToken.balanceOf(msg.sender);
         require(balance != 0, "BoostedMasterChefJoe: Balance must exceed 0");
