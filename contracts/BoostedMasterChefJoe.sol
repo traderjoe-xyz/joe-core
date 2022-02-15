@@ -152,7 +152,6 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     }
 
     /// @notice Add a new LP to the pool. Can only be called by the owner.
-    /// DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     /// @param _allocPoint AP of the new pool.
     /// @param _lpToken Address of the LP ERC-20 token.
     /// @param _rewarder Address of the rewarder delegate.
