@@ -1,8 +1,8 @@
 import { ethers, network } from "hardhat"
 import { expect } from "chai"
-import { ADDRESS_ZERO, advanceTimeAndBlock, advanceBlockTo, latest, duration, increase } from "./utilities"
+import { ADDRESS_ZERO, advanceBlock, advanceBlockTo, latest, duration, increase } from "./utilities"
 
-describe("BoostedMasterChefJoe", function () {
+describe.only("BoostedMasterChefJoe", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
@@ -168,12 +168,13 @@ describe("BoostedMasterChefJoe", function () {
     await this.bmc.connect(this.alice).deposit(0, 1000)
     await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
     await this.bmc.connect(this.bob).deposit(0, 1000)
-    await network.provider.send("evm_mine")
 
-    // Make sure contract has to JOE to emit
+    await advanceBlock()
+
+    // Make sure contract has JOE to emit
     await this.bmc.connect(this.dev).harvestFromMasterChef()
-    await network.provider.send("evm_increaseTime", [3600])
-    await network.provider.send("evm_mine")
+
+    await increase(duration.hours(1))
 
     // bob should have 2.5x the pending tokens as alice.
     const alicePending = await this.bmc.pendingTokens(0, this.alice.address)
@@ -190,15 +191,12 @@ describe("BoostedMasterChefJoe", function () {
 
     await this.bmc.connect(this.bob).deposit(0, 1000)
     await network.provider.send("evm_setAutomine", [false])
-    // Make sure contract has to JOE to emit
+    // Make sure contract has JOE to emit
     await this.bmc.connect(this.dev).harvestFromMasterChef()
-    await network.provider.send("evm_increaseTime", [3600])
-    await network.provider.send("evm_mine")
+    await increase(duration.hours(1))
 
     await this.bmc.connect(this.bob).withdraw(0, 0)
-
-    await network.provider.send("evm_increaseTime", [1])
-    await network.provider.send("evm_mine")
+    await increase(duration.seconds(1))
 
     const user = await this.bmc.userInfo(0, this.bob.address)
     expect(await this.joe.balanceOf(this.bob.address)).to.equal(user.rewardDebt)
@@ -212,14 +210,13 @@ describe("BoostedMasterChefJoe", function () {
 
     await this.bmc.connect(this.bob).deposit(0, 500)
     await network.provider.send("evm_setAutomine", [false])
-    // Make sure contract has to JOE to emit
+    // Make sure contract has JOE to emit
     await this.bmc.connect(this.dev).harvestFromMasterChef()
-    await network.provider.send("evm_increaseTime", [3600])
-    await network.provider.send("evm_mine")
+    await increase(duration.hours(1))
 
     await this.bmc.connect(this.bob).deposit(0, 500)
 
-    await network.provider.send("evm_mine")
+    await advanceBlock()
 
     const user = await this.bmc.userInfo(0, this.bob.address)
     // `mul(2)` is due to doubling the deposit.
@@ -284,8 +281,7 @@ describe("BoostedMasterChefJoe", function () {
     await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
     await this.bmc.connect(this.bob).deposit(0, 1000)
 
-    await network.provider.send("evm_increaseTime", [3600])
-    await network.provider.send("evm_mine")
+    await increase(duration.hours(1))
 
     const pending = await this.bmc.pendingTokens(0, this.bob.address)
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
@@ -304,8 +300,7 @@ describe("BoostedMasterChefJoe", function () {
     await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
     await this.bmc.connect(this.bob).deposit(0, 1000)
 
-    await network.provider.send("evm_increaseTime", [3600])
-    await network.provider.send("evm_mine")
+    await increase(duration.hours(1))
     expect(await this.bmc.getBoostedLiquidity(0, this.bob.address)).to.equal(2500)
 
     await this.veJoe.connect(this.dev).burnFrom(this.bob.address, 100)
@@ -326,10 +321,8 @@ describe("BoostedMasterChefJoe", function () {
 
     await this.bmc.connect(this.bob).deposit(0, 1000)
     await this.bmc.connect(this.alice).deposit(0, 1000)
-    await network.provider.send("evm_mine")
-
-    await network.provider.send("evm_increaseTime", [3600])
-    await network.provider.send("evm_mine")
+    await advanceBlock()
+    await increase(duration.hours(1))
 
     // We use `closeTo` here with 2 Wei to account for rounding errors.
     expect((await this.bmc.pendingTokens(0, this.bob.address))[0]).to.be.closeTo(
