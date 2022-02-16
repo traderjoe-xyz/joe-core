@@ -332,6 +332,12 @@ describe.only("BoostedMasterChefJoe", function () {
     await network.provider.send("evm_setAutomine", [true])
   })
 
+  it("it should uptade the totalAllocPoint when calling set", async function () {
+    await this.bmc.set(0, 1000, ADDRESS_ZERO, 0)
+    expect(await this.bmc.totalAllocPoint()).to.equal(1000)
+    expect((await this.bmc.poolInfo(0)).allocPoint).to.equal(1000)
+  })
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",

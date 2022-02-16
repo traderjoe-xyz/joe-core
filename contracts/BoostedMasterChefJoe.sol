@@ -199,7 +199,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         bool _overwrite
     ) external onlyOwner {
         PoolInfo memory pool = poolInfo[_pid];
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
+        totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
         if (_overwrite) {
             if (address(_rewarder) != address(0)) {
