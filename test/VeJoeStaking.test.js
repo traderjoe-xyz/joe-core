@@ -119,7 +119,7 @@ describe("VeJoe Staking", function () {
       );
       // balance
       expect(beforeAliceUserInfo[0]).to.be.equal(0);
-      // debtReward
+      // rewardDebt
       expect(beforeAliceUserInfo[1]).to.be.equal(0);
 
       // Check joe balance before deposit
@@ -176,7 +176,7 @@ describe("VeJoe Staking", function () {
         .deposit(ethers.utils.parseEther("1"));
 
       // Check veJoe balance after deposit
-      // Should have 100 * 30 = 6000 veJOE
+      // Should have 100 * 30 = 3000 veJOE
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("3000")
       );
@@ -240,9 +240,9 @@ describe("VeJoe Staking", function () {
       );
       // balance
       expect(afterAliceUserInfo[0]).to.be.equal(ethers.utils.parseEther("95"));
-      // debtReward
+      // rewardDebt
       expect(afterAliceUserInfo[1]).to.be.equal(
-        (await this.veJoeStaking.accVeJoePerShare()).mul("95")
+        (await this.veJoeStaking.accVeJoePerShare()).mul(95)
       );
 
       // Check user token balances are updated correctly
@@ -272,9 +272,6 @@ describe("VeJoe Staking", function () {
       await this.veJoeStaking.connect(this.alice).claim();
       const claimBlock = await ethers.provider.getBlock();
 
-      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
-        this.alice.address
-      );
       // lastRewardTimestamp
       expect(await this.veJoeStaking.lastRewardTimestamp()).to.be.equal(
         claimBlock.timestamp
@@ -296,6 +293,64 @@ describe("VeJoe Staking", function () {
       // Check veJoe balance after claim
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("5000")
+      );
+    });
+
+    it("should receive correct veJOE if baseGenerationRate is updated multiple times", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(9);
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBaseGenerationRate(ethers.utils.parseEther("2"));
+
+      await increase(9);
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBaseGenerationRate(ethers.utils.parseEther("1.5"));
+
+      await increase(9);
+
+      // Check veJoe balance before claim
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      // Check veJoe balance after claim
+      // Expected to have been generating at a rate of 1 for the first 10 seconds,
+      // a rate of 2 for the next 10 seconds, and a rate of 1.5 for the last 10
+      // seconds, i.e.:
+      // 100 * 10 * 1 + 100 * 10 * 2 + 100 * 10 * 1.5 = 4500
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("4500")
+      );
+    });
+  });
+
+  describe("updateRewardVars", function () {
+    it("should have correct reward vars after time passes", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      const block = await ethers.provider.getBlock();
+      await increase(29);
+
+      const accVeJoePerShareBeforeUpdate =
+        await this.veJoeStaking.accVeJoePerShare();
+      await this.veJoeStaking.connect(this.dev).updateRewardVars();
+
+      expect(await this.veJoeStaking.lastRewardTimestamp()).to.be.equal(
+        block.timestamp + 30
+      );
+      // Increase should be `secondsElapsed * baseGenerationRate * ACC_VEJOE_PER_SHARE_PRECISION`:
+      // = 30 * 1 * 1e18
+      expect(await this.veJoeStaking.accVeJoePerShare()).to.be.equal(
+        accVeJoePerShareBeforeUpdate.add(ethers.utils.parseEther("30"))
       );
     });
   });
