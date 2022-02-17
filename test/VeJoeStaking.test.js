@@ -295,6 +295,33 @@ describe("VeJoe Staking", function () {
         ethers.utils.parseEther("5000")
       );
     });
+
+    it("should receive correct veJOE if baseGenerationRate is updated", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(49);
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBaseGenerationRate(ethers.utils.parseEther("2"));
+
+      await increase(49);
+
+      // Check veJoe balance before claim
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      // Check veJoe balance after claim
+      // Expected to have been generating at a rate of 1 for the first 50 seconds
+      // and then at a rate of 2 for the latter 50 seconds, i.e.:
+      // 100 * 50 + 100 * 50 * 2 = 15000
+      expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("15000")
+      );
+    });
   });
 
   describe("updateRewardVars", function () {
