@@ -21,7 +21,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Info for each user
     /// `balance`: Amount of JOE currently staked by user
-    /// `rewardDebt`: The amount of rewards user has already claimed
+    /// `rewardDebt`: The reward debt of the user
     struct UserInfo {
         uint256 balance;
         uint256 rewardDebt;
