@@ -300,6 +300,30 @@ describe("VeJoe Staking", function () {
     });
   });
 
+  describe("updateRewardVars", function () {
+    it("should have correct reward vars after time passes", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      const block = await ethers.provider.getBlock();
+      await increase(29);
+
+      const accVeJoePerShareBeforeUpdate =
+        await this.veJoeStaking.accVeJoePerShare();
+      await this.veJoeStaking.connect(this.dev).updateRewardVars();
+
+      expect(await this.veJoeStaking.lastRewardTimestamp()).to.be.equal(
+        block.timestamp + 30
+      );
+      // Increase should be `secondsElapsed * baseGenerationRate * ACC_VEJOE_PER_SHARE_PRECISION`:
+      // = 30 * 1 * 1e18
+      expect(await this.veJoeStaking.accVeJoePerShare()).to.be.equal(
+        accVeJoePerShareBeforeUpdate.add(ethers.utils.parseEther("30"))
+      );
+    });
+  });
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
