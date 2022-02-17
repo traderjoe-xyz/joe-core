@@ -119,7 +119,7 @@ describe("VeJoe Staking", function () {
       );
       // balance
       expect(beforeAliceUserInfo[0]).to.be.equal(0);
-      // debtReward
+      // rewardDebt
       expect(beforeAliceUserInfo[1]).to.be.equal(0);
 
       // Check joe balance before deposit
@@ -176,7 +176,7 @@ describe("VeJoe Staking", function () {
         .deposit(ethers.utils.parseEther("1"));
 
       // Check veJoe balance after deposit
-      // Should have 100 * 30 = 6000 veJOE
+      // Should have 100 * 30 = 3000 veJOE
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
         ethers.utils.parseEther("3000")
       );
