@@ -57,10 +57,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     mapping(address => UserInfo) public userInfos;
 
     event Claim(address indexed user, uint256 amount);
-    event UpdateBaseGenerationRate(
-        address indexed user,
-        uint256 baseGenerationRate
-    );
+    event UpdateBaseGenerationRate(address indexed user, uint256 baseGenerationRate);
     event UpdateMaxCap(address indexed user, uint256 maxCap);
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
@@ -77,14 +74,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _baseGenerationRate,
         uint256 _maxCap
     ) public initializer {
-        require(
-            address(_joe) != address(0),
-            "VeJoeStaking: unexpected zero address for _joe"
-        );
-        require(
-            address(_veJoe) != address(0),
-            "VeJoeStaking: unexpected zero address for _veJoe"
-        );
+        require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
+        require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
 
         upperLimitMaxCap = 100000;
         require(
@@ -105,10 +96,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Set maxCap
     /// @param _maxCap The new maxCap
     function setMaxCap(uint256 _maxCap) external onlyOwner {
-        require(
-            _maxCap > maxCap,
-            "VeJoeStaking: expected new _maxCap to be greater than existing maxCap"
-        );
+        require(_maxCap > maxCap, "VeJoeStaking: expected new _maxCap to be greater than existing maxCap");
         require(
             _maxCap != 0 && _maxCap <= upperLimitMaxCap,
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
@@ -119,10 +107,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Set baseGenerationRate
     /// @param _baseGenerationRate The new baseGenerationRate
-    function setBaseGenerationRate(uint256 _baseGenerationRate)
-        external
-        onlyOwner
-    {
+    function setBaseGenerationRate(uint256 _baseGenerationRate) external onlyOwner {
         update();
         baseGenerationRate = _baseGenerationRate;
         emit UpdateBaseGenerationRate(msg.sender, _baseGenerationRate);
@@ -132,21 +117,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// will also be claimed in the process.
     /// @param _amount The amount of JOE to deposit
     function deposit(uint256 _amount) external {
-        require(
-            _amount > 0,
-            "VeJoeStaking: expected deposit amount to be greater than zero"
-        );
+        require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
         update();
-        if (_getUserHasNonZeroBalance(msg.sender)){
+        if (_getUserHasNonZeroBalance(msg.sender)) {
             _claim();
         }
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
         userInfo.balance = userInfo.balance.add(_amount);
-        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(
-            PRECISION
-        );
+        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(PRECISION);
 
         joe.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -157,10 +137,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// lose all of your current veJOE.
     /// @param _amount The amount of JOE to unstake
     function withdraw(uint256 _amount) external {
-        require(
-            _amount > 0,
-            "VeJoeStaking: expected withdraw amount to be greater than zero"
-        );
+        require(_amount > 0, "VeJoeStaking: expected withdraw amount to be greater than zero");
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
@@ -172,9 +149,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         //We don't need to claim as veJOE balance will be reseted to 0
 
         userInfo.balance = userInfo.balance.sub(_amount);
-        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(
-            PRECISION
-        );
+        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(PRECISION);
 
         // Burn the user's current veJOE balance
         veJoe.burnFrom(msg.sender, veJoe.balanceOf(msg.sender));
@@ -187,10 +162,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Claim any pending veJOE
     function claim() external {
-        require(
-            _getUserHasNonZeroBalance(msg.sender),
-            "VeJoeStaking: cannot claim veJOE when no JOE is staked"
-        );
+        require(_getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim veJOE when no JOE is staked");
         update();
         _claim();
     }
@@ -198,11 +170,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Get the pending amount of veJOE for a given user
     /// @param _user The user to lookup
     /// @return pendingVeJoe The number of pending veJOE tokens for `_user`
-    function getPendingVeJoe(address _user)
-        public
-        view
-        returns (uint256 pendingVeJoe)
-    {
+    function getPendingVeJoe(address _user) public view returns (uint256 pendingVeJoe) {
         if (!_getUserHasNonZeroBalance(_user)) {
             return 0;
         }
@@ -216,9 +184,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             _accVeJoePerShare.add(secondsElapsed.mul(baseGenerationRate));
         }
 
-        pendingVeJoe = _accVeJoePerShare.mul(user.balance).div(PRECISION).sub(
-            user.rewardDebt
-        );
+        pendingVeJoe = _accVeJoePerShare.mul(user.balance).div(PRECISION).sub(user.rewardDebt);
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
@@ -255,11 +221,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Checks to see if a given user currently has staked JOE
     /// @param _user The user address to check
     /// @return Whether `_user` currently has staked JOE
-    function _getUserHasNonZeroBalance(address _user)
-        private
-        view
-        returns (bool)
-    {
+    function _getUserHasNonZeroBalance(address _user) private view returns (bool) {
         return userInfos[_user].balance > 0;
     }
 
@@ -269,9 +231,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
-        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(
-            PRECISION
-        );
+        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(PRECISION);
 
         if (veJoeToClaim > 0) {
             veJoe.mint(msg.sender, veJoeToClaim);
