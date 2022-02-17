@@ -296,18 +296,24 @@ describe("VeJoe Staking", function () {
       );
     });
 
-    it("should receive correct veJOE if baseGenerationRate is updated", async function () {
+    it("should receive correct veJOE if baseGenerationRate is updated multiple times", async function () {
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
 
-      await increase(49);
+      await increase(9);
 
       await this.veJoeStaking
         .connect(this.dev)
         .setBaseGenerationRate(ethers.utils.parseEther("2"));
 
-      await increase(49);
+      await increase(9);
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setBaseGenerationRate(ethers.utils.parseEther("1.5"));
+
+      await increase(9);
 
       // Check veJoe balance before claim
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);
@@ -315,11 +321,12 @@ describe("VeJoe Staking", function () {
       await this.veJoeStaking.connect(this.alice).claim();
 
       // Check veJoe balance after claim
-      // Expected to have been generating at a rate of 1 for the first 50 seconds
-      // and then at a rate of 2 for the latter 50 seconds, i.e.:
-      // 100 * 50 + 100 * 50 * 2 = 15000
+      // Expected to have been generating at a rate of 1 for the first 10 seconds,
+      // a rate of 2 for the next 10 seconds, and a rate of 1.5 for the last 10
+      // seconds, i.e.:
+      // 100 * 10 * 1 + 100 * 10 * 2 + 100 * 10 * 1.5 = 4500
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
-        ethers.utils.parseEther("15000")
+        ethers.utils.parseEther("4500")
       );
     });
   });
