@@ -3,7 +3,7 @@ const { ethers, network, upgrades } = require("hardhat");
 const { expect } = require("chai");
 const { describe } = require("mocha");
 
-describe("VeJoe Staking", function () {
+describe.only("VeJoe Staking", function () {
   before(async function () {
     this.VeJoeStakingCF = await ethers.getContractFactory("VeJoeStaking");
     this.VeJoeTokenCF = await ethers.getContractFactory("VeJoeToken");
@@ -34,9 +34,6 @@ describe("VeJoe Staking", function () {
       this.joe.address, // _joe
       this.veJoe.address, // _veJoe
       this.baseGenerationRate, // _baseGenerationRate
-      this.boostedGenerationRate, // _boostedGenerationRate
-      this.boostedThreshold, // _boostedThreshold
-      this.boostedDuration, // _boostedDuration
       this.maxCap, // _maxCap
     ]);
     await this.veJoe.transferOwnership(this.veJoeStaking.address);
@@ -95,20 +92,6 @@ describe("VeJoe Staking", function () {
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should not allow owner to setBaseGenerationRate greater than boostedGenerationRate", async function () {
-      expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
-        this.boostedGenerationRate
-      );
-
-      await expect(
-        this.veJoeStaking
-          .connect(this.dev)
-          .setBaseGenerationRate(ethers.utils.parseEther("3"))
-      ).to.be.revertedWith(
-        "VeJoeStaking: expected new _baseGenerationRate to be less than boostedGenerationRate"
-      );
-    });
-
     it("should allow owner to setBaseGenerationRate", async function () {
       expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
         this.baseGenerationRate
@@ -120,117 +103,6 @@ describe("VeJoe Staking", function () {
 
       expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
         ethers.utils.parseEther("1.5")
-      );
-    });
-  });
-
-  describe("setBoostedGenerationRate", function () {
-    it("should not allow non-owner to setBoostedGenerationRate", async function () {
-      await expect(
-        this.veJoeStaking
-          .connect(this.alice)
-          .setBoostedGenerationRate(ethers.utils.parseEther("11"))
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("should not allow owner to setBoostedGenerationRate leq to baseGenerationRate", async function () {
-      expect(await this.veJoeStaking.baseGenerationRate()).to.be.equal(
-        this.baseGenerationRate
-      );
-
-      await expect(
-        this.veJoeStaking
-          .connect(this.dev)
-          .setBoostedGenerationRate(ethers.utils.parseEther("0.99"))
-      ).to.be.revertedWith(
-        "VeJoeStaking: expected new _boostedGenerationRate to be greater than baseGenerationRate"
-      );
-    });
-
-    it("should allow owner to setBoostedGenerationRate", async function () {
-      expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
-        this.boostedGenerationRate
-      );
-
-      await this.veJoeStaking
-        .connect(this.dev)
-        .setBoostedGenerationRate(ethers.utils.parseEther("3"));
-
-      expect(await this.veJoeStaking.boostedGenerationRate()).to.be.equal(
-        ethers.utils.parseEther("3")
-      );
-    });
-  });
-
-  describe("setBoostedThreshold", function () {
-    it("should not allow non-owner to setBoostedThreshold", async function () {
-      await expect(
-        this.veJoeStaking.connect(this.alice).setBoostedThreshold(10)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("should not allow owner to setBoostedThreshold to 0", async function () {
-      await expect(
-        this.veJoeStaking.connect(this.dev).setBoostedThreshold(0)
-      ).to.be.revertedWith(
-        "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
-      );
-    });
-
-    it("should not allow owner to setBoostedThreshold greater than 100", async function () {
-      await expect(
-        this.veJoeStaking.connect(this.dev).setBoostedThreshold(101)
-      ).to.be.revertedWith(
-        "VeJoeStaking: expected _boostedThreshold to be > 0 and <= 100"
-      );
-    });
-
-    it("should allow owner to setBoostedThreshold", async function () {
-      expect(await this.veJoeStaking.boostedThreshold()).to.be.equal(
-        this.boostedThreshold
-      );
-
-      await this.veJoeStaking.connect(this.dev).setBoostedThreshold(10);
-
-      expect(await this.veJoeStaking.boostedThreshold()).to.be.equal(10);
-    });
-  });
-
-  describe("setBoostedDuration", function () {
-    it("should not allow non-owner to setBoostedDuration", async function () {
-      await expect(
-        this.veJoeStaking.connect(this.alice).setBoostedDuration(100)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("should not allow owner to setBoostedDuration greater than 365 days", async function () {
-      const secondsInHour = 60 * 60;
-      const secondsInDay = secondsInHour * 24;
-      const secondsInYear = secondsInDay * 365;
-      await expect(
-        this.veJoeStaking
-          .connect(this.dev)
-          .setBoostedDuration(secondsInYear + 1)
-      ).to.be.revertedWith(
-        "VeJoeStaking: expected _boostedDuration to be <= 365 days"
-      );
-    });
-
-    it("should allow owner to setBoostedThreshold to upper limit", async function () {
-      const secondsInHour = 60 * 60;
-      const secondsInDay = secondsInHour * 24;
-      const secondsInYear = secondsInDay * 365;
-
-      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(
-        this.boostedDuration
-      );
-
-      await this.veJoeStaking
-        .connect(this.dev)
-        .setBoostedDuration(secondsInYear);
-
-      expect(await this.veJoeStaking.boostedDuration()).to.be.equal(
-        secondsInYear
       );
     });
   });
