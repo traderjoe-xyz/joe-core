@@ -240,9 +240,9 @@ describe("VeJoe Staking", function () {
       );
       // balance
       expect(afterAliceUserInfo[0]).to.be.equal(ethers.utils.parseEther("95"));
-      // debtReward
+      // rewardDebt
       expect(afterAliceUserInfo[1]).to.be.equal(
-        (await this.veJoeStaking.accVeJoePerShare()).mul("95")
+        (await this.veJoeStaking.accVeJoePerShare()).mul(95)
       );
 
       // Check user token balances are updated correctly
@@ -272,9 +272,6 @@ describe("VeJoe Staking", function () {
       await this.veJoeStaking.connect(this.alice).claim();
       const claimBlock = await ethers.provider.getBlock();
 
-      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
-        this.alice.address
-      );
       // lastRewardTimestamp
       expect(await this.veJoeStaking.lastRewardTimestamp()).to.be.equal(
         claimBlock.timestamp
