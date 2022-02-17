@@ -57,11 +57,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     mapping(address => UserInfo) public userInfos;
 
     event Claim(address indexed user, uint256 amount);
+    event Deposit(address indexed user, uint256 amount);
+    event Update(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
     event UpdateBaseGenerationRate(address indexed user, uint256 baseGenerationRate);
     event UpdateMaxCap(address indexed user, uint256 maxCap);
-    event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
-    event Update(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
 
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
@@ -202,7 +202,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         }
     }
 
-    // Update reward variables of the given pool to be up-to-date.
+    // Update reward variables of veJOE.
     function update() public {
         if (block.timestamp <= lastRewardTimestamp) {
             return;
