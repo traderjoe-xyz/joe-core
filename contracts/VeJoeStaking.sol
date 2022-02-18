@@ -187,7 +187,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             );
         }
 
-        pendingVeJoe = _accVeJoePerShare.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION).sub(user.rewardDebt);
+        uint256 pendingVeJoe = _accVeJoePerShare.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION).sub(user.rewardDebt);
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
