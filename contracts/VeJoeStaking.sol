@@ -147,7 +147,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: cannot withdraw greater amount of JOE than currently staked"
         );
         updateRewardVars();
-        
+
         // Note that we don't need to claim as the user's veJOE balance will be reset to 0
         userInfo.balance = userInfo.balance.sub(_amount);
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
