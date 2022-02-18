@@ -146,10 +146,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             userInfo.balance >= _amount,
             "VeJoeStaking: cannot withdraw greater amount of JOE than currently staked"
         );
-
         updateRewardVars();
+        
         // Note that we don't need to claim as the user's veJOE balance will be reset to 0
-
         userInfo.balance = userInfo.balance.sub(_amount);
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
 
@@ -171,8 +170,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Get the pending amount of veJOE for a given user
     /// @param _user The user to lookup
-    /// @return pendingVeJoe The number of pending veJOE tokens for `_user`
-    function getPendingVeJoe(address _user) public view returns (uint256 pendingVeJoe) {
+    /// @return The number of pending veJOE tokens for `_user`
+    function getPendingVeJoe(address _user) public view returns (uint256) {
         if (!_getUserHasNonZeroBalance(_user)) {
             return 0;
         }
@@ -197,9 +196,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         if (userVeJoeBalance >= userMaxVeJoeCap) {
             // User already holds maximum amount of veJOE so there is no pending veJOE
             return 0;
-        }
-
-        if (userVeJoeBalance.add(pendingVeJoe) > userMaxVeJoeCap) {
+        } else if (userVeJoeBalance.add(pendingVeJoe) > userMaxVeJoeCap) {
             return userMaxVeJoeCap.sub(userVeJoeBalance);
         } else {
             return pendingVeJoe;
