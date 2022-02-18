@@ -46,34 +46,43 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice The last time that the reward variables were updated
     uint256 public lastRewardTimestamp;
 
-    /// @notice Rate of veJOE generated per sec per JOE staked, scaled to `GENERATION_RATE_PRECISION`
-    uint256 public baseGenerationRate;
+    /// @notice veJOE per sec per JOE staked, scaled to `VEJOE_PER_SEC_PRECISION`
+    uint256 public veJoePerSec;
 
-    /// @notice Precision of `baseGenerationRate`
-    uint256 public GENERATION_RATE_PRECISION;
+    /// @notice Precision of `veJoePerSec`
+    uint256 public VEJOE_PER_SEC_PRECISION;
 
     mapping(address => UserInfo) public userInfos;
 
     event Claim(address indexed user, uint256 amount);
     event Deposit(address indexed user, uint256 amount);
-    event UpdateBaseGenerationRate(address indexed user, uint256 baseGenerationRate);
+    event UpdateVeJoePerSec(address indexed user, uint256 veJoePerSec);
     event UpdateMaxCap(address indexed user, uint256 maxCap);
-    event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
+    event UpdateRewardVars(
+        uint256 lastRewardTimestamp,
+        uint256 accVeJoePerShare
+    );
     event Withdraw(address indexed user, uint256 amount);
 
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
     /// @param _veJoe Address of the veJOE token contract
-    /// @param _baseGenerationRate Rate of veJOE generated per sec per JOE staked
+    /// @param _veJoePerSec veJOE per sec per JOE staked, scaled to `VEJOE_PER_SEC_PRECISION`
     /// @param _maxCap the maximum amount of veJOE received per JOE staked
     function initialize(
         IERC20Upgradeable _joe,
         VeJoeToken _veJoe,
-        uint256 _baseGenerationRate,
+        uint256 _veJoePerSec,
         uint256 _maxCap
     ) public initializer {
-        require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
-        require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
+        require(
+            address(_joe) != address(0),
+            "VeJoeStaking: unexpected zero address for _joe"
+        );
+        require(
+            address(_veJoe) != address(0),
+            "VeJoeStaking: unexpected zero address for _veJoe"
+        );
 
         upperLimitMaxCap = 100000;
         require(
@@ -86,16 +95,19 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         maxCap = _maxCap;
         joe = _joe;
         veJoe = _veJoe;
-        baseGenerationRate = _baseGenerationRate;
+        veJoePerSec = _veJoePerSec;
         lastRewardTimestamp = block.timestamp;
         ACC_VEJOE_PER_SHARE_PRECISION = 1e18;
-        GENERATION_RATE_PRECISION = 1e18;
+        VEJOE_PER_SEC_PRECISION = 1e18;
     }
 
     /// @notice Set maxCap
     /// @param _maxCap The new maxCap
     function setMaxCap(uint256 _maxCap) external onlyOwner {
-        require(_maxCap > maxCap, "VeJoeStaking: expected new _maxCap to be greater than existing maxCap");
+        require(
+            _maxCap > maxCap,
+            "VeJoeStaking: expected new _maxCap to be greater than existing maxCap"
+        );
         require(
             _maxCap != 0 && _maxCap <= upperLimitMaxCap,
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
@@ -104,19 +116,22 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         emit UpdateMaxCap(msg.sender, _maxCap);
     }
 
-    /// @notice Set baseGenerationRate
-    /// @param _baseGenerationRate The new baseGenerationRate
-    function setBaseGenerationRate(uint256 _baseGenerationRate) external onlyOwner {
+    /// @notice Set veJoePerSec
+    /// @param _veJoePerSec The new veJoePerSec
+    function setVeJoePerSec(uint256 _veJoePerSec) external onlyOwner {
         updateRewardVars();
-        baseGenerationRate = _baseGenerationRate;
-        emit UpdateBaseGenerationRate(msg.sender, _baseGenerationRate);
+        veJoePerSec = _veJoePerSec;
+        emit UpdateVeJoePerSec(msg.sender, _veJoePerSec);
     }
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
     /// will also be claimed in the process.
     /// @param _amount The amount of JOE to deposit
     function deposit(uint256 _amount) external {
-        require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
+        require(
+            _amount > 0,
+            "VeJoeStaking: expected deposit amount to be greater than zero"
+        );
 
         updateRewardVars();
         // Transfer to the user their pending veJOE before updating their UserInfo
@@ -127,7 +142,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         UserInfo storage userInfo = userInfos[msg.sender];
 
         userInfo.balance = userInfo.balance.add(_amount);
-        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
+        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(
+            ACC_VEJOE_PER_SHARE_PRECISION
+        );
 
         joe.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -138,7 +155,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// lose all of your current veJOE.
     /// @param _amount The amount of JOE to unstake
     function withdraw(uint256 _amount) external {
-        require(_amount > 0, "VeJoeStaking: expected withdraw amount to be greater than zero");
+        require(
+            _amount > 0,
+            "VeJoeStaking: expected withdraw amount to be greater than zero"
+        );
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
@@ -150,7 +170,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         // Note that we don't need to claim as the user's veJOE balance will be reset to 0
         userInfo.balance = userInfo.balance.sub(_amount);
-        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
+        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(
+            ACC_VEJOE_PER_SHARE_PRECISION
+        );
 
         // Burn the user's current veJOE balance
         veJoe.burnFrom(msg.sender, veJoe.balanceOf(msg.sender));
@@ -163,7 +185,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Claim any pending veJOE
     function claim() external {
-        require(_getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim veJOE when no JOE is staked");
+        require(
+            _getUserHasNonZeroBalance(msg.sender),
+            "VeJoeStaking: cannot claim veJOE when no JOE is staked"
+        );
         updateRewardVars();
         _claim();
     }
@@ -183,11 +208,17 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 secondsElapsed = block.timestamp.sub(lastRewardTimestamp);
         if (secondsElapsed > 0) {
             _accVeJoePerShare = _accVeJoePerShare.add(
-                secondsElapsed.mul(baseGenerationRate).mul(ACC_VEJOE_PER_SHARE_PRECISION).div(GENERATION_RATE_PRECISION)
+                secondsElapsed
+                    .mul(veJoePerSec)
+                    .mul(ACC_VEJOE_PER_SHARE_PRECISION)
+                    .div(VEJOE_PER_SEC_PRECISION)
             );
         }
 
-        pendingVeJoe = _accVeJoePerShare.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION).sub(user.rewardDebt);
+        pendingVeJoe = _accVeJoePerShare
+            .mul(user.balance)
+            .div(ACC_VEJOE_PER_SHARE_PRECISION)
+            .sub(user.rewardDebt);
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
@@ -216,7 +247,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         uint256 secondsElapsed = block.timestamp.sub(lastRewardTimestamp);
         accVeJoePerShare = accVeJoePerShare.add(
-            secondsElapsed.mul(baseGenerationRate).mul(ACC_VEJOE_PER_SHARE_PRECISION).div(GENERATION_RATE_PRECISION)
+            secondsElapsed
+                .mul(veJoePerSec)
+                .mul(ACC_VEJOE_PER_SHARE_PRECISION)
+                .div(VEJOE_PER_SEC_PRECISION)
         );
         lastRewardTimestamp = block.timestamp;
 
@@ -226,7 +260,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Checks to see if a given user currently has staked JOE
     /// @param _user The user address to check
     /// @return Whether `_user` currently has staked JOE
-    function _getUserHasNonZeroBalance(address _user) private view returns (bool) {
+    function _getUserHasNonZeroBalance(address _user)
+        private
+        view
+        returns (bool)
+    {
         return userInfos[_user].balance > 0;
     }
 
@@ -236,7 +274,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
-        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
+        userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(
+            ACC_VEJOE_PER_SHARE_PRECISION
+        );
 
         if (veJoeToClaim > 0) {
             veJoe.mint(msg.sender, veJoeToClaim);
