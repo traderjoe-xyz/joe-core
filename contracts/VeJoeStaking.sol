@@ -81,8 +81,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Percentage of user's current staked JOE user has to deposit in order to start
     /// receiving speed up benefits, in parts per 100.
     /// @dev Specifically, user has to deposit at least `speedUpThreshold/100 * userStakedJoe` JOE.
-    /// The only exception is the user will also receive speed up benefits if it's their first
-    /// time staking.
+    /// The only exception is the user will also receive speed up benefits if they are depositing
+    /// with zero balance
     uint256 public speedUpThreshold;
 
     /// @notice The length of time a user receives speed up benefits
@@ -216,6 +216,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             }
         } else {
+            // If user is depositing with zero balance, they will automatically
+            // receive speed up benefits
             userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             userInfo.lastClaimTimestamp = block.timestamp;
         }
