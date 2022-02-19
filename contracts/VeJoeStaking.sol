@@ -85,16 +85,12 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice The length of time a user receives speed up benefits
     uint256 public speedUpDuration;
 
-    /// @notice The upper limit of `speedUpDuration`
-    uint256 public upperLimitSpeedUpDuration;
-
     mapping(address => UserInfo) public userInfos;
 
     event Claim(address indexed user, uint256 amount);
     event Deposit(address indexed user, uint256 amount);
     event UpdateMaxCap(address indexed user, uint256 maxCap);
     event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
-    event UpdateSpeedUpDuration(address indexed user, uint256 speedUpDuration);
     event UpdateSpeedUpThreshold(address indexed user, uint256 speedUpThreshold);
     event UpdateVeJoePerSharePerSec(address indexed user, uint256 veJoePerSharePerSec);
     event Withdraw(address indexed user, uint256 amount);
@@ -124,11 +120,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
         );
 
-        upperLimitSpeedUpDuration = 365 days;
-        require(
-            _speedUpDuration <= upperLimitSpeedUpDuration,
-            "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
-        );
+        require(_speedUpDuration <= 365 days, "VeJoeStaking: expected _speedUpDuration to be <= 365 days");
 
         upperLimitMaxCap = 100000;
         require(
@@ -179,17 +171,6 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         );
         speedUpThreshold = _speedUpThreshold;
         emit UpdateSpeedUpThreshold(msg.sender, _speedUpThreshold);
-    }
-
-    /// @notice Set speedUpDuration
-    /// @param _speedUpDuration The new speedUpDurationn
-    function setSpeedUpDuration(uint256 _speedUpDuration) external onlyOwner {
-        require(
-            _speedUpDuration <= upperLimitSpeedUpDuration,
-            "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
-        );
-        speedUpDuration = _speedUpDuration;
-        emit UpdateSpeedUpDuration(msg.sender, _speedUpDuration);
     }
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
