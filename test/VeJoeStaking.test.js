@@ -3,7 +3,7 @@ const { ethers, network, upgrades } = require("hardhat");
 const { expect } = require("chai");
 const { describe } = require("mocha");
 
-describe("VeJoe Staking", function () {
+describe.only("VeJoe Staking", function () {
   before(async function () {
     this.VeJoeStakingCF = await ethers.getContractFactory("VeJoeStaking");
     this.VeJoeTokenCF = await ethers.getContractFactory("VeJoeToken");
@@ -106,6 +106,79 @@ describe("VeJoe Staking", function () {
 
       expect(await this.veJoeStaking.veJoePerSharePerSec()).to.be.equal(
         ethers.utils.parseEther("1.5")
+      );
+    });
+  });
+
+  describe("setSpeedUpThreshold", function () {
+    it("should not allow non-owner to setSpeedUpThreshold", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).setSpeedUpThreshold(10)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to setSpeedUpThreshold to 0", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.dev).setSpeedUpThreshold(0)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
+      );
+    });
+
+    it("should not allow owner to setSpeedUpThreshold greater than 100", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.dev).setSpeedUpThreshold(101)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
+      );
+    });
+
+    it("should allow owner to setSpeedUpThreshold", async function () {
+      expect(await this.veJoeStaking.speedUpThreshold()).to.be.equal(
+        this.speedUpThreshold
+      );
+
+      await this.veJoeStaking.connect(this.dev).setSpeedUpThreshold(10);
+
+      expect(await this.veJoeStaking.speedUpThreshold()).to.be.equal(10);
+    });
+  });
+
+  describe("setSpeedUpDuration", function () {
+    it("should not allow non-owner to setSpeedUpDuration", async function () {
+      await expect(
+        this.veJoeStaking.connect(this.alice).setSpeedUpDuration(100)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to setSpeedUpDuration greater than 365 days", async function () {
+      const secondsInHour = 60 * 60;
+      const secondsInDay = secondsInHour * 24;
+      const secondsInYear = secondsInDay * 365;
+      await expect(
+        this.veJoeStaking
+          .connect(this.dev)
+          .setSpeedUpDuration(secondsInYear + 1)
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
+      );
+    });
+
+    it("should allow owner to setSpeedUpDuration to upper limit", async function () {
+      const secondsInHour = 60 * 60;
+      const secondsInDay = secondsInHour * 24;
+      const secondsInYear = secondsInDay * 365;
+
+      expect(await this.veJoeStaking.speedUpDuration()).to.be.equal(
+        this.speedUpDuration
+      );
+
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setSpeedUpDuration(secondsInYear);
+
+      expect(await this.veJoeStaking.speedUpDuration()).to.be.equal(
+        secondsInYear
       );
     });
   });
@@ -216,7 +289,7 @@ describe("VeJoe Staking", function () {
         ethers.utils.parseEther("900")
       );
 
-      await increase(this.boostedDuration / 2);
+      await increase(this.speedUpDuration / 2);
 
       await this.veJoeStaking.connect(this.alice).claim();
       const claimBlock = await ethers.provider.getBlock();

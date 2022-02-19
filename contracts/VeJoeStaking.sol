@@ -185,7 +185,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             _speedUpDuration <= upperLimitSpeedUpDuration,
             "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
         );
-        speedUpDuration = speedUpDuration;
+        speedUpDuration = _speedUpDuration;
         emit UpdateSpeedUpDuration(msg.sender, _speedUpDuration);
     }
 
