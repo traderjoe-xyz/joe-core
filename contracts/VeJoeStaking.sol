@@ -69,7 +69,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     uint256 public veJoePerSharePerSec;
 
-    /// @notice speed up veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
+    /// @notice Speed up veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     uint256 public speedUpVeJoePerSharePerSec;
 
     /// @notice Precision of `veJoePerSharePerSec`
@@ -206,17 +206,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // Transfer to the user their pending veJOE before updating their UserInfo
             _claim();
 
+            // We need to update user's `lastClaimTimestamp` to now to prevent
+            // passive veJOE accrual if user hit their max cap.
+            userInfo.lastClaimTimestamp = block.timestamp;
+
             uint256 userStakedJoe = userInfo.balance;
-
-            uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
-            uint256 userMaxVeJoeCap = userStakedJoe.mul(maxCap);
-
-            // If the user is currently at their max veJOE cap, we need to update
-            // their `lastClaimTimestamp` to now to prevent passive veJOE accrual
-            // after user hit their max cap.
-            if (userVeJoeBalance == userMaxVeJoeCap) {
-                userInfo.lastClaimTimestamp = block.timestamp;
-            }
 
             // User is eligible for speed up benefits if `_amount` is at least
             // `speedUpThreshold / 100 * userStakedJoe`
@@ -301,7 +295,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         );
 
         // Calculate amount of pending speed up veJOE
-        uint256 pendingSpeedUpVeJoe = 0;
+        uint256 pendingSpeedUpVeJoe;
         if (user.speedUpEndTimestamp != 0) {
             uint256 speedUpCeilingTimestamp = block.timestamp > user.speedUpEndTimestamp
                 ? user.speedUpEndTimestamp
