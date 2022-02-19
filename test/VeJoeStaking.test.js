@@ -3,7 +3,7 @@ const { ethers, network, upgrades } = require("hardhat");
 const { expect } = require("chai");
 const { describe } = require("mocha");
 
-describe.only("VeJoe Staking", function () {
+describe("VeJoe Staking", function () {
   before(async function () {
     this.VeJoeStakingCF = await ethers.getContractFactory("VeJoeStaking");
     this.VeJoeTokenCF = await ethers.getContractFactory("VeJoeToken");
