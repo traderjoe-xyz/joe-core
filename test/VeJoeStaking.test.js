@@ -321,7 +321,7 @@ describe("VeJoe Staking", function () {
       expect(afterAliceUserInfo[3]).to.be.equal(0);
     });
 
-    it("should have speed up period extended after depositing speedUPThreshold and currently receiving speed up benefits", async function () {
+    it("should have speed up period extended after depositing speedUpThreshold and currently receiving speed up benefits", async function () {
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
