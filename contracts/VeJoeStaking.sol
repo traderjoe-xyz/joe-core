@@ -69,6 +69,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     uint256 public veJoePerSharePerSec;
 
+    /// @notice The upper limit of `veJoePerSharePerSec`
+    uint256 public upperLimitVeJoePerSharePerSec;
+
     /// @notice Speed up veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     uint256 public speedUpVeJoePerSharePerSec;
 
@@ -115,6 +118,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
 
+        upperLimitVeJoePerSharePerSec = 1e36;
+        require(
+            _veJoePerSharePerSec <= upperLimitVeJoePerSharePerSec,
+            "VeJoeStaking: expected _veJoePerSharePerSec to be <= 1e36"
+        );
+        require(
+            _speedUpVeJoePerSharePerSec <= upperLimitVeJoePerSharePerSec,
+            "VeJoeStaking: expected _speedUpVeJoePerSharePerSec to be <= 1e36"
+        );
+
         require(
             _speedUpThreshold != 0 && _speedUpThreshold <= 100,
             "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
@@ -125,7 +138,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         upperLimitMaxCap = 100000;
         require(
             _maxCap != 0 && _maxCap <= upperLimitMaxCap,
-            "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
+            "VeJoeStaking: expected _maxCap to be non-zero and <= 100000"
         );
 
         __Ownable_init();
@@ -157,6 +170,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Set veJoePerSharePerSec
     /// @param _veJoePerSharePerSec The new veJoePerSharePerSec
     function setVeJoePerSharePerSec(uint256 _veJoePerSharePerSec) external onlyOwner {
+        require(
+            _veJoePerSharePerSec <= upperLimitVeJoePerSharePerSec,
+            "VeJoeStaking: expected _veJoePerSharePerSec to be <= 1e36"
+        );
         updateRewardVars();
         veJoePerSharePerSec = _veJoePerSharePerSec;
         emit UpdateVeJoePerSharePerSec(msg.sender, _veJoePerSharePerSec);

@@ -3,7 +3,7 @@ const { ethers, network, upgrades } = require("hardhat");
 const { expect } = require("chai");
 const { describe } = require("mocha");
 
-describe("VeJoe Staking", function () {
+describe.only("VeJoe Staking", function () {
   before(async function () {
     this.VeJoeStakingCF = await ethers.getContractFactory("VeJoeStaking");
     this.VeJoeTokenCF = await ethers.getContractFactory("VeJoeToken");
@@ -87,12 +87,22 @@ describe("VeJoe Staking", function () {
   });
 
   describe("setVeJoePerSharePerSec", function () {
-    it("should not allow non-owner to setMaxCap", async function () {
+    it("should not allow non-owner to setVeJoePerSharePerSec", async function () {
       await expect(
         this.veJoeStaking
           .connect(this.alice)
           .setVeJoePerSharePerSec(ethers.utils.parseEther("1.5"))
       ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should not allow owner to set veJoePerSharePerSec greater than upper limit", async function () {
+      await expect(
+        this.veJoeStaking
+          .connect(this.dev)
+          .setVeJoePerSharePerSec(ethers.utils.parseUnits("1", 37))
+      ).to.be.revertedWith(
+        "VeJoeStaking: expected _veJoePerSharePerSec to be <= 1e36"
+      );
     });
 
     it("should allow owner to setVeJoePerSharePerSec", async function () {
