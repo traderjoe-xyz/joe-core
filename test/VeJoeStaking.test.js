@@ -393,8 +393,11 @@ describe.only("VeJoe Staking", function () {
       await this.veJoeStaking.connect(this.alice).claim();
 
       // Check veJoe balance after claim
+      // Should be sum of:
+      // baseVeJoe = 100 * 50 = 5000
+      // speedUpVeJoe = 100 * 50 = 5000
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
-        ethers.utils.parseEther("5000")
+        ethers.utils.parseEther("10000")
       );
     });
 
@@ -423,12 +426,13 @@ describe.only("VeJoe Staking", function () {
       await this.veJoeStaking.connect(this.alice).claim();
 
       // Check veJoe balance after claim
-      // Expected to have been generating at a rate of 1 for the first 10 seconds,
-      // a rate of 2 for the next 10 seconds, and a rate of 1.5 for the last 10
-      // seconds, i.e.:
-      // 100 * 10 * 1 + 100 * 10 * 2 + 100 * 10 * 1.5 = 4500
+      // For baseVeJoe, we're expected to have been generating at a rate of 1 for
+      // the first 10 seconds, a rate of 2 for the next 10 seconds, and a rate of
+      // 1.5 for the last 10 seconds, i.e.:
+      // baseVeJoe = 100 * 10 * 1 + 100 * 10 * 2 + 100 * 10 * 1.5 = 4500
+      // speedUpVeJoe = 100 * 30 = 3000
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
-        ethers.utils.parseEther("4500")
+        ethers.utils.parseEther("7500")
       );
     });
   });
