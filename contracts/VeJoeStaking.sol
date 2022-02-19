@@ -9,8 +9,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "hardhat/console.sol";
-
 import "./VeJoeToken.sol";
 
 /// @title Vote Escrow Joe Staking
@@ -105,7 +103,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _joe Address of the JOE token contract
     /// @param _veJoe Address of the veJOE token contract
     /// @param _veJoePerSharePerSec veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
-    /// @param _maxCap the maximum amount of veJOE received per JOE staked
+    /// @param _speedUpVeJoePerSharePerSec Similar to `_veJoePerSharePerSec` but for speed up
+    /// @param _speedUpThreshold Percentage of total staked JOE user has to deposit receive speed up
+    /// @param _speedUpDuration Length of time a user receives speed up benefits
+    /// @param _maxCap The maximum amount of veJOE received per JOE staked
     function initialize(
         IERC20Upgradeable _joe,
         VeJoeToken _veJoe,
@@ -198,14 +199,13 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         require(_amount > 0, "VeJoeStaking: expected deposit amount to be greater than zero");
 
         updateRewardVars();
-        // Transfer to the user their pending veJOE before updating their UserInfo
-        if (_getUserHasNonZeroBalance(msg.sender)) {
-            _claim();
-        }
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
         if (_getUserHasNonZeroBalance(msg.sender)) {
+            // Transfer to the user their pending veJOE before updating their UserInfo
+            _claim();
+
             uint256 userStakedJoe = userInfo.balance;
 
             uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
@@ -307,8 +307,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 ? user.speedUpEndTimestamp
                 : block.timestamp;
             uint256 speedUpSecondsElapsed = speedUpCeilingTimestamp.sub(user.lastClaimTimestamp);
-            uint256 speedUpAccVeJoePerJoe = speedUpSecondsElapsed.mul(speedUpVeJoePerSharePerSec);
-            pendingSpeedUpVeJoe = speedUpAccVeJoePerJoe.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
+            uint256 speedUpAccVeJoePerShare = speedUpSecondsElapsed.mul(speedUpVeJoePerSharePerSec);
+            pendingSpeedUpVeJoe = speedUpAccVeJoePerShare.mul(user.balance).div(VEJOE_PER_SHARE_PER_SEC_PRECISION);
         }
 
         uint256 pendingVeJoe = pendingBaseVeJoe.add(pendingSpeedUpVeJoe);
