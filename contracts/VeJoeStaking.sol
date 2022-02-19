@@ -60,11 +60,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice The last time that the reward variables were updated
     uint256 public lastRewardTimestamp;
 
-    /// @notice veJOE per sec per JOE staked, scaled to `VEJOE_PER_SEC_PRECISION`
-    uint256 public veJoePerSec;
+    /// @notice veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
+    uint256 public veJoePerSharePerSec;
 
-    /// @notice Precision of `veJoePerSec`
-    uint256 public VEJOE_PER_SEC_PRECISION;
+    /// @notice Precision of `veJoePerSharePerSec`
+    uint256 public VEJOE_PER_SHARE_PER_SEC_PRECISION;
 
     /// @notice Percentage of user's current staked JOE user has to deposit in order to start
     /// receiving speed up benefits, in parts per 100.
@@ -87,18 +87,18 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
     event UpdateSpeedUpDuration(address indexed user, uint256 speedUpDuration);
     event UpdateSpeedUpThreshold(address indexed user, uint256 speedUpThreshold);
-    event UpdateVeJoePerSec(address indexed user, uint256 veJoePerSec);
+    event UpdateVeJoePerSharePerSec(address indexed user, uint256 veJoePerSharePerSec);
     event Withdraw(address indexed user, uint256 amount);
 
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
     /// @param _veJoe Address of the veJOE token contract
-    /// @param _veJoePerSec veJOE per sec per JOE staked, scaled to `VEJOE_PER_SEC_PRECISION`
+    /// @param _veJoePerSharePerSec veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     /// @param _maxCap the maximum amount of veJOE received per JOE staked
     function initialize(
         IERC20Upgradeable _joe,
         VeJoeToken _veJoe,
-        uint256 _veJoePerSec,
+        uint256 _veJoePerSharePerSec,
         uint256 _maxCap,
         uint256 _speedUpThreshold,
         uint256 _speedUpDuration
@@ -130,10 +130,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         speedUpDuration = _speedUpDuration;
         joe = _joe;
         veJoe = _veJoe;
-        veJoePerSec = _veJoePerSec;
+        veJoePerSharePerSec = _veJoePerSharePerSec;
         lastRewardTimestamp = block.timestamp;
         ACC_VEJOE_PER_SHARE_PRECISION = 1e18;
-        VEJOE_PER_SEC_PRECISION = 1e18;
+        VEJOE_PER_SHARE_PER_SEC_PRECISION = 1e18;
     }
 
     /// @notice Set maxCap
@@ -148,12 +148,12 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         emit UpdateMaxCap(msg.sender, _maxCap);
     }
 
-    /// @notice Set veJoePerSec
-    /// @param _veJoePerSec The new veJoePerSec
-    function setVeJoePerSec(uint256 _veJoePerSec) external onlyOwner {
+    /// @notice Set veJoePerSharePerSec
+    /// @param _veJoePerSharePerSec The new veJoePerSharePerSec
+    function setVeJoePerSharePerSec(uint256 _veJoePerSharePerSec) external onlyOwner {
         updateRewardVars();
-        veJoePerSec = _veJoePerSec;
-        emit UpdateVeJoePerSec(msg.sender, _veJoePerSec);
+        veJoePerSharePerSec = _veJoePerSharePerSec;
+        emit UpdateVeJoePerSharePerSec(msg.sender, _veJoePerSharePerSec);
     }
 
     /// @notice Set speedUpThreshold
@@ -267,7 +267,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 secondsElapsed = block.timestamp.sub(lastRewardTimestamp);
         if (secondsElapsed > 0) {
             _accVeJoePerShare = _accVeJoePerShare.add(
-                secondsElapsed.mul(veJoePerSec).mul(ACC_VEJOE_PER_SHARE_PRECISION).div(VEJOE_PER_SEC_PRECISION)
+                secondsElapsed.mul(veJoePerSharePerSec).mul(ACC_VEJOE_PER_SHARE_PRECISION).div(
+                    VEJOE_PER_SHARE_PER_SEC_PRECISION
+                )
             );
         }
 
@@ -282,7 +284,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 ? user.speedUpEndTimestamp
                 : block.timestamp;
             uint256 speedUpSecondsElapsed = speedUpCeiling.sub(user.lastClaimTimestamp);
-            uint256 speedUpAccVeJoePerJoe = speedUpSecondsElapsed.mul(veJoePerSec);
+            uint256 speedUpAccVeJoePerJoe = speedUpSecondsElapsed.mul(veJoePerSharePerSec);
             pendingSpeedUpVeJoe = speedUpAccVeJoePerJoe.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
         }
 
@@ -315,7 +317,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         uint256 secondsElapsed = block.timestamp.sub(lastRewardTimestamp);
         accVeJoePerShare = accVeJoePerShare.add(
-            secondsElapsed.mul(veJoePerSec).mul(ACC_VEJOE_PER_SHARE_PRECISION).div(VEJOE_PER_SEC_PRECISION)
+            secondsElapsed.mul(veJoePerSharePerSec).mul(ACC_VEJOE_PER_SHARE_PRECISION).div(
+                VEJOE_PER_SHARE_PER_SEC_PRECISION
+            )
         );
         lastRewardTimestamp = block.timestamp;
 
