@@ -25,6 +25,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     struct UserInfo {
         uint256 balance;
         uint256 rewardDebt;
+        uint256 lastClaimTimestamp;
+        uint256 speedUpEndTimestamp;
     }
 
     IERC20Upgradeable public joe;
@@ -52,13 +54,20 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Precision of `veJoePerSec`
     uint256 public VEJOE_PER_SEC_PRECISION;
 
+    /// @notice The length of time a user receives speed up benefits
+    uint256 public speedUpDuration;
+
+    /// @notice The upper limit of `speedUpDuration`
+    uint256 public upperLimitSpeedUpDuration;
+
     mapping(address => UserInfo) public userInfos;
 
     event Claim(address indexed user, uint256 amount);
     event Deposit(address indexed user, uint256 amount);
-    event UpdateVeJoePerSec(address indexed user, uint256 veJoePerSec);
     event UpdateMaxCap(address indexed user, uint256 maxCap);
     event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
+    event UpdateSpeedUpDuration(address indexed user, uint256 speedUpDuration);
+    event UpdateVeJoePerSec(address indexed user, uint256 veJoePerSec);
     event Withdraw(address indexed user, uint256 amount);
 
     /// @notice Initialize with needed parameters
@@ -70,7 +79,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         IERC20Upgradeable _joe,
         VeJoeToken _veJoe,
         uint256 _veJoePerSec,
-        uint256 _maxCap
+        uint256 _maxCap,
+        uint256 _speedUpDuration
     ) public initializer {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
@@ -81,9 +91,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
         );
 
+        upperLimitSpeedUpDuration = 365 days;
+        require(
+            _speedUpDuration <= upperLimitSpeedUpDuration,
+            "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
+        );
+
         __Ownable_init();
 
         maxCap = _maxCap;
+        speedUpDuration = _speedUpDuration;
         joe = _joe;
         veJoe = _veJoe;
         veJoePerSec = _veJoePerSec;
@@ -110,6 +127,17 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         updateRewardVars();
         veJoePerSec = _veJoePerSec;
         emit UpdateVeJoePerSec(msg.sender, _veJoePerSec);
+    }
+
+    /// @notice Set speedUpDuration
+    /// @param _speedUpDuration The new speedUpDurationn
+    function setSpeedUpDuration(uint256 _speedUpDuration) external onlyOwner {
+        require(
+            _speedUpDuration <= upperLimitSpeedUpDuration,
+            "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
+        );
+        speedUpDuration = speedUpDuration;
+        emit UpdateSpeedUpDuration(msg.sender, _speedUpDuration);
     }
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
