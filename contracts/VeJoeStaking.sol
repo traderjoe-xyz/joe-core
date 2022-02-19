@@ -22,11 +22,23 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Info for each user
     /// `balance`: Amount of JOE currently staked by user
     /// `rewardDebt`: The reward debt of the user
+    /// `lastClaimTimestamp`: The timestamp of user's last claim or withdraw
+    /// `speedUpEndTimestamp`: The timestamp when user stops receiving speed up benefits, or
+    /// zero if user is not currently receiving speed up benefits
     struct UserInfo {
         uint256 balance;
         uint256 rewardDebt;
         uint256 lastClaimTimestamp;
         uint256 speedUpEndTimestamp;
+        /**
+         * @notice We do some fancy math here. Basically, any point in time, the amount of JOEs
+         * entitled to a user but is pending to be distributed is:
+         *
+         *   pending reward = baseReward + speedUpReward
+         *   baseReward = (user.balance * accVeJoePerShare) - user.rewardDebt
+         *   speedUpReward =
+         *
+         */
     }
 
     IERC20Upgradeable public joe;
@@ -242,8 +254,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Get the pending amount of veJOE for a given user
     /// @param _user The user to lookup
-    /// @return pendingVeJoe The number of pending veJOE tokens for `_user`
-    function getPendingVeJoe(address _user) public view returns (uint256 pendingVeJoe) {
+    /// @return The number of pending veJOE tokens for `_user`
+    function getPendingVeJoe(address _user) public view returns (uint256) {
         if (!_getUserHasNonZeroBalance(_user)) {
             return 0;
         }
@@ -275,28 +287,6 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         } else {
             return pendingVeJoe;
         }
-
-        if (userVeJoeBalance.add(pendingVeJoe) > userMaxVeJoeCap) {
-            return userMaxVeJoeCap.sub(userVeJoeBalance);
-        } else {
-            return pendingVeJoe;
-        }
-    }
-
-    // Update reward variables of veJOE.
-    function update() public {
-        if (block.timestamp <= lastRewardTimestamp) {
-            return;
-        }
-        if (joe.balanceOf(address(this)) == 0) {
-            lastRewardTimestamp = block.timestamp;
-            return;
-        }
-        uint256 timeElapsed = block.timestamp.sub(lastRewardTimestamp);
-        uint256 veJoeReward = timeElapsed.mul(baseGenerationRate);
-        accVeJoePerShare = accVeJoePerShare.add(veJoeReward);
-        lastRewardTimestamp = block.timestamp;
-        emit Update(lastRewardTimestamp, accVeJoePerShare);
     }
 
     /// @notice Update reward variables
