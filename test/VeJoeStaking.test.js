@@ -25,12 +25,18 @@ describe("VeJoe Staking", function () {
     await this.joe.mint(this.carol.address, ethers.utils.parseEther("1000"));
 
     this.veJoePerSharePerSec = ethers.utils.parseEther("1");
+    this.speedUpVeJoePerSharePerSec = ethers.utils.parseEther("1");
+    this.speedUpThreshold = 5;
+    this.speedUpDuration = 50;
     this.maxCap = 200;
 
     this.veJoeStaking = await upgrades.deployProxy(this.VeJoeStakingCF, [
       this.joe.address, // _joe
       this.veJoe.address, // _veJoe
       this.veJoePerSharePerSec, // _veJoePerSharePerSec
+      this.speedUpVeJoePerSharePerSec, // _speedUpVeJoePerSharePerSec
+      this.speedUpThreshold, // _speedUpThreshold
+      this.speedUpDuration, // _speedUpDuration
       this.maxCap, // _maxCap
     ]);
     await this.veJoe.transferOwnership(this.veJoeStaking.address);
@@ -80,23 +86,23 @@ describe("VeJoe Staking", function () {
     });
   });
 
-  describe("setVeJoePerSec", function () {
+  describe("setVeJoePerSharePerSec", function () {
     it("should not allow non-owner to setMaxCap", async function () {
       await expect(
         this.veJoeStaking
           .connect(this.alice)
-          .setVeJoePerSec(ethers.utils.parseEther("1.5"))
+          .setVeJoePerSharePerSec(ethers.utils.parseEther("1.5"))
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should allow owner to setVeJoePerSec", async function () {
+    it("should allow owner to setVeJoePerSharePerSec", async function () {
       expect(await this.veJoeStaking.veJoePerSharePerSec()).to.be.equal(
         this.veJoePerSharePerSec
       );
 
       await this.veJoeStaking
         .connect(this.dev)
-        .setVeJoePerSec(ethers.utils.parseEther("1.5"));
+        .setVeJoePerSharePerSec(ethers.utils.parseEther("1.5"));
 
       expect(await this.veJoeStaking.veJoePerSharePerSec()).to.be.equal(
         ethers.utils.parseEther("1.5")
@@ -305,13 +311,13 @@ describe("VeJoe Staking", function () {
 
       await this.veJoeStaking
         .connect(this.dev)
-        .setVeJoePerSec(ethers.utils.parseEther("2"));
+        .setVeJoePerSharePerSec(ethers.utils.parseEther("2"));
 
       await increase(9);
 
       await this.veJoeStaking
         .connect(this.dev)
-        .setVeJoePerSec(ethers.utils.parseEther("1.5"));
+        .setVeJoePerSharePerSec(ethers.utils.parseEther("1.5"));
 
       await increase(9);
 
@@ -347,7 +353,7 @@ describe("VeJoe Staking", function () {
       expect(await this.veJoeStaking.lastRewardTimestamp()).to.be.equal(
         block.timestamp + 30
       );
-      // Increase should be `secondsElapsed * veJoePerSharePerSec * ACC_VEJOE_PER_SHARE_PRECISION`:
+      // Increase should be `secondsElapsed * veJoePerSharePerSec * ACC_VEJOE_PER_SHARE_PER_SEC_PRECISION`:
       // = 30 * 1 * 1e18
       expect(await this.veJoeStaking.accVeJoePerShare()).to.be.equal(
         accVeJoePerShareBeforeUpdate.add(ethers.utils.parseEther("30"))

@@ -31,7 +31,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 lastClaimTimestamp;
         uint256 speedUpEndTimestamp;
         /**
-         * @notice We do some fancy math here. Basically, any point in time, the amount of JOEs
+         * @notice We do some fancy math here. Basically, any point in time, the amount of veJOE
          * entitled to a user but is pending to be distributed is:
          *
          *   pendingReward = pendingBaseReward + pendingSpeedUpReward
@@ -109,18 +109,12 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         VeJoeToken _veJoe,
         uint256 _veJoePerSharePerSec,
         uint256 _speedUpVeJoePerSharePerSec,
-        uint256 _maxCap,
         uint256 _speedUpThreshold,
-        uint256 _speedUpDuration
+        uint256 _speedUpDuration,
+        uint256 _maxCap,
     ) public initializer {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
-
-        upperLimitMaxCap = 100000;
-        require(
-            _maxCap != 0 && _maxCap <= upperLimitMaxCap,
-            "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
-        );
 
         require(
             _speedUpThreshold != 0 && _speedUpThreshold <= 100,
@@ -131,6 +125,12 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         require(
             _speedUpDuration <= upperLimitSpeedUpDuration,
             "VeJoeStaking: expected _speedUpDuration to be <= 365 days"
+        );
+
+        upperLimitMaxCap = 100000;
+        require(
+            _maxCap != 0 && _maxCap <= upperLimitMaxCap,
+            "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
         );
 
         __Ownable_init();
