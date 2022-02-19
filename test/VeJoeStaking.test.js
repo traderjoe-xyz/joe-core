@@ -200,6 +200,10 @@ describe.only("VeJoe Staking", function () {
       expect(beforeAliceUserInfo[0]).to.be.equal(0);
       // rewardDebt
       expect(beforeAliceUserInfo[1]).to.be.equal(0);
+      // lastClaimTimestamp
+      expect(beforeAliceUserInfo[2]).to.be.equal(0);
+      // speedUpEndTimestamp
+      expect(beforeAliceUserInfo[3]).to.be.equal(0);
 
       // Check joe balance before deposit
       expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
@@ -222,6 +226,12 @@ describe.only("VeJoe Staking", function () {
       expect(afterAliceUserInfo[0]).to.be.equal(depositAmount);
       // debtReward
       expect(afterAliceUserInfo[1]).to.be.equal(0);
+      // lastClaimTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(depositBlock.timestamp);
+      // speedUpEndTimestamp
+      expect(afterAliceUserInfo[3]).to.be.equal(
+        depositBlock.timestamp + this.speedUpDuration
+      );
     });
 
     it("should have correct updated user balance after deposit with non-zero balance", async function () {
@@ -255,9 +265,11 @@ describe.only("VeJoe Staking", function () {
         .deposit(ethers.utils.parseEther("1"));
 
       // Check veJoe balance after deposit
-      // Should have 100 * 30 = 3000 veJOE
+      // Should have sum of:
+      // baseVeJoe =  100 * 30 = 3000 veJOE
+      // speedUpVeJoe = 100 * 30 = 3000 veJOE
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(
-        ethers.utils.parseEther("3000")
+        ethers.utils.parseEther("6000")
       );
     });
   });
@@ -305,7 +317,14 @@ describe.only("VeJoe Staking", function () {
       );
       // rewardDebt
       expect(beforeAliceUserInfo[1]).to.be.equal(
-        await this.veJoe.balanceOf(this.alice.address)
+        // Divide by 2 since half of it is from the speed up
+        (await this.veJoe.balanceOf(this.alice.address)).div(2)
+      );
+      // lastClaimTimestamp
+      expect(beforeAliceUserInfo[2]).to.be.equal(claimBlock.timestamp);
+      // speedUpEndTimestamp
+      expect(beforeAliceUserInfo[3]).to.be.equal(
+        depositBlock.timestamp + this.speedUpDuration
       );
 
       await this.veJoeStaking
@@ -323,6 +342,10 @@ describe.only("VeJoe Staking", function () {
       expect(afterAliceUserInfo[1]).to.be.equal(
         (await this.veJoeStaking.accVeJoePerShare()).mul(95)
       );
+      // lastClaimTimestamp
+      expect(afterAliceUserInfo[2]).to.be.equal(withdrawBlock.timestamp);
+      // speedUpEndTimestamp
+      expect(afterAliceUserInfo[3]).to.be.equal(0);
 
       // Check user token balances are updated correctly
       expect(await this.veJoe.balanceOf(this.alice.address)).to.be.equal(0);

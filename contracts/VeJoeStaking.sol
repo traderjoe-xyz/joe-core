@@ -9,6 +9,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
+import "hardhat/console.sol";
+
 import "./VeJoeToken.sol";
 
 /// @title Vote Escrow Joe Staking
@@ -217,6 +219,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             if (userInfo.lastClaimTimestamp == 0) {
                 userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             }
+            userInfo.lastClaimTimestamp = block.timestamp;
         }
 
         userInfo.balance = userInfo.balance.add(_amount);
@@ -283,7 +286,6 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 )
             );
         }
-
         uint256 pendingBaseVeJoe = _accVeJoePerShare.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION).sub(
             user.rewardDebt
         );
@@ -299,7 +301,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             pendingSpeedUpVeJoe = speedUpAccVeJoePerJoe.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
         }
 
-        uint256 pendingVeJoe = pendingBaseVeJoe + pendingSpeedUpVeJoe;
+        uint256 pendingVeJoe = pendingBaseVeJoe.add(pendingSpeedUpVeJoe);
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
