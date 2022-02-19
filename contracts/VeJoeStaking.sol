@@ -111,7 +111,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _speedUpVeJoePerSharePerSec,
         uint256 _speedUpThreshold,
         uint256 _speedUpDuration,
-        uint256 _maxCap,
+        uint256 _maxCap
     ) public initializer {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
@@ -215,7 +215,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             // If the user's `lastClaimTimestamp` is 0, i.e. if this is the user's first time staking,
             // then they will receive speed up benefits.
             if (userInfo.lastClaimTimestamp == 0) {
-                userInfo.speedUpEndTimestamp = block.timestamp.add(boostedDuration);
+                userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             }
         }
 
