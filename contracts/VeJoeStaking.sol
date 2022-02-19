@@ -34,10 +34,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
          * @notice We do some fancy math here. Basically, any point in time, the amount of JOEs
          * entitled to a user but is pending to be distributed is:
          *
-         *   pending reward = baseReward + speedUpReward
-         *   baseReward = (user.balance * accVeJoePerShare) - user.rewardDebt
-         *   speedUpReward =
+         *   pendingReward = pendingBaseReward + pendingSpeedUpReward
          *
+         *   pendingBaseReward = (user.balance * accVeJoePerShare) - user.rewardDebt
+         *
+         *   if user.speedUpEndTimestamp != 0:
+         *     speedUpCeilingTimestamp = min(block.timestamp, user.speedUpEndTimestamp)
+         *     speedUpSecondsElapsed = speedUpCeilingTimestamp - user.lastClaimTimestamp
+         *     pendingSpeedUpReward = speedUpSecondsElapsed * user.balance * speedUpVeJoePerSharePerSec
+         *   else:
+         *     pendingSpeedUpReward = 0
          */
     }
 
@@ -285,10 +291,10 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         // Calculate amount of pending speed up veJOE
         uint256 pendingSpeedUpVeJoe = 0;
         if (user.speedUpEndTimestamp != 0) {
-            uint256 speedUpCeiling = block.timestamp > user.speedUpEndTimestamp
+            uint256 speedUpCeilingTimestamp = block.timestamp > user.speedUpEndTimestamp
                 ? user.speedUpEndTimestamp
                 : block.timestamp;
-            uint256 speedUpSecondsElapsed = speedUpCeiling.sub(user.lastClaimTimestamp);
+            uint256 speedUpSecondsElapsed = speedUpCeilingTimestamp.sub(user.lastClaimTimestamp);
             uint256 speedUpAccVeJoePerJoe = speedUpSecondsElapsed.mul(speedUpVeJoePerSharePerSec);
             pendingSpeedUpVeJoe = speedUpAccVeJoePerJoe.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
         }
