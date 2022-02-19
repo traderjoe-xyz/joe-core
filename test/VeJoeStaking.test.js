@@ -272,6 +272,134 @@ describe.only("VeJoe Staking", function () {
         ethers.utils.parseEther("6000")
       );
     });
+
+    it("should receive speed up benefits after depositing speedUpThreshold with non-zero balance", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(this.speedUpDuration);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      const afterClaimAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // speedUpTimestamp
+      expect(afterClaimAliceUserInfo[3]).to.be.equal(0);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const seconDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // speedUpTimestamp
+      expect(seconDepositAliceUserInfo[3]).to.be.equal(
+        secondDepositBlock.timestamp + this.speedUpDuration
+      );
+    });
+
+    it("should not receive speed up benefits after depositing less than speedUpThreshold with non-zero balance", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(this.speedUpDuration);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("1"));
+
+      const afterAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // speedUpTimestamp
+      expect(afterAliceUserInfo[3]).to.be.equal(0);
+    });
+
+    it("should have speed up period extended after depositing speedUPThreshold and currently receiving speed up benefits", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      const initialDepositBlock = await ethers.provider.getBlock();
+
+      const initialDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      const initialDepositSpeedUpEndTimestamp = initialDepositAliceUserInfo[3];
+
+      expect(initialDepositSpeedUpEndTimestamp).to.be.equal(
+        initialDepositBlock.timestamp + this.speedUpDuration
+      );
+
+      // Increase by some amount of time less than speedUpDuration
+      await increase(this.speedUpDuration / 2);
+
+      // Deposit speedUpThreshold amount so that speed up period gets extended
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const secondDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      const secondDepositSpeedUpEndTimestamp = secondDepositAliceUserInfo[3];
+
+      expect(
+        secondDepositSpeedUpEndTimestamp.gt(initialDepositSpeedUpEndTimestamp)
+      ).to.be.equal(true);
+      expect(secondDepositSpeedUpEndTimestamp).to.be.equal(
+        secondDepositBlock.timestamp + this.speedUpDuration
+      );
+    });
+
+    it("should have lastClaimTimestamp updated after depositing if holding max veJOE cap", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      // Increase by `maxCap` seconds to ensure that user will have max veJOE
+      // after claiming
+      await increase(this.maxCap);
+
+      await this.veJoeStaking.connect(this.alice).claim();
+
+      const claimBlock = await ethers.provider.getBlock();
+
+      const claimAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // lastClaimTimestamp
+      expect(claimAliceUserInfo[2]).to.be.equal(claimBlock.timestamp);
+
+      await increase(this.maxCap);
+
+      const pendingVeJoe = await this.veJoeStaking.getPendingVeJoe(
+        this.alice.address
+      );
+      expect(pendingVeJoe).to.be.equal(0);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("5"));
+
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const secondDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // lastClaimTimestamp
+      expect(secondDepositAliceUserInfo[2]).to.be.equal(
+        secondDepositBlock.timestamp
+      );
+    });
   });
 
   describe("withdraw", function () {

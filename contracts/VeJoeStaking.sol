@@ -208,6 +208,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         if (_getUserHasNonZeroBalance(msg.sender)) {
             uint256 userStakedJoe = userInfo.balance;
 
+            uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
+            uint256 userMaxVeJoeCap = userStakedJoe.mul(maxCap);
+
+            // If the user is currently at their max veJOE cap, we need to update
+            // their `lastClaimTimestamp` to now to prevent passive veJOE accrual
+            // after user hit their max cap.
+            if (userVeJoeBalance == userMaxVeJoeCap) {
+                userInfo.lastClaimTimestamp = block.timestamp;
+            }
+
             // User is eligible for speed up benefits if `_amount` is at least
             // `speedUpThreshold / 100 * userStakedJoe`
             if (_amount.mul(100) >= speedUpThreshold.mul(userStakedJoe)) {
