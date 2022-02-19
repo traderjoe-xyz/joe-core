@@ -218,11 +218,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
                 userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             }
         } else {
-            // If the user's `lastClaimTimestamp` is 0, i.e. if this is the user's first time staking,
-            // then they will receive speed up benefits.
-            if (userInfo.lastClaimTimestamp == 0) {
-                userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
-            }
+            userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             userInfo.lastClaimTimestamp = block.timestamp;
         }
 

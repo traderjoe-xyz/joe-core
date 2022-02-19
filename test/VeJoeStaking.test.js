@@ -3,7 +3,7 @@ const { ethers, network, upgrades } = require("hardhat");
 const { expect } = require("chai");
 const { describe } = require("mocha");
 
-describe("VeJoe Staking", function () {
+describe.only("VeJoe Staking", function () {
   before(async function () {
     this.VeJoeStakingCF = await ethers.getContractFactory("VeJoeStaking");
     this.VeJoeTokenCF = await ethers.getContractFactory("VeJoeToken");
@@ -319,6 +319,34 @@ describe("VeJoe Staking", function () {
       );
       // speedUpTimestamp
       expect(afterAliceUserInfo[3]).to.be.equal(0);
+    });
+
+    it("should receive speed up benefits after deposit with zero balance", async function () {
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("100"));
+
+      await increase(100);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .withdraw(ethers.utils.parseEther("100"));
+
+      await increase(100);
+
+      await this.veJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("1"));
+
+      const secondDepositBlock = await ethers.provider.getBlock();
+
+      const secondDepositAliceUserInfo = await this.veJoeStaking.userInfos(
+        this.alice.address
+      );
+      // speedUpEndTimestamp
+      expect(secondDepositAliceUserInfo[3]).to.be.equal(
+        secondDepositBlock.timestamp + this.speedUpDuration
+      );
     });
 
     it("should have speed up period extended after depositing speedUpThreshold and currently receiving speed up benefits", async function () {
