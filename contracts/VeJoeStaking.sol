@@ -316,7 +316,14 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
 
+        // If user's speed up period has ended, reset `speedUpEndTimestamp` to 0
+        if (userInfo.speedUpEndTimestamp != 0 && block.timestamp >= userInfo.speedUpEndTimestamp) {
+            userInfo.speedUpEndTimestamp = 0;
+        }
+
         if (veJoeToClaim > 0) {
+            userInfo.lastClaimTimestamp = block.timestamp;
+
             veJoe.mint(msg.sender, veJoeToClaim);
             emit Claim(msg.sender, veJoeToClaim);
         }
