@@ -24,13 +24,13 @@ describe("VeJoe Staking", function () {
     await this.joe.mint(this.bob.address, ethers.utils.parseEther("1000"));
     await this.joe.mint(this.carol.address, ethers.utils.parseEther("1000"));
 
-    this.veJoePerSec = ethers.utils.parseEther("1");
+    this.veJoePerSharePerSec = ethers.utils.parseEther("1");
     this.maxCap = 200;
 
     this.veJoeStaking = await upgrades.deployProxy(this.VeJoeStakingCF, [
       this.joe.address, // _joe
       this.veJoe.address, // _veJoe
-      this.veJoePerSec, // _veJoePerSec
+      this.veJoePerSharePerSec, // _veJoePerSharePerSec
       this.maxCap, // _maxCap
     ]);
     await this.veJoe.transferOwnership(this.veJoeStaking.address);
@@ -90,15 +90,15 @@ describe("VeJoe Staking", function () {
     });
 
     it("should allow owner to setVeJoePerSec", async function () {
-      expect(await this.veJoeStaking.veJoePerSec()).to.be.equal(
-        this.veJoePerSec
+      expect(await this.veJoeStaking.veJoePerSharePerSec()).to.be.equal(
+        this.veJoePerSharePerSec
       );
 
       await this.veJoeStaking
         .connect(this.dev)
         .setVeJoePerSec(ethers.utils.parseEther("1.5"));
 
-      expect(await this.veJoeStaking.veJoePerSec()).to.be.equal(
+      expect(await this.veJoeStaking.veJoePerSharePerSec()).to.be.equal(
         ethers.utils.parseEther("1.5")
       );
     });
@@ -296,7 +296,7 @@ describe("VeJoe Staking", function () {
       );
     });
 
-    it("should receive correct veJOE if veJoePerSec is updated multiple times", async function () {
+    it("should receive correct veJOE if veJoePerSharePerSec is updated multiple times", async function () {
       await this.veJoeStaking
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
@@ -347,7 +347,7 @@ describe("VeJoe Staking", function () {
       expect(await this.veJoeStaking.lastRewardTimestamp()).to.be.equal(
         block.timestamp + 30
       );
-      // Increase should be `secondsElapsed * veJoePerSec * ACC_VEJOE_PER_SHARE_PRECISION`:
+      // Increase should be `secondsElapsed * veJoePerSharePerSec * ACC_VEJOE_PER_SHARE_PRECISION`:
       // = 30 * 1 * 1e18
       expect(await this.veJoeStaking.accVeJoePerShare()).to.be.equal(
         accVeJoePerShareBeforeUpdate.add(ethers.utils.parseEther("30"))
