@@ -69,11 +69,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     uint256 public veJoePerSharePerSec;
 
-    /// @notice The upper limit of `veJoePerSharePerSec`
-    uint256 public upperLimitVeJoePerSharePerSec;
-
     /// @notice Speed up veJOE per sec per JOE staked, scaled to `VEJOE_PER_SHARE_PER_SEC_PRECISION`
     uint256 public speedUpVeJoePerSharePerSec;
+
+    /// @notice The upper limit of `veJoePerSharePerSec` and `speedUpVeJoePerSharePerSec`
+    uint256 public upperLimitVeJoePerSharePerSec;
 
     /// @notice Precision of `veJoePerSharePerSec`
     uint256 public VEJOE_PER_SHARE_PER_SEC_PRECISION;
