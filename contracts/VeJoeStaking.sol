@@ -180,6 +180,22 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo storage userInfo = userInfos[msg.sender];
 
+        if (_getUserHasNonZeroBalance(msg.sender)) {
+            uint256 userStakedJoe = userInfo.balance;
+
+            // User is eligible for speed up benefits if `_amount` is at least
+            // `speedUpThreshold / 100 * userStakedJoe`
+            if (_amount.mul(100) >= speedUpThreshold.mul(userStakedJoe)) {
+                userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
+            }
+        } else {
+            // If the user's `lastClaimTimestamp` is 0, i.e. if this is the user's first time staking,
+            // then they will receive speed up benefits.
+            if (userInfo.lastClaimTimestamp == 0) {
+                userInfo.speedUpEndTimestamp = block.timestamp.add(boostedDuration);
+            }
+        }
+
         userInfo.balance = userInfo.balance.add(_amount);
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
 
