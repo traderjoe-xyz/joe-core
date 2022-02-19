@@ -221,6 +221,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         // Note that we don't need to claim as the user's veJOE balance will be reset to 0
         userInfo.balance = userInfo.balance.sub(_amount);
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
+        userInfo.lastClaimTimestamp = block.timestamp;
+        userInfo.speedUpEndTimestamp = 0;
 
         // Burn the user's current veJOE balance
         veJoe.burnFrom(msg.sender, veJoe.balanceOf(msg.sender));
