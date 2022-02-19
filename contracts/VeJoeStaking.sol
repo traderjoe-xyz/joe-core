@@ -54,6 +54,13 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Precision of `veJoePerSec`
     uint256 public VEJOE_PER_SEC_PRECISION;
 
+    /// @notice Percentage of user's current staked JOE user has to deposit in order to start
+    /// receiving speed up benefits, in parts per 100.
+    /// @dev Specifically, user has to deposit at least `speedUpThreshold/100 * userStakedJoe` JOE.
+    /// The only exception is the user will also receive speed up benefits if it's their first
+    /// time staking.
+    uint256 public speedUpThreshold;
+
     /// @notice The length of time a user receives speed up benefits
     uint256 public speedUpDuration;
 
@@ -67,6 +74,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     event UpdateMaxCap(address indexed user, uint256 maxCap);
     event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
     event UpdateSpeedUpDuration(address indexed user, uint256 speedUpDuration);
+    event UpdateSpeedUpThreshold(address indexed user, uint256 speedUpThreshold);
     event UpdateVeJoePerSec(address indexed user, uint256 veJoePerSec);
     event Withdraw(address indexed user, uint256 amount);
 
@@ -80,6 +88,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         VeJoeToken _veJoe,
         uint256 _veJoePerSec,
         uint256 _maxCap,
+        uint256 _speedUpThreshold,
         uint256 _speedUpDuration
     ) public initializer {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
@@ -91,6 +100,11 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
         );
 
+        require(
+            _speedUpThreshold != 0 && _speedUpThreshold <= 100,
+            "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
+        );
+
         upperLimitSpeedUpDuration = 365 days;
         require(
             _speedUpDuration <= upperLimitSpeedUpDuration,
@@ -100,6 +114,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         __Ownable_init();
 
         maxCap = _maxCap;
+        speedUpThreshold = _speedUpThreshold;
         speedUpDuration = _speedUpDuration;
         joe = _joe;
         veJoe = _veJoe;
@@ -127,6 +142,17 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         updateRewardVars();
         veJoePerSec = _veJoePerSec;
         emit UpdateVeJoePerSec(msg.sender, _veJoePerSec);
+    }
+
+    /// @notice Set speedUpThreshold
+    /// @param _speedUpThreshold The new speedUpThreshold
+    function setSpeedUpThreshold(uint256 _speedUpThreshold) external onlyOwner {
+        require(
+            _speedUpThreshold != 0 && _speedUpThreshold <= 100,
+            "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
+        );
+        speedUpThreshold = _speedUpThreshold;
+        emit UpdateSpeedUpThreshold(msg.sender, _speedUpThreshold);
     }
 
     /// @notice Set speedUpDuration
