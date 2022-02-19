@@ -262,7 +262,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         UserInfo memory user = userInfos[_user];
 
-        // Calculate amount of pending veJOE
+        // Calculate amount of pending base veJOE
         uint256 _accVeJoePerShare = accVeJoePerShare;
         uint256 secondsElapsed = block.timestamp.sub(lastRewardTimestamp);
         if (secondsElapsed > 0) {
@@ -271,9 +271,22 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             );
         }
 
-        uint256 pendingVeJoe = _accVeJoePerShare.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION).sub(
+        uint256 pendingBaseVeJoe = _accVeJoePerShare.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION).sub(
             user.rewardDebt
         );
+
+        // Calculate amount of pending speed up veJOE
+        uint256 pendingSpeedUpVeJoe = 0;
+        if (user.speedUpEndTimestamp != 0) {
+            uint256 speedUpCeiling = block.timestamp > user.speedUpEndTimestamp
+                ? user.speedUpEndTimestamp
+                : block.timestamp;
+            uint256 speedUpSecondsElapsed = speedUpCeiling.sub(user.lastClaimTimestamp);
+            uint256 speedUpAccVeJoePerJoe = speedUpSecondsElapsed.mul(veJoePerSec);
+            pendingSpeedUpVeJoe = speedUpAccVeJoePerJoe.mul(user.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
+        }
+
+        uint256 pendingVeJoe = pendingBaseVeJoe + pendingSpeedUpVeJoe;
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
