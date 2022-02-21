@@ -53,7 +53,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     address public feeCollector;
 
-    /// @notice The deposit fee, scaled to 1e18
+    /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PRECISION`
     uint256 public depositFeePercent;
     /// @notice The precision of `depositFeePercent`
     uint256 public DEPOSIT_FEE_PRECISION;
@@ -163,7 +163,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @return The reward debt for the chosen token
      */
     function getUserInfo(address _user, IERC20Upgradeable _rewardToken) external view returns (uint256, uint256) {
-        UserInfo memory user = userInfo[_user];
+        UserInfo storage user = userInfo[_user];
         return (user.amount, user.rewardDebt[_rewardToken]);
     }
 
