@@ -53,10 +53,10 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     address public feeCollector;
 
-    /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PRECISION`
+    /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PERCENT_PRECISION`
     uint256 public depositFeePercent;
     /// @notice The precision of `depositFeePercent`
-    uint256 public DEPOSIT_FEE_PRECISION;
+    uint256 public DEPOSIT_FEE_PERCENT_PRECISION;
 
     /// @notice Accumulated `token` rewards per share, scaled to `ACC_REWARD_PER_SHARE_PRECISION`
     mapping(IERC20Upgradeable => uint256) public accRewardPerShare;
@@ -112,7 +112,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
         isRewardToken[_rewardToken] = true;
         rewardTokens.push(_rewardToken);
-        DEPOSIT_FEE_PRECISION = 1e18;
+        DEPOSIT_FEE_PERCENT_PRECISION = 1e18;
         ACC_REWARD_PER_SHARE_PRECISION = 1e24;
     }
 
@@ -123,7 +123,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     function deposit(uint256 _amount) external {
         UserInfo storage user = userInfo[msg.sender];
 
-        uint256 _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PRECISION);
+        uint256 _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
         uint256 _amountMinusFee = _amount.sub(_fee);
 
         uint256 _previousAmount = user.amount;
