@@ -231,15 +231,16 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     function pendingReward(address _user, IERC20Upgradeable _token) external view returns (uint256) {
         require(isRewardToken[_token], "StableJoeStaking: wrong reward token");
         UserInfo storage user = userInfo[_user];
+        uint256 _totalJoe = internalJoeBalance;
         uint256 _accRewardTokenPerShare = accRewardPerShare[_token];
 
         uint256 _currRewardBalance = _token.balanceOf(address(this));
-        uint256 _rewardBalance = _token == joe ? _currRewardBalance.sub(internalJoeBalance) : _currRewardBalance;
+        uint256 _rewardBalance = _token == joe ? _currRewardBalance.sub(_totalJoe) : _currRewardBalance;
 
-        if (_rewardBalance != lastRewardBalance[_token] && internalJoeBalance != 0) {
+        if (_rewardBalance != lastRewardBalance[_token] && _totalJoe != 0) {
             uint256 _accruedReward = _rewardBalance.sub(lastRewardBalance[_token]);
             _accRewardTokenPerShare = _accRewardTokenPerShare.add(
-                _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(internalJoeBalance)
+                _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(_totalJoe)
             );
         }
         return
@@ -306,18 +307,20 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     function updateReward(IERC20Upgradeable _token) public {
         require(isRewardToken[_token], "StableJoeStaking: wrong reward token");
 
+        uint256 _totalJoe = internalJoeBalance;
+
         uint256 _currRewardBalance = _token.balanceOf(address(this));
-        uint256 _rewardBalance = _token == joe ? _currRewardBalance.sub(internalJoeBalance) : _currRewardBalance;
+        uint256 _rewardBalance = _token == joe ? _currRewardBalance.sub(_totalJoe) : _currRewardBalance;
 
         // Did StableJoeStaking receive any token
-        if (_rewardBalance == lastRewardBalance[_token] || internalJoeBalance == 0) {
+        if (_rewardBalance == lastRewardBalance[_token] || _totalJoe == 0) {
             return;
         }
 
         uint256 _accruedReward = _rewardBalance.sub(lastRewardBalance[_token]);
 
         accRewardPerShare[_token] = accRewardPerShare[_token].add(
-            _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(internalJoeBalance)
+            _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(_totalJoe)
         );
         lastRewardBalance[_token] = _rewardBalance;
     }
