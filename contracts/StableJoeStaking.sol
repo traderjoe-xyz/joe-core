@@ -58,10 +58,10 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice The precision of `depositFeePercent`
     uint256 public DEPOSIT_FEE_PRECISION;
 
-    /// @notice Accumulated `token` rewards per share, scaled to `PRECISION`. See above
+    /// @notice Accumulated `token` rewards per share, scaled to `ACC_REWARD_PER_SHARE_PRECISION`
     mapping(IERC20Upgradeable => uint256) public accRewardPerShare;
-    /// @notice `PRECISION` of `accRewardPerShare`
-    uint256 public PRECISION;
+    /// @notice The precision of `accRewardPerShare`
+    uint256 public ACC_REWARD_PER_SHARE_PRECISION;
 
     /// @dev Info of each user that stakes JOE
     mapping(address => UserInfo) private userInfo;
@@ -113,7 +113,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         isRewardToken[_rewardToken] = true;
         rewardTokens.push(_rewardToken);
         DEPOSIT_FEE_PRECISION = 1e18;
-        PRECISION = 1e24;
+        ACC_REWARD_PER_SHARE_PRECISION = 1e24;
     }
 
     /**
@@ -136,12 +136,13 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             updateReward(_token);
 
             uint256 _previousRewardDebt = user.rewardDebt[_token];
-            user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(PRECISION);
+            user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(ACC_REWARD_PER_SHARE_PRECISION);
 
             if (_previousAmount != 0) {
-                uint256 _pending = _previousAmount.mul(accRewardPerShare[_token]).div(PRECISION).sub(
-                    _previousRewardDebt
-                );
+                uint256 _pending = _previousAmount
+                    .mul(accRewardPerShare[_token])
+                    .div(ACC_REWARD_PER_SHARE_PRECISION)
+                    .sub(_previousRewardDebt);
                 if (_pending != 0) {
                     safeTokenTransfer(_token, msg.sender, _pending);
                     emit ClaimReward(msg.sender, address(_token), _pending);
@@ -238,10 +239,11 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         if (_rewardBalance != lastRewardBalance[_token] && internalJoeBalance != 0) {
             uint256 _accruedReward = _rewardBalance.sub(lastRewardBalance[_token]);
             _accRewardTokenPerShare = _accRewardTokenPerShare.add(
-                _accruedReward.mul(PRECISION).div(internalJoeBalance)
+                _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(internalJoeBalance)
             );
         }
-        return user.amount.mul(_accRewardTokenPerShare).div(PRECISION).sub(user.rewardDebt[_token]);
+        return
+            user.amount.mul(_accRewardTokenPerShare).div(ACC_REWARD_PER_SHARE_PRECISION).sub(user.rewardDebt[_token]);
     }
 
     /**
@@ -261,10 +263,11 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
                 IERC20Upgradeable _token = rewardTokens[i];
                 updateReward(_token);
 
-                uint256 _pending = _previousAmount.mul(accRewardPerShare[_token]).div(PRECISION).sub(
-                    user.rewardDebt[_token]
-                );
-                user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(PRECISION);
+                uint256 _pending = _previousAmount
+                    .mul(accRewardPerShare[_token])
+                    .div(ACC_REWARD_PER_SHARE_PRECISION)
+                    .sub(user.rewardDebt[_token]);
+                user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(ACC_REWARD_PER_SHARE_PRECISION);
 
                 if (_pending != 0) {
                     safeTokenTransfer(_token, msg.sender, _pending);
@@ -314,7 +317,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _accruedReward = _rewardBalance.sub(lastRewardBalance[_token]);
 
         accRewardPerShare[_token] = accRewardPerShare[_token].add(
-            _accruedReward.mul(PRECISION).div(internalJoeBalance)
+            _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(internalJoeBalance)
         );
         lastRewardBalance[_token] = _rewardBalance;
     }
