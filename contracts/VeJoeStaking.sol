@@ -84,6 +84,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _boostedGenerationRate Boosted rate of veJOE generated per sec per JOE staked
     /// @param _boostedThreshold Percentage of total staked JOE user has to deposit to be boosted
     /// @param _boostedDuration Length of time a user receives boosted benefits
+    /// @param _maxCap The maximim balance of veJoe for a user, a multiplier of their staked JOE
     function initialize(
         IERC20Upgradeable _joe,
         VeJoeToken _veJoe,
