@@ -2,7 +2,7 @@ import { ethers, network, upgrades } from "hardhat"
 import { expect } from "chai"
 import { ADDRESS_ZERO, advanceBlock, advanceBlockTo, latest, duration, increase } from "./utilities"
 
-describe.only("BoostedMasterChefJoe", function () {
+describe("BoostedMasterChefJoe", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
