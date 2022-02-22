@@ -109,7 +109,7 @@ describe("moneyMaker", function () {
     it("emits correct event on bridge", async function () {
       await expect(this.moneyMaker.setBridge(this.dai.address, this.joe.address))
         .to.emit(this.moneyMaker, "LogBridgeSet")
-        .withArgs(this.dai.address, this.joe.address)
+        .withArgs(this.dai.address, ethers.constants.AddressZero, this.joe.address)
     })
   })
 
