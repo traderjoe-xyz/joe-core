@@ -178,6 +178,7 @@ contract MoneyMaker is Ownable {
     ) external onlyEOA onlyAuth {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
         require(slippage < 5_000, "MoneyMaker: slippage needs to be lower than 50%");
+        require(token0.length == token1.length, "MoneyMaker: arrays length don't match");
 
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
