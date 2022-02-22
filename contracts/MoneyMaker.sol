@@ -11,14 +11,16 @@ import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 /// @title Money Maker
 /// @author Trader Joe
 /// @notice MoneyMaker receives 0.05% of the swaps done on Trader Joe in the form of an LP. It swaps those LPs
 /// to a token of choice and sends it to the JoeBar
 contract MoneyMaker is Ownable {
-    using SafeMath for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
     using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     IJoeFactory public immutable factory;
 
@@ -31,18 +33,18 @@ contract MoneyMaker is Ownable {
     address public devAddr;
 
     // @notice Set of addresses that can perform certain functions
-    mapping(address => bool) public isAuth;
-    address[] public authorized;
-    bool public anyAuth = false;
+    EnumerableSet.AddressSet private _isAuth;
 
     modifier onlyAuth() {
-        require(isAuth[msg.sender] || anyAuth, "MoneyMaker: FORBIDDEN");
+        require(_isAuth.contains(_msgSender()), "MoneyMaker: FORBIDDEN");
         _;
     }
 
-    /// @notice Maps a token `token` to another token `bridge` so that it uses `token/bridge` pair to convert token
+    /// @dev Maps a token `token` to another token `bridge` so that it uses `token/bridge` pair to convert token
     mapping(address => address) internal _bridges;
 
+    event AddAuthorizedAddress(address indexed _addr);
+    event RemoveAuthorizedAddress(address indexed _addr);
     event SetDevAddr(address _addr);
     event SetDevCut(uint256 _amount);
     event SetTokenTo(address _tokenTo);
@@ -71,29 +73,35 @@ contract MoneyMaker is Ownable {
         bar = _bar;
         tokenTo = _tokenTo;
         wavax = _wavax;
-        devAddr = msg.sender;
-        isAuth[msg.sender] = true;
-        authorized.push(msg.sender);
+        devAddr = _msgSender();
+        _isAuth.add(_msgSender());
     }
 
     /// @notice Adds a user to the authorized addresses
     /// @param _auth The address to add
     function addAuth(address _auth) external onlyOwner {
-        isAuth[_auth] = true;
-        authorized.push(_auth);
+        require(_isAuth.add(_auth), "MoneyMaker: Address is already authorized");
+        emit AddAuthorizedAddress(_auth);
     }
 
     /// @notice Remove a user of authorized addresses
     /// @param _auth The address to remove
-    function revokeAuth(address _auth) external onlyOwner {
-        isAuth[_auth] = false;
+    function removeAuth(address _auth) external onlyOwner {
+        require(_isAuth.remove(_auth), "MoneyMaker: Address is not authorized");
+        emit RemoveAuthorizedAddress(_auth);
     }
 
-    /// @notice Setting anyAuth to true allows anyone to call functions protected by onlyAuth
-    /// @param access The boolean value, true means every one can call onlyAuth functions, false, only authorized
-    /// addresses
-    function setAnyAuth(bool access) external onlyOwner {
-        anyAuth = access;
+    /// @notice Return the list of authorized addresses
+    /// @param index Index of the returned address
+    /// @return The authorized address at `index`
+    function getAuth(uint256 index) external view returns (address) {
+        return _isAuth.at(index);
+    }
+
+    /// @notice Return the length of authorized addresses
+    /// @return The number of authorized addresses
+    function lenAuth() external view returns (uint256) {
+        return _isAuth.length();
     }
 
     /// @notice Force using `pair/bridge` pair to convert `token`
@@ -101,7 +109,10 @@ contract MoneyMaker is Ownable {
     /// @param bridge The address of the tokenTo
     function setBridge(address token, address bridge) external onlyAuth {
         // Checks
-        require(token != tokenTo && token != wavax && token != bridge, "MoneyMaker: Invalid bridge");
+        require(
+            token != tokenTo && token != wavax && token != bridge,
+            "MoneyMaker: Invalid bridge"
+        );
 
         // Effects
         _bridges[token] = bridge;
@@ -120,7 +131,10 @@ contract MoneyMaker is Ownable {
     /// @notice Sets `devAddr`, the address that will receive the `devCut`
     /// @param _addr The new dev address
     function setDevAddr(address _addr) external onlyOwner {
-        require(_addr != address(0), "setDevAddr, address cannot be zero address");
+        require(
+            _addr != address(0),
+            "setDevAddr, address cannot be zero address"
+        );
         devAddr = _addr;
 
         emit SetDevAddr(_addr);
@@ -129,7 +143,10 @@ contract MoneyMaker is Ownable {
     /// @notice Sets token that we're buying back
     /// @param _tokenTo The new token address
     function setTokenToAddress(address _tokenTo) external onlyOwner {
-        require(_tokenTo != address(0), "setTokenToAddress, address cannot be zero address");
+        require(
+            _tokenTo != address(0),
+            "setTokenToAddress, address cannot be zero address"
+        );
         tokenTo = _tokenTo;
 
         emit SetTokenTo(_tokenTo);
@@ -148,7 +165,7 @@ contract MoneyMaker is Ownable {
     // C6: It's not a fool proof solution, but it prevents flash loans, so here it's ok to use tx.origin
     modifier onlyEOA() {
         // Try to make flash-loan exploit harder to do by only allowing externally owned addresses.
-        require(msg.sender == tx.origin, "MoneyMaker: must use EOA");
+        require(_msgSender() == tx.origin, "MoneyMaker: must use EOA");
         _;
     }
 
@@ -162,7 +179,10 @@ contract MoneyMaker is Ownable {
         address token1,
         uint256 slippage
     ) external onlyEOA onlyAuth {
-        require(slippage < 5_000, "MoneyMaker: slippage needs to be lower than 50%");
+        require(
+            slippage < 5_000,
+            "MoneyMaker: slippage needs to be lower than 50%"
+        );
         _convert(token0, token1, slippage);
     }
 
@@ -177,7 +197,10 @@ contract MoneyMaker is Ownable {
         uint256 slippage
     ) external onlyEOA onlyAuth {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
-        require(slippage < 5_000, "MoneyMaker: slippage needs to be lower than 50%");
+        require(
+            slippage < 5_000,
+            "MoneyMaker: slippage needs to be lower than 50%"
+        );
 
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {
@@ -206,7 +229,10 @@ contract MoneyMaker is Ownable {
             IJoePair pair = IJoePair(factory.getPair(token0, token1));
             require(address(pair) != address(0), "MoneyMaker: Invalid pair");
 
-            IERC20(address(pair)).safeTransfer(address(pair), pair.balanceOf(address(this)));
+            IERC20(address(pair)).safeTransfer(
+                address(pair),
+                pair.balanceOf(address(this))
+            );
 
             // take balance of tokens in this contract before burning the pair, incase there are already some here
             uint256 tok0bal = IERC20(token0).balanceOf(address(this));
@@ -220,7 +246,7 @@ contract MoneyMaker is Ownable {
             amount1 = IERC20(token1).balanceOf(address(this)).sub(tok1bal);
         }
         emit LogConvert(
-            msg.sender,
+            _msgSender(),
             token0,
             token1,
             amount0,
@@ -266,10 +292,22 @@ contract MoneyMaker is Ownable {
             tokenOut = _toToken(token0, amount0, slippage).add(amount1);
         } else if (token0 == wavax) {
             // eg. AVAX - USDC
-            tokenOut = _toToken(wavax, _swap(token1, wavax, amount1, address(this), slippage).add(amount0), slippage);
+            tokenOut = _toToken(
+                wavax,
+                _swap(token1, wavax, amount1, address(this), slippage).add(
+                    amount0
+                ),
+                slippage
+            );
         } else if (token1 == wavax) {
             // eg. USDT - AVAX
-            tokenOut = _toToken(wavax, _swap(token0, wavax, amount0, address(this), slippage).add(amount1), slippage);
+            tokenOut = _toToken(
+                wavax,
+                _swap(token0, wavax, amount0, address(this), slippage).add(
+                    amount1
+                ),
+                slippage
+            );
         } else {
             // eg. MIC - USDT
             address bridge0 = bridgeFor(token0);
@@ -325,11 +363,14 @@ contract MoneyMaker is Ownable {
         require(address(pair) != address(0), "MoneyMaker: Cannot convert");
 
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-        (uint256 reserveInput, uint256 reserveOutput) = fromToken == pair.token0()
+        (uint256 reserveInput, uint256 reserveOutput) = fromToken ==
+            pair.token0()
             ? (reserve0, reserve1)
             : (reserve1, reserve0);
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
-        uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(reserveInput); // calculate amount that was transferred, this accounts for transfer taxes
+        uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(
+            reserveInput
+        ); // calculate amount that was transferred, this accounts for transfer taxes
 
         amountOut = getAmountOut(amountInput, reserveInput, reserveOutput);
 
@@ -382,7 +423,10 @@ contract MoneyMaker is Ownable {
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
         require(amountIn > 0, "MoneyMaker: INSUFFICIENT_INPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "MoneyMaker: INSUFFICIENT_LIQUIDITY");
+        require(
+            reserveIn > 0 && reserveOut > 0,
+            "MoneyMaker: INSUFFICIENT_LIQUIDITY"
+        );
         uint256 amountInWithFee = amountIn.mul(997);
         uint256 numerator = amountInWithFee.mul(reserveOut);
         uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
