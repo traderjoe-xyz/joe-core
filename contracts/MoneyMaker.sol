@@ -48,7 +48,7 @@ contract MoneyMaker is Ownable {
     event SetDevAddr(address _addr);
     event SetDevCut(uint256 _amount);
     event SetTokenTo(address _tokenTo);
-    event LogBridgeSet(address indexed token, address indexed bridge);
+    event LogBridgeSet(address indexed token, address indexed oldBridge, address indexed bridge);
     event LogConvert(
         address indexed server,
         address indexed token0,
@@ -116,8 +116,9 @@ contract MoneyMaker is Ownable {
         require(token != tokenTo && token != wavax && token != bridge, "MoneyMaker: Invalid bridge");
 
         // Effects
+        address oldBridge = _bridges[token];
         _bridges[token] = bridge;
-        emit LogBridgeSet(token, bridge);
+        emit LogBridgeSet(token, oldBridge, bridge);
     }
 
     /// @notice Sets dev cut, which will be sent to `devAddr`, can't be greater than 50%
