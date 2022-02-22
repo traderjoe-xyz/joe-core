@@ -121,7 +121,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _amount The amount of JOE to deposit
      */
     function deposit(uint256 _amount) external {
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[_msgSender()];
 
         uint256 _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
         uint256 _amountMinusFee = _amount.sub(_fee);
@@ -144,16 +144,16 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
                     .div(ACC_REWARD_PER_SHARE_PRECISION)
                     .sub(_previousRewardDebt);
                 if (_pending != 0) {
-                    safeTokenTransfer(_token, msg.sender, _pending);
-                    emit ClaimReward(msg.sender, address(_token), _pending);
+                    safeTokenTransfer(_token, _msgSender(), _pending);
+                    emit ClaimReward(_msgSender(), address(_token), _pending);
                 }
             }
         }
 
         internalJoeBalance = internalJoeBalance.add(_amountMinusFee);
-        joe.safeTransferFrom(msg.sender, feeCollector, _fee);
-        joe.safeTransferFrom(msg.sender, address(this), _amountMinusFee);
-        emit Deposit(msg.sender, _amountMinusFee, _fee);
+        joe.safeTransferFrom(_msgSender(), feeCollector, _fee);
+        joe.safeTransferFrom(_msgSender(), address(this), _amountMinusFee);
+        emit Deposit(_msgSender(), _amountMinusFee, _fee);
     }
 
     /**
@@ -252,7 +252,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _amount The amount of JOE to withdraw
      */
     function withdraw(uint256 _amount) external {
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[_msgSender()];
         uint256 _previousAmount = user.amount;
         require(_amount <= _previousAmount, "StableJoeStaking: withdraw amount exceeds balance");
         uint256 _newAmount = user.amount.sub(_amount);
@@ -271,22 +271,22 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
                 user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(ACC_REWARD_PER_SHARE_PRECISION);
 
                 if (_pending != 0) {
-                    safeTokenTransfer(_token, msg.sender, _pending);
-                    emit ClaimReward(msg.sender, address(_token), _pending);
+                    safeTokenTransfer(_token, _msgSender(), _pending);
+                    emit ClaimReward(_msgSender(), address(_token), _pending);
                 }
             }
         }
 
         internalJoeBalance = internalJoeBalance.sub(_amount);
-        joe.safeTransfer(msg.sender, _amount);
-        emit Withdraw(msg.sender, _amount);
+        joe.safeTransfer(_msgSender(), _amount);
+        emit Withdraw(_msgSender(), _amount);
     }
 
     /**
      * @notice Withdraw without caring about rewards. EMERGENCY ONLY
      */
     function emergencyWithdraw() external {
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[_msgSender()];
 
         uint256 _amount = user.amount;
         user.amount = 0;
@@ -295,8 +295,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             IERC20Upgradeable _token = rewardTokens[i];
             user.rewardDebt[_token] = 0;
         }
-        joe.safeTransfer(msg.sender, _amount);
-        emit EmergencyWithdraw(msg.sender, _amount);
+        joe.safeTransfer(_msgSender(), _amount);
+        emit EmergencyWithdraw(_msgSender(), _amount);
     }
 
     /**
