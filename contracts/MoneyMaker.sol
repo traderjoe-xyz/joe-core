@@ -9,6 +9,7 @@ import "./libraries/SafeERC20.sol";
 import "./traderjoe/interfaces/IERC20.sol";
 import "./traderjoe/interfaces/IJoePair.sol";
 import "./traderjoe/interfaces/IJoeFactory.sol";
+import "./traderjoe/libraries/JoeLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
@@ -345,7 +346,7 @@ contract MoneyMaker is Ownable {
         IERC20(fromToken).safeTransfer(address(pair), amountIn);
         uint256 amountInput = IERC20(fromToken).balanceOf(address(pair)).sub(reserveInput); // calculate amount that was transferred, this accounts for transfer taxes
 
-        amountOut = getAmountOut(amountInput, reserveInput, reserveOutput);
+        amountOut = JoeLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
 
         {
             uint256 rest = uint256(10_000).sub(slippage);
@@ -353,7 +354,7 @@ contract MoneyMaker is Ownable {
             /// hence why we do rest^2, i.e. calculating the slippage twice cause we actually do two swaps.
             /// This allows us to catch if a pair has low liquidity
             require(
-                getAmountOut(amountOut, reserveOutput, reserveInput) >=
+                JoeLibrary.getAmountOut(amountOut, reserveOutput, reserveInput) >=
                     amountInput.mul(rest).mul(rest).div(100_000_000),
                 "MoneyMaker: Slippage caught"
             );
@@ -383,23 +384,5 @@ contract MoneyMaker is Ownable {
             amount = amountIn.sub(amount);
         }
         amountOut = _swap(token, tokenTo, amount, bar, slippage);
-    }
-
-    /// @notice Returns the amount that user will receive after swapping from `in` to `out`
-    /// @param amountIn The amount of the `token`
-    /// @param reserveIn The reserve of `tokenIn`
-    /// @param reserveOut The reserve of `tokenOut`
-    /// @return amountOut The amount of `tokenOut`
-    function getAmountOut(
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) internal pure returns (uint256 amountOut) {
-        require(amountIn > 0, "MoneyMaker: INSUFFICIENT_INPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "MoneyMaker: INSUFFICIENT_LIQUIDITY");
-        uint256 amountInWithFee = amountIn.mul(997);
-        uint256 numerator = amountInWithFee.mul(reserveOut);
-        uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
-        amountOut = numerator / denominator;
     }
 }
