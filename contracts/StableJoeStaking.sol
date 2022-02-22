@@ -103,7 +103,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _depositFeePercent
     ) external initializer {
         __Ownable_init();
-        require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address 0");
+        require(address(_rewardToken) != address(0), "StableJoeStaking: reward token can't be address(0)");
+        require(address(_joe) != address(0), "StableJoeStaking: joe can't be address(0)");
+        require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address(0)");
         require(_depositFeePercent <= 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
 
         joe = _joe;
