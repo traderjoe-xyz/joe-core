@@ -20,13 +20,17 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     // rinkeby contract addresses
     joeAddress = "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4";
     masterChefV2Address = "0x1F51b7697A1919cF301845c93D4843FD620ad7Cc";
-    PID = 100;
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
     joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
     masterChefV2Address = "0xC98C3C547DDbcc0029F38E0383C645C202aD663d";
-    PID = 100;
   }
+
+  const MCV2 = await ethers.getContract("MasterChefJoeV2", masterChefV2Address);
+  await (await MCV2.add(100, dummyToken.address, false)).wait();
+
+  // PID should be the last added pool.
+  PID = await MCV2.poolLength;
 
   const { address } = await deploy("BoostedMasterChefJoe", {
     from: deployer,
@@ -46,9 +50,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     "BoostedMasterChefJoe",
     address
   );
-  const MCV2 = await ethers.getContract("MasterChefJoeV2", masterChefV2Address);
-
-  await (await MCV2.add(100, dummyToken.address, false)).wait();
   await (await dummyToken.approve(boostedMasterChef.address, 1)).wait();
   await (await BoostedMasterChefJoe.init(dummyToken.address)).wait();
 };
