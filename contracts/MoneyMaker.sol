@@ -69,6 +69,10 @@ contract MoneyMaker is Ownable {
         address _tokenTo,
         address _wavax
     ) public {
+        require(_factory != address(0), "MoneyMaker: factory can't be address(0)");
+        require(_bar != address(0), "MoneyMaker: bar can't be address(0)");
+        require(_tokenTo != address(0), "MoneyMaker: token can't be address(0)");
+        require(_wavax != address(0), "MoneyMaker: wavax can't be address(0)");
         factory = IJoeFactory(_factory);
         bar = _bar;
         tokenTo = _tokenTo;
