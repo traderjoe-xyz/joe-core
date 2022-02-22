@@ -7,19 +7,15 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const chainId = await getChainId();
   if (chainId == 4) {
     // rinkeby contract addresses
-    joeAddress = ethers.utils.getAddress(
-      "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4"
-    );
+    joeAddress = "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4";
     rewardToken = ethers.constants.AddressZero;
-    feeCollector = ethers.constants.AddressZero;
+    feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
-    joeAddress = ethers.utils.getAddress(
-      "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd"
-    );
+    joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
     rewardToken = ethers.constants.AddressZero;
-    feeCollector = ethers.constants.AddressZero;
+    feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
   }
 
