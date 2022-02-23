@@ -16,7 +16,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     // avalanche mainnet or hardhat network addresses
     joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
     // USDC.e
-    rewardToken = "0xa7d7079b0fead91f3e65f86e8915cb59c1a4c664";
+    rewardToken = "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E";
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
   }
