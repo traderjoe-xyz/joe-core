@@ -44,7 +44,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @dev Internal balance of JOE, this gets updated on user deposits / withdrawals
     /// this allows to reward users with JOE
-    uint256 internalJoeBalance;
+    uint256 public internalJoeBalance;
     /// @notice Array of tokens that users can claim
     IERC20Upgradeable[] public rewardTokens;
     mapping(IERC20Upgradeable => bool) public isRewardToken;
