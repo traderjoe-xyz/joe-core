@@ -5,7 +5,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   let PID,
     joeAddress,
     veJoeAddress = (await deployments.get("VeJoeToken")).address,
-    dummyTokenAddress = (await deployments.get("BoostedMasterChefToken")).address,
+    dummyTokenAddress = (await deployments.get("BoostedMasterChefToken"))
+      .address,
     masterChefV2Address;
 
   const chainId = await getChainId();
