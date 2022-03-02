@@ -50,12 +50,12 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     IERC20Upgradeable public joe;
     VeJoeToken public veJoe;
 
-    /// @notice The maximum ratio of veJOE to staked JOE
-    /// For example, if user has `n` JOE staked, they can own a maximum of `n * maxCap` veJOE.
-    uint256 public maxCap;
+    /// @notice The maximum limit of veJOE user can have as percentage points of staked JOE
+    /// For example, if user has `n` JOE staked, they can own a maximum of `n * maxCapPct / 100` veJOE.
+    uint256 public maxCapPct;
 
-    /// @notice The upper limit of `maxCap`
-    uint256 public upperLimitMaxCap;
+    /// @notice The upper limit of `maxCapPct`
+    uint256 public upperLimitMaxCapPct;
 
     /// @notice The accrued veJoe per share, scaled to `ACC_VEJOE_PER_SHARE_PRECISION`
     uint256 public accVeJoePerShare;
@@ -92,7 +92,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     event Claim(address indexed user, uint256 amount);
     event Deposit(address indexed user, uint256 amount);
-    event UpdateMaxCap(address indexed user, uint256 maxCap);
+    event UpdateMaxCapPct(address indexed user, uint256 maxCapPct);
     event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
     event UpdateSpeedUpThreshold(address indexed user, uint256 speedUpThreshold);
     event UpdateVeJoePerSharePerSec(address indexed user, uint256 veJoePerSharePerSec);
@@ -105,7 +105,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     /// @param _speedUpVeJoePerSharePerSec Similar to `_veJoePerSharePerSec` but for speed up
     /// @param _speedUpThreshold Percentage of total staked JOE user has to deposit receive speed up
     /// @param _speedUpDuration Length of time a user receives speed up benefits
-    /// @param _maxCap The maximum amount of veJOE received per JOE staked
+    /// @param _maxCapPct Maximum limit of veJOE user can have as percentage points of staked JOE
     function initialize(
         IERC20Upgradeable _joe,
         VeJoeToken _veJoe,
@@ -113,7 +113,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _speedUpVeJoePerSharePerSec,
         uint256 _speedUpThreshold,
         uint256 _speedUpDuration,
-        uint256 _maxCap
+        uint256 _maxCapPct
     ) public initializer {
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
@@ -135,15 +135,15 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         require(_speedUpDuration <= 365 days, "VeJoeStaking: expected _speedUpDuration to be <= 365 days");
 
-        upperLimitMaxCap = 100000;
+        upperLimitMaxCapPct = 10000000;
         require(
-            _maxCap != 0 && _maxCap <= upperLimitMaxCap,
-            "VeJoeStaking: expected _maxCap to be non-zero and <= 100000"
+            _maxCapPct != 0 && _maxCapPct <= upperLimitMaxCapPct,
+            "VeJoeStaking: expected _maxCapPct to be non-zero and <= 10000000"
         );
 
         __Ownable_init();
 
-        maxCap = _maxCap;
+        maxCapPct = _maxCapPct;
         speedUpThreshold = _speedUpThreshold;
         speedUpDuration = _speedUpDuration;
         joe = _joe;
@@ -155,16 +155,16 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         VEJOE_PER_SHARE_PER_SEC_PRECISION = 1e18;
     }
 
-    /// @notice Set maxCap
-    /// @param _maxCap The new maxCap
-    function setMaxCap(uint256 _maxCap) external onlyOwner {
-        require(_maxCap > maxCap, "VeJoeStaking: expected new _maxCap to be greater than existing maxCap");
+    /// @notice Set maxCapPct
+    /// @param _maxCapPct The new maxCapPct
+    function setMaxCap(uint256 _maxCapPct) external onlyOwner {
+        require(_maxCapPct > maxCapPct, "VeJoeStaking: expected new _maxCapPct to be greater than existing maxCapPct");
         require(
-            _maxCap != 0 && _maxCap <= upperLimitMaxCap,
-            "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
+            _maxCapPct != 0 && _maxCapPct <= upperLimitMaxCapPct,
+            "VeJoeStaking: expected new _maxCapPct to be non-zero and <= 10000000"
         );
-        maxCap = _maxCap;
-        emit UpdateMaxCap(msg.sender, _maxCap);
+        maxCapPct = _maxCapPct;
+        emit UpdateMaxCapPct(msg.sender, _maxCapPct);
     }
 
     /// @notice Set veJoePerSharePerSec
@@ -305,7 +305,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         // Get the user's current veJOE balance and maximum veJOE they can hold
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
-        uint256 userMaxVeJoeCap = user.balance.mul(maxCap);
+        uint256 userMaxVeJoeCap = user.balance.mul(maxCapPct).div(100);
 
         if (userVeJoeBalance >= userMaxVeJoeCap) {
             // User already holds maximum amount of veJOE so there is no pending veJOE
