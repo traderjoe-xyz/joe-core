@@ -52,10 +52,10 @@ describe.only("VeJoe Staking", function () {
       .approve(this.veJoeStaking.address, ethers.utils.parseEther("100000"));
   });
 
-  describe("setMaxCap", function () {
-    it("should not allow non-owner to setMaxCap", async function () {
+  describe("setMaxCapPct", function () {
+    it("should not allow non-owner to setMaxCapPct", async function () {
       await expect(
-        this.veJoeStaking.connect(this.alice).setMaxCap(200)
+        this.veJoeStaking.connect(this.alice).setMaxCapPct(200)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
@@ -63,7 +63,7 @@ describe.only("VeJoe Staking", function () {
       expect(await this.veJoeStaking.maxCapPct()).to.be.equal(this.maxCapPct);
 
       await expect(
-        this.veJoeStaking.connect(this.dev).setMaxCap(99)
+        this.veJoeStaking.connect(this.dev).setMaxCapPct(this.maxCapPct - 1)
       ).to.be.revertedWith(
         "VeJoeStaking: expected new _maxCapPct to be greater than existing maxCapPct"
       );
@@ -71,16 +71,18 @@ describe.only("VeJoe Staking", function () {
 
     it("should not allow owner to set maxCapPct greater than upper limit", async function () {
       await expect(
-        this.veJoeStaking.connect(this.dev).setMaxCap(100001)
+        this.veJoeStaking.connect(this.dev).setMaxCapPct(10000001)
       ).to.be.revertedWith(
-        "VeJoeStaking: expected new _maxCapPct to be non-zero and <= 100000"
+        "VeJoeStaking: expected new _maxCapPct to be non-zero and <= 10000000"
       );
     });
 
-    it("should allow owner to setMaxCap", async function () {
+    it("should allow owner to setMaxCapPct", async function () {
       expect(await this.veJoeStaking.maxCapPct()).to.be.equal(this.maxCapPct);
 
-      await this.veJoeStaking.connect(this.dev).setMaxCap(this.maxCapPct + 100);
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setMaxCapPct(this.maxCapPct + 100);
 
       expect(await this.veJoeStaking.maxCapPct()).to.be.equal(
         this.maxCapPct + 100

@@ -157,7 +157,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Set maxCapPct
     /// @param _maxCapPct The new maxCapPct
-    function setMaxCap(uint256 _maxCapPct) external onlyOwner {
+    function setMaxCapPct(uint256 _maxCapPct) external onlyOwner {
         require(_maxCapPct > maxCapPct, "VeJoeStaking: expected new _maxCapPct to be greater than existing maxCapPct");
         require(
             _maxCapPct != 0 && _maxCapPct <= upperLimitMaxCapPct,
