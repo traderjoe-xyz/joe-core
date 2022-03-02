@@ -55,7 +55,7 @@ describe("VeJoe Staking", function () {
   describe("setMaxCapPct", function () {
     it("should not allow non-owner to setMaxCapPct", async function () {
       await expect(
-        this.veJoeStaking.connect(this.alice).setMaxCapPct(200)
+        this.veJoeStaking.connect(this.alice).setMaxCapPct(this.maxCapPct + 1)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
