@@ -350,16 +350,16 @@ describe("BoostedMasterChefJoe", function () {
     this.bmc.add(100, this.lp3.address, ADDRESS_ZERO)
 
     await this.lp1.connect(this.alice).approve(this.bmc.address, "490114764570241975");
-    await this.bmc.connect(this.alice).deposit(1, "490114764570241975");
+    await this.bmc.connect(this.alice).deposit(0, "490114764570241975");
 
     await this.lp2.connect(this.bob).approve(this.bmc.address, "289542403083227152");
-    await this.bmc.connect(this.bob).deposit(2, "289542403083227152");
+    await this.bmc.connect(this.bob).deposit(1, "289542403083227152");
 
     await increase(duration.hours(1));
     await advanceBlock();
 
     await this.lp1.connect(this.alice).approve(this.bmc.address, "4521227702709282");
-    await this.bmc.connect(this.alice).deposit(1, "4521227702709282");
+    await this.bmc.connect(this.alice).deposit(0, "4521227702709282");
   })
 
   after(async function () {
