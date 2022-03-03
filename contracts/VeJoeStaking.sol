@@ -115,6 +115,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _speedUpDuration,
         uint256 _maxCapPct
     ) public initializer {
+        __Ownable_init();
+
         require(address(_joe) != address(0), "VeJoeStaking: unexpected zero address for _joe");
         require(address(_veJoe) != address(0), "VeJoeStaking: unexpected zero address for _veJoe");
 
@@ -140,8 +142,6 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             _maxCapPct != 0 && _maxCapPct <= upperLimitMaxCapPct,
             "VeJoeStaking: expected _maxCapPct to be non-zero and <= 10000000"
         );
-
-        __Ownable_init();
 
         maxCapPct = _maxCapPct;
         speedUpThreshold = _speedUpThreshold;
@@ -303,15 +303,17 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         uint256 pendingVeJoe = pendingBaseVeJoe.add(pendingSpeedUpVeJoe);
 
-        // Get the user's current veJOE balance and maximum veJOE they can hold
+        // Get the user's current veJOE balance
         uint256 userVeJoeBalance = veJoe.balanceOf(_user);
-        uint256 userMaxVeJoeCap = user.balance.mul(maxCapPct).div(100);
 
-        if (userVeJoeBalance >= userMaxVeJoeCap) {
+        // This is the user's max veJOE cap multiplied by 100
+        uint256 scaledUserMaxVeJoeCap = user.balance.mul(maxCapPct);
+
+        if (userVeJoeBalance.mul(100) >= scaledUserMaxVeJoeCap) {
             // User already holds maximum amount of veJOE so there is no pending veJOE
             return 0;
-        } else if (userVeJoeBalance.add(pendingVeJoe) > userMaxVeJoeCap) {
-            return userMaxVeJoeCap.sub(userVeJoeBalance);
+        } else if (userVeJoeBalance.add(pendingVeJoe).mul(100) > scaledUserMaxVeJoeCap) {
+            return scaledUserMaxVeJoeCap.sub(userVeJoeBalance.mul(100)).div(100);
         } else {
             return pendingVeJoe;
         }
