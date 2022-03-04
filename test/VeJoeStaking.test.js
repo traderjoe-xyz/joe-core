@@ -28,7 +28,7 @@ describe("VeJoe Staking", function () {
     this.speedUpVeJoePerSharePerSec = ethers.utils.parseEther("1");
     this.speedUpThreshold = 5;
     this.speedUpDuration = 50;
-    this.maxCap = 200;
+    this.maxCapPct = 20000;
 
     this.veJoeStaking = await upgrades.deployProxy(this.VeJoeStakingCF, [
       this.joe.address, // _joe
@@ -37,7 +37,7 @@ describe("VeJoe Staking", function () {
       this.speedUpVeJoePerSharePerSec, // _speedUpVeJoePerSharePerSec
       this.speedUpThreshold, // _speedUpThreshold
       this.speedUpDuration, // _speedUpDuration
-      this.maxCap, // _maxCap
+      this.maxCapPct, // _maxCapPct
     ]);
     await this.veJoe.transferOwnership(this.veJoeStaking.address);
 
@@ -52,37 +52,41 @@ describe("VeJoe Staking", function () {
       .approve(this.veJoeStaking.address, ethers.utils.parseEther("100000"));
   });
 
-  describe("setMaxCap", function () {
-    it("should not allow non-owner to setMaxCap", async function () {
+  describe("setMaxCapPct", function () {
+    it("should not allow non-owner to setMaxCapPct", async function () {
       await expect(
-        this.veJoeStaking.connect(this.alice).setMaxCap(200)
+        this.veJoeStaking.connect(this.alice).setMaxCapPct(this.maxCapPct + 1)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should not allow owner to set lower maxCap", async function () {
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap);
+    it("should not allow owner to set lower maxCapPct", async function () {
+      expect(await this.veJoeStaking.maxCapPct()).to.be.equal(this.maxCapPct);
 
       await expect(
-        this.veJoeStaking.connect(this.dev).setMaxCap(99)
+        this.veJoeStaking.connect(this.dev).setMaxCapPct(this.maxCapPct - 1)
       ).to.be.revertedWith(
-        "VeJoeStaking: expected new _maxCap to be greater than existing maxCap"
+        "VeJoeStaking: expected new _maxCapPct to be greater than existing maxCapPct"
       );
     });
 
-    it("should not allow owner to set maxCap greater than upper limit", async function () {
+    it("should not allow owner to set maxCapPct greater than upper limit", async function () {
       await expect(
-        this.veJoeStaking.connect(this.dev).setMaxCap(100001)
+        this.veJoeStaking.connect(this.dev).setMaxCapPct(10000001)
       ).to.be.revertedWith(
-        "VeJoeStaking: expected new _maxCap to be non-zero and <= 100000"
+        "VeJoeStaking: expected new _maxCapPct to be non-zero and <= 10000000"
       );
     });
 
-    it("should allow owner to setMaxCap", async function () {
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap);
+    it("should allow owner to setMaxCapPct", async function () {
+      expect(await this.veJoeStaking.maxCapPct()).to.be.equal(this.maxCapPct);
 
-      await this.veJoeStaking.connect(this.dev).setMaxCap(this.maxCap + 100);
+      await this.veJoeStaking
+        .connect(this.dev)
+        .setMaxCapPct(this.maxCapPct + 100);
 
-      expect(await this.veJoeStaking.maxCap()).to.be.equal(this.maxCap + 100);
+      expect(await this.veJoeStaking.maxCapPct()).to.be.equal(
+        this.maxCapPct + 100
+      );
     });
   });
 
@@ -364,9 +368,9 @@ describe("VeJoe Staking", function () {
         .connect(this.alice)
         .deposit(ethers.utils.parseEther("100"));
 
-      // Increase by `maxCap` seconds to ensure that user will have max veJOE
+      // Increase by `maxCapPct` seconds to ensure that user will have max veJOE
       // after claiming
-      await increase(this.maxCap);
+      await increase(this.maxCapPct);
 
       await this.veJoeStaking.connect(this.alice).claim();
 
@@ -378,7 +382,7 @@ describe("VeJoe Staking", function () {
       // lastClaimTimestamp
       expect(claimAliceUserInfo[2]).to.be.equal(claimBlock.timestamp);
 
-      await increase(this.maxCap);
+      await increase(this.maxCapPct);
 
       const pendingVeJoe = await this.veJoeStaking.getPendingVeJoe(
         this.alice.address
