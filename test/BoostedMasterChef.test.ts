@@ -339,10 +339,10 @@ describe("BoostedMasterChefJoe", function () {
   })
 
   it("it should allow deposits if contract has balance", async function () {
-    await this.lp.transfer(this.bmc.address, 100);
-    await this.bmc.updatePool(0);
-    await this.lp.connect(this.bob).approve(this.bmc.address, 100);
-    await this.bmc.connect(this.bob).deposit(0, 100);
+    await this.lp.transfer(this.bmc.address, 100)
+    await this.bmc.updatePool(0)
+    await this.lp.connect(this.bob).approve(this.bmc.address, 100)
+    await this.bmc.connect(this.bob).deposit(0, 100)
   })
 
   after(async function () {
