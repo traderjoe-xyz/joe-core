@@ -277,7 +277,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         PoolInfo memory pool = poolInfo[_pid];
         if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-            if (lpSupply != 0) {
+            if (pool.totalBoostedAmount != 0 && lpSupply != 0) {
                 uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
                 uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
                 pool.accJoePerShare = pool.accJoePerShare.add(
