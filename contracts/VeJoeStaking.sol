@@ -96,7 +96,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     event UpdateRewardVars(uint256 lastRewardTimestamp, uint256 accVeJoePerShare);
     event UpdateSpeedUpThreshold(address indexed user, uint256 speedUpThreshold);
     event UpdateVeJoePerSharePerSec(address indexed user, uint256 veJoePerSharePerSec);
-    event Withdraw(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 withdrawAmount, uint256 burnAmount);
 
     /// @notice Initialize with needed parameters
     /// @param _joe Address of the JOE token contract
@@ -251,12 +251,13 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         userInfo.speedUpEndTimestamp = 0;
 
         // Burn the user's current veJOE balance
-        veJoe.burnFrom(msg.sender, veJoe.balanceOf(msg.sender));
+        uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
+        veJoe.burnFrom(msg.sender, userVeJoeBalance);
 
         // Send user their requested amount of staked JOE
         joe.safeTransfer(msg.sender, _amount);
 
-        emit Withdraw(msg.sender, _amount);
+        emit Withdraw(msg.sender, _amount, userVeJoeBalance);
     }
 
     /// @notice Claim any pending veJOE
