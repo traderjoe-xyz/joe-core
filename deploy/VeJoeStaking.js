@@ -4,11 +4,11 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 
   let joeAddress,
     veJoeAddress = (await deployments.get("VeJoeToken")).address,
-    baseGenerationRate = 0,
-    boostedGenerationRate = 1,
-    boostedThreshold = 1,
-    boostedDuration = 0,
-    maxCap = 1;
+    veJoePerSharePerSec = 3170979198376,
+    speedUpVeJoePerSharePerSec = 3170979198376,
+    speedUpThreshold = 5,
+    speedUpDuration = 15,
+    maxCapPct = 10000;
 
   const chainId = await getChainId();
   if (chainId == 4) {
@@ -33,11 +33,11 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
           args: [
             joeAddress,
             veJoeAddress,
-            baseGenerationRate,
-            boostedGenerationRate,
-            boostedThreshold,
-            boostedDuration,
-            maxCap,
+            veJoePerSharePerSec,
+            speedUpVeJoePerSharePerSec,
+            speedUpThreshold,
+            speedUpDuration,
+            maxCapPct,
           ],
         },
       },
