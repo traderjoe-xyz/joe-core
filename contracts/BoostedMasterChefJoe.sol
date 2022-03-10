@@ -6,12 +6,12 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IMasterChefJoe.sol";
 import "./interfaces/IRewarder.sol";
 import "./libraries/BoringJoeERC20.sol";
+import "./traderjoe/libraries/Math.sol";
 
 /// @notice The (older) MasterChefJoeV2 contract gives out a constant number of JOE
 /// tokens per block.  It is the only address with minting rights for JOE.  The idea
@@ -29,10 +29,13 @@ import "./libraries/BoringJoeERC20.sol";
 /// liquidity multiplied by a boost factor. The boost factor is calculated by the
 /// amount of veJOE held by the user over the total veJOE amount held by all pool
 /// participants. Total liquidity is the sum of all boosted liquidity.
-contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
-    using SafeMathUpgradeable for uint256;
+contract BoostedMasterChefJoe is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using BoringJoeERC20 for IERC20;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using SafeMathUpgradeable for uint256;
 
     /// @notice Info of each BMCJ user
     /// `amount` LP token amount the user has provided
@@ -42,32 +45,36 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
-        uint256 veJoeBalance;
+        uint256 factor;
     }
 
     /// @notice Info of each BMCJ pool
     /// `allocPoint` The amount of allocation points assigned to the pool
     /// Also known as the amount of JOE to distribute per block
     struct PoolInfo {
+        // Address are stored in 160 bytes, so we store allocPoint in 96 bytes to
+        // optimize storage (160 + 86 = 256)
         IERC20 lpToken;
+        uint96 allocPoint;
         uint256 accJoePerShare;
-        uint256 lastRewardTimestamp;
-        uint256 allocPoint;
+        uint256 accJoePerFactorPerShare;
+        // Address are stored in 160 bytes, so we store lastRewardTimestamp in 64 bytes and
+        // veJoeShareBp in 32 bytes to optimize storage (160 + 64 + 32 = 256)
+        uint64 lastRewardTimestamp;
         IRewarder rewarder;
+        // Share of the reward to distribute to veJoe holders
+        uint32 veJoeShareBp;
         // The sum of all veJoe held by users participating in this farm
         // This value is updated when
         // - A user enter/leaves a farm
         // - A user claims veJOE
         // - A user unstakes JOE
-        uint256 totalVeJoe;
-        // The total boosted `amount` on the farm
+        uint256 totalFactor;
+        // The total LP supply of the farm
         // This is the sum of all users boosted amounts in the farm. Updated when
-        // totalVeJoe is updated
-        // This is used instead of the usual `lpToken.balanceOf(address(this))`
-        uint256 totalBoostedAmount;
-        // Even though it seems redundant to keep track of two variables here
-        // the `totalBoostedAmount` means we don't need to iterate over all
-        // depositors to calculate the pending reward.
+        // someone deposits or withdraws.
+        // This is used instead of the usual `lpToken.balanceOf(address(this))` for security reasons
+        uint256 totalLpSupply;
     }
 
     /// @notice Address of MCJV2 contract
@@ -81,8 +88,8 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
 
     /// @notice Info of each BMCJ pool
     PoolInfo[] public poolInfo;
-    /// @dev Set of all LP tokens that have been added as pools
-    EnumerableSetUpgradeable.AddressSet private lpTokens;
+    /// @dev maps an address to a bool to assert that a token isn't added twice
+    mapping(IERC20 => bool) private checkPoolDuplicate;
 
     /// @notice Info of each user that stakes LP tokens
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
@@ -90,21 +97,41 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     uint256 public totalAllocPoint;
     uint256 private ACC_TOKEN_PRECISION;
 
-    /// @dev A maximum scaling factor applied to boosted amounts
-    uint256 public maxBoostFactor;
     /// @dev Amount of claimable Joe the user has, this is required as we
     /// need to update rewardDebt after a token operation but we don't
     /// want to send a reward at this point. This amount gets added onto
     /// the pending amount when a user claims
     mapping(uint256 => mapping(address => uint256)) public claimableJoe;
 
-    event Add(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
-    event Set(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
+    event Add(
+        uint256 indexed pid,
+        uint256 allocPoint,
+        uint256 veJoeShareBp,
+        IERC20 indexed lpToken,
+        IRewarder indexed rewarder
+    );
+    event Set(
+        uint256 indexed pid,
+        uint256 allocPoint,
+        uint256 veJoeShareBp,
+        IRewarder indexed rewarder,
+        bool overwrite
+    );
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event UpdatePool(uint256 indexed pid, uint256 lastRewardTimestamp, uint256 lpSupply, uint256 accJoePerShare);
+    event UpdatePool(
+        uint256 indexed pid,
+        uint256 lastRewardTimestamp,
+        uint256 lpSupply,
+        uint256 accJoePerShare,
+        uint256 accJoePerFactorPerShare
+    );
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event EmergencyWithdraw(
+        address indexed user,
+        uint256 indexed pid,
+        uint256 amount
+    );
     event Init(uint256 amount);
 
     /// @param _MASTER_CHEF_V2 The MCJV2 contract address
@@ -124,7 +151,6 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         MASTER_PID = _MASTER_PID;
 
         ACC_TOKEN_PRECISION = 1e18;
-        maxBoostFactor = 1500;
     }
 
     /// @notice Deposits a dummy token to `MASTER_CHEF_V2` MCJV2. This is required because MCJV2
@@ -156,35 +182,51 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @param _lpToken Address of the LP ERC-20 token.
     /// @param _rewarder Address of the rewarder delegate.
     function add(
-        uint256 _allocPoint,
+        uint96 _allocPoint,
+        uint32 _veJoeShareBp,
         IERC20 _lpToken,
         IRewarder _rewarder
     ) external onlyOwner {
-        require(!lpTokens.contains(address(_lpToken)), "BoostedMasterChefJoe: LP already added");
-        require(poolInfo.length <= 50, "BoostedMasterChefJoe: Too many pools");
+        require(
+            !checkPoolDuplicate[_lpToken],
+            "BoostedMasterChefJoe: LP already added"
+        );
+        require(
+            _veJoeShareBp <= 10_000,
+            "BoostedMasterChefJoe: veJoeShareBp needs to be lower than 10000"
+        );
+        require(poolInfo.length <= 50, "BoostedMasterChefJoe: Too many pools"); // NOTE| not needed anymore I'd say
+        checkPoolDuplicate[_lpToken] = true;
         // Sanity check to ensure _lpToken is an ERC20 token
         _lpToken.balanceOf(address(this));
         // Sanity check if we add a rewarder
         if (address(_rewarder) != address(0)) {
             _rewarder.onJoeReward(address(0), 0);
         }
+        // NOTE call massUpdatePool ? with a boolean ?
 
-        uint256 lastRewardTimestamp = block.timestamp;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
 
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
-                lastRewardTimestamp: lastRewardTimestamp,
                 accJoePerShare: 0,
+                accJoePerFactorPerShare: 0,
+                lastRewardTimestamp: uint64(block.timestamp),
                 rewarder: _rewarder,
-                totalVeJoe: 0,
-                totalBoostedAmount: 0
+                veJoeShareBp: _veJoeShareBp,
+                totalFactor: 0,
+                totalLpSupply: 0
             })
         );
-        lpTokens.add(address(_lpToken));
-        emit Add(poolInfo.length.sub(1), _allocPoint, _lpToken, _rewarder);
+        emit Add(
+            poolInfo.length - 1,
+            _allocPoint,
+            _veJoeShareBp,
+            _lpToken,
+            _rewarder
+        );
     }
 
     /// @notice Update the given pool's JOE allocation point and `IRewarder` contract. Can only be called by the owner.
@@ -194,21 +236,31 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @param _overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored
     function set(
         uint256 _pid,
-        uint256 _allocPoint,
+        uint96 _allocPoint,
+        uint32 _veJoeShareBp,
         IRewarder _rewarder,
         bool _overwrite
     ) external onlyOwner {
         PoolInfo memory pool = poolInfo[_pid];
         totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
+        pool.veJoeShareBp = _veJoeShareBp;
         if (_overwrite) {
             if (address(_rewarder) != address(0)) {
+                // Sanity check
                 _rewarder.onJoeReward(address(0), 0);
             }
             pool.rewarder = _rewarder;
         }
+        // NOTE call massUpdatePool ? with a boolean ?
         poolInfo[_pid] = pool;
-        emit Set(_pid, _allocPoint, _overwrite ? _rewarder : pool.rewarder, _overwrite);
+        emit Set(
+            _pid,
+            _allocPoint,
+            _veJoeShareBp,
+            _overwrite ? _rewarder : pool.rewarder,
+            _overwrite
+        );
     }
 
     /// @notice View function to see pending JOE on frontend
@@ -218,7 +270,10 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @return bonusTokenAddress The address of the bonus reward.
     /// @return bonusTokenSymbol The symbol of the bonus token.
     /// @return pendingBonusToken The amount of bonus rewards pending.
-    function pendingTokens(uint256 _pid, address _user)
+    function pendingTokens(
+        uint256 _pid,
+        address _user /// NOTE TODO
+    )
         external
         view
         returns (
@@ -231,22 +286,48 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accJoePerShare = pool.accJoePerShare;
+        uint256 accJoePerFactorPerShare = pool.accJoePerFactorPerShare;
 
-        if (block.timestamp > pool.lastRewardTimestamp && pool.totalBoostedAmount != 0) {
-            uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
-            uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
-            accJoePerShare = accJoePerShare.add(joeReward.mul(ACC_TOKEN_PRECISION).div(pool.totalBoostedAmount));
+        if (
+            block.timestamp > pool.lastRewardTimestamp &&
+            pool.totalLpSupply != 0
+        ) {
+            uint256 secondsElapsed = block.timestamp - pool.lastRewardTimestamp;
+            uint256 joeReward = secondsElapsed
+                .mul(joePerSec())
+                .mul(pool.allocPoint)
+                .div(totalAllocPoint);
+            accJoePerShare = pool.accJoePerShare.add(
+                joeReward
+                    .mul(ACC_TOKEN_PRECISION)
+                    .mul(10_000 - pool.veJoeShareBp)
+                    .div(pool.totalLpSupply.mul(10_000))
+            );
+            accJoePerFactorPerShare = accJoePerFactorPerShare.add(
+                joeReward.mul(ACC_TOKEN_PRECISION).div(pool.totalLpSupply)
+            );
+            if (pool.veJoeShareBp != 0) {
+                accJoePerFactorPerShare = pool.accJoePerFactorPerShare.add(
+                    joeReward
+                        .mul(ACC_TOKEN_PRECISION)
+                        .mul(pool.veJoeShareBp)
+                        .div(pool.totalLpSupply.mul(10_000))
+                );
+            }
         }
 
-        uint256 userLiquidity = getBoostedLiquidity(_pid, _user);
-        pendingJoe = userLiquidity.mul(accJoePerShare).div(ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
-            claimableJoe[_pid][_user]
-        );
+        pendingJoe = user
+            .amount
+            .mul(pool.accJoePerShare)
+            .add(user.factor.mul(pool.accJoePerFactorPerShare))
+            .div(ACC_TOKEN_PRECISION)
+            .add(claimableJoe[_pid][_user])
+            .sub(user.rewardDebt);
 
         // If it's a double reward farm, we return info about the bonus token
         if (address(pool.rewarder) != address(0)) {
             bonusTokenAddress = address(pool.rewarder.rewardToken());
-            bonusTokenSymbol = IERC20(pool.rewarder.rewardToken()).safeSymbol();
+            bonusTokenSymbol = IERC20(bonusTokenAddress).safeSymbol();
             pendingBonusToken = pool.rewarder.pendingTokens(_user);
         }
     }
@@ -254,6 +335,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @notice Update reward variables for all pools. Be careful of gas spending!
     /// @param _pids Pool IDs of all to be updated. Make sure to update all active pools
     function massUpdatePools(uint256[] calldata _pids) external {
+        /// NOTE to redo
         uint256 len = _pids.length;
         for (uint256 i = 0; i < len; ++i) {
             updatePool(_pids[i]);
@@ -264,29 +346,54 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @return amount The amount of JOE emitted per second
     function joePerSec() public view returns (uint256 amount) {
         uint256 total = 1000;
-        uint256 lpPercent = total.sub(MASTER_CHEF_V2.devPercent()).sub(MASTER_CHEF_V2.treasuryPercent()).sub(
-            MASTER_CHEF_V2.investorPercent()
-        );
+        uint256 lpPercent = total
+            .sub(MASTER_CHEF_V2.devPercent())
+            .sub(MASTER_CHEF_V2.treasuryPercent())
+            .sub(MASTER_CHEF_V2.investorPercent());
         uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
-        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
+        amount = lpShare
+            .mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint)
+            .div(MASTER_CHEF_V2.totalAllocPoint());
     }
 
     /// @notice Update reward variables of the given pool
     /// @param _pid The index of the pool. See `poolInfo`
     function updatePool(uint256 _pid) public {
-        PoolInfo memory pool = poolInfo[_pid];
+        PoolInfo storage pool = poolInfo[_pid];
         if (block.timestamp > pool.lastRewardTimestamp) {
-            uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-            if (pool.totalBoostedAmount != 0 && lpSupply != 0) {
-                uint256 secondsElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
-                uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
+            uint256 lpSupply = pool.totalLpSupply;
+            if (lpSupply != 0) {
+                uint256 secondsElapsed = block.timestamp -
+                    pool.lastRewardTimestamp;
+                uint256 joeReward = secondsElapsed
+                    .mul(joePerSec())
+                    .mul(pool.allocPoint)
+                    .div(totalAllocPoint);
                 pool.accJoePerShare = pool.accJoePerShare.add(
-                    joeReward.mul(ACC_TOKEN_PRECISION).div(pool.totalBoostedAmount)
+                    joeReward
+                        .mul(ACC_TOKEN_PRECISION)
+                        .mul(10_000 - pool.veJoeShareBp)
+                        .div(pool.totalLpSupply.mul(10_000))
                 );
+                if (pool.veJoeShareBp != 0) {
+                    pool.accJoePerFactorPerShare = pool
+                        .accJoePerFactorPerShare
+                        .add(
+                            joeReward
+                                .mul(ACC_TOKEN_PRECISION)
+                                .mul(pool.veJoeShareBp)
+                                .div(pool.totalLpSupply.mul(10_000))
+                        );
+                }
             }
-            pool.lastRewardTimestamp = block.timestamp;
-            poolInfo[_pid] = pool;
-            emit UpdatePool(_pid, pool.lastRewardTimestamp, lpSupply, pool.accJoePerShare);
+            pool.lastRewardTimestamp = uint64(block.timestamp);
+            emit UpdatePool(
+                _pid,
+                pool.lastRewardTimestamp,
+                lpSupply,
+                pool.accJoePerShare,
+                pool.accJoePerFactorPerShare
+            );
         }
     }
 
@@ -302,13 +409,13 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         // Pay a user any pending rewards
         if (user.amount != 0) {
             // Harvest JOE
-            uint256 boostedLiquidity = getBoostedLiquidity(_pid, msg.sender);
-
-            uint256 pending = boostedLiquidity
+            uint256 pending = user
+                .amount
                 .mul(pool.accJoePerShare)
+                .add(user.factor.mul(pool.accJoePerFactorPerShare))
                 .div(ACC_TOKEN_PRECISION)
-                .sub(user.rewardDebt)
-                .add(claimableJoe[_pid][msg.sender]);
+                .add(claimableJoe[_pid][msg.sender])
+                .sub(user.rewardDebt);
             claimableJoe[_pid][msg.sender] = 0;
             JOE.safeTransfer(msg.sender, pending);
             emit Harvest(msg.sender, _pid, pending);
@@ -316,28 +423,25 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
 
         uint256 balanceBefore = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(balanceBefore);
+        uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(
+            balanceBefore
+        );
 
-        // Effects
-
-        // Update the `pool.totalVeJoe`
-        uint256 veJoeBalance = VEJOE.balanceOf(msg.sender);
-        if (veJoeBalance != 0) {
-            pool.totalVeJoe = pool.totalVeJoe.add(veJoeBalance).sub(user.veJoeBalance);
-        }
-        user.veJoeBalance = veJoeBalance;
-
-        // Update the `pool.totalBoostedAmount`
-        uint256 boostedLiquidityBefore = getBoostedLiquidity(_pid, msg.sender);
+        uint256 oldAmount = user.amount;
         user.amount = user.amount.add(receivedAmount);
-        uint256 boostedLiquidityAfter = getBoostedLiquidity(_pid, msg.sender);
+        pool.totalLpSupply = pool.totalLpSupply.add(user.amount).sub(oldAmount);
 
-        pool.totalBoostedAmount = pool.totalBoostedAmount.add(boostedLiquidityAfter).sub(boostedLiquidityBefore);
+        uint256 oldFactor = user.factor;
+        uint256 veJoeBalance = VEJOE.balanceOf(msg.sender);
+        user.factor = Math.sqrt(user.amount * veJoeBalance);
+        pool.totalFactor = pool.totalFactor.add(user.factor).sub(oldFactor);
 
-        // Update users reward debt
-        user.rewardDebt = boostedLiquidityAfter.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION);
+        user.rewardDebt = user
+            .amount
+            .mul(pool.accJoePerShare)
+            .add(user.factor.mul(pool.accJoePerFactorPerShare))
+            .div(ACC_TOKEN_PRECISION);
 
-        // Interactions
         IRewarder _rewarder = pool.rewarder;
         if (address(_rewarder) != address(0)) {
             _rewarder.onJoeReward(msg.sender, user.amount);
@@ -353,111 +457,47 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+        require(
+            user.amount >= _amount,
+            "BoostedMasterChefJoe: withdraw not good"
+        );
 
         if (user.amount != 0) {
             // Harvest JOE
-            uint256 boostedLiquidity = getBoostedLiquidity(_pid, msg.sender);
-
-            uint256 pending = boostedLiquidity
+            uint256 pending = user
+                .amount
                 .mul(pool.accJoePerShare)
+                .add(user.factor.mul(pool.accJoePerFactorPerShare))
                 .div(ACC_TOKEN_PRECISION)
-                .sub(user.rewardDebt)
-                .add(claimableJoe[_pid][msg.sender]);
+                .add(claimableJoe[_pid][msg.sender])
+                .sub(user.rewardDebt);
             claimableJoe[_pid][msg.sender] = 0;
             JOE.safeTransfer(msg.sender, pending);
             emit Harvest(msg.sender, _pid, pending);
         }
 
-        // Effects
-        uint256 boostedLiquidityBefore = getBoostedLiquidity(_pid, msg.sender);
+        uint256 oldAmount = user.amount;
         user.amount = user.amount.sub(_amount);
-        uint256 boostedLiquidityAfter = getBoostedLiquidity(_pid, msg.sender);
-        // Update the `pool.totalBoostedAmount` and `totalVeJoe` if needed
-        if (user.amount == 0) {
-            pool.totalVeJoe = pool.totalVeJoe.sub(user.veJoeBalance);
-        }
+        pool.totalLpSupply = pool.totalLpSupply.add(user.amount).sub(oldAmount);
 
-        pool.totalBoostedAmount = pool.totalBoostedAmount.add(boostedLiquidityAfter).sub(boostedLiquidityBefore);
-        user.rewardDebt = boostedLiquidityAfter.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION);
+        uint256 oldFactor = user.factor;
+        uint256 veJoeBalance = VEJOE.balanceOf(msg.sender);
+        user.factor = Math.sqrt(user.amount * veJoeBalance);
+        pool.totalFactor = pool.totalFactor.add(user.factor).sub(oldFactor);
 
-        // Interactions
+        user.rewardDebt = user
+            .amount
+            .mul(pool.accJoePerShare)
+            .add(user.factor.mul(pool.accJoePerFactorPerShare))
+            .div(ACC_TOKEN_PRECISION);
+
+        pool.lpToken.safeTransfer(msg.sender, _amount);
+
         IRewarder _rewarder = pool.rewarder;
         if (address(_rewarder) != address(0)) {
             _rewarder.onJoeReward(msg.sender, user.amount);
         }
-
-        pool.lpToken.safeTransfer(msg.sender, _amount);
-
         emit Withdraw(msg.sender, _pid, _amount);
-    }
-
-    /// @notice Updates a pool and user boost factors after
-    /// a veJoe token operation. This function needs to be called
-    /// by the veJoe contract after every event.
-    /// @param _user The users address we are updating
-    /// @param _newUserBalance The new balance of the users veJoe
-    function updateBoost(address _user, uint256 _newUserBalance) external {
-        require(msg.sender == address(VEJOE), "BoostedMasterChefJoe: Caller not veJOE");
-
-        uint256 length = poolInfo.length;
-
-        for (uint256 pid = 0; pid < length; ++pid) {
-            UserInfo storage user = userInfo[pid][_user];
-
-            // Skip if user doesn't have any deposit in the pool
-            if (user.amount == 0) {
-                continue;
-            }
-
-            PoolInfo storage pool = poolInfo[pid];
-            updatePool(pid);
-            // Calculate pending
-            uint256 oldBoostedLiquidity = getBoostedLiquidity(pid, _user);
-            uint256 pending = oldBoostedLiquidity.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION).sub(
-                user.rewardDebt
-            );
-
-            // Increase claimableJoe
-            claimableJoe[pid][_user] = claimableJoe[pid][_user].add(pending);
-
-            // Update users veJoeBalance
-            uint256 _oldBalance = user.veJoeBalance;
-            user.veJoeBalance = _newUserBalance;
-
-            // Update the pool total veJoe
-            pool.totalVeJoe = pool.totalVeJoe.add(_newUserBalance).sub(_oldBalance);
-
-            uint256 newBoostedLiquidity = getBoostedLiquidity(pid, _user);
-
-            // Update the pools total boosted
-            pool.totalBoostedAmount = pool.totalBoostedAmount.add(newBoostedLiquidity).sub(oldBoostedLiquidity);
-
-            // Update reward debt, take into account new boost
-            user.rewardDebt = newBoostedLiquidity.mul(pool.accJoePerShare).div(ACC_TOKEN_PRECISION);
-        }
-    }
-
-    /// @notice Returns a users "boosted" liquidity
-    /// @param _pid The index of the pool. See `poolInfo`
-    /// @param _user The address of the depositor
-    /// @return boostedLiquidity The users liquidity multiplied by their boost
-    function getBoostedLiquidity(uint256 _pid, address _user) public view returns (uint256 boostedLiquidity) {
-        UserInfo memory user = userInfo[_pid][_user];
-        boostedLiquidity = user.amount.mul(getUserBoost(_pid, _user)).div(1000);
-    }
-
-    /// @notice Returns a users boosted emission share
-    /// @param _pid The index of the pool. See `poolInfo`
-    /// @param _user The address of the depositor
-    /// @dev `userBoost` is scaled by 1e3
-    /// @return userBoost A multiplier for a users liquidity
-    function getUserBoost(uint256 _pid, address _user) public view returns (uint256 userBoost) {
-        PoolInfo memory pool = poolInfo[_pid];
-        UserInfo memory user = userInfo[_pid][_user];
-        userBoost = 1000;
-        if (user.veJoeBalance != 0 && pool.totalVeJoe != 0) {
-            userBoost = userBoost.add(user.veJoeBalance.mul(maxBoostFactor).div(pool.totalVeJoe));
-        }
     }
 
     /// @notice Harvests JOE from `MASTER_CHEF_V2` MCJV2 and pool `MASTER_PID` to this BMCJ contract
@@ -470,9 +510,13 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     function emergencyWithdraw(uint256 _pid) external nonReentrant {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+
+        pool.totalFactor = pool.totalFactor.sub(user.factor);
+        pool.totalLpSupply = pool.totalLpSupply.sub(user.amount);
         uint256 amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+        user.factor = 0;
 
         IRewarder _rewarder = pool.rewarder;
         if (address(_rewarder) != address(0)) {
@@ -482,5 +526,55 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         // Note: transfer can fail or succeed if `amount` is zero
         pool.lpToken.safeTransfer(msg.sender, amount);
         emit EmergencyWithdraw(msg.sender, _pid, amount);
+    }
+
+    /// @notice Updates factor after after a veJoe token operation.
+    /// This function needs to be called by the veJoe contract after
+    /// every mint / burn.
+    /// @param _user The users address we are updating
+    /// @param _newVeJoeBalance The new balance of the users veJoe
+    function updateFactor(address _user, uint256 _newVeJoeBalance) external {
+        require(
+            msg.sender == address(VEJOE),
+            "BoostedMasterChefJoe: Caller not veJOE"
+        );
+        uint256 length = poolInfo.length;
+
+        for (uint256 pid; pid < length; ++pid) {
+            UserInfo storage user = userInfo[pid][_user];
+
+            // Skip if user doesn't have any deposit in the pool
+            if (user.amount == 0) {
+                continue;
+            }
+
+            PoolInfo storage pool = poolInfo[pid];
+
+            updatePool(pid);
+            // Calculate pending
+            uint256 pending = user
+                .amount
+                .mul(pool.accJoePerShare)
+                .add(user.factor.mul(pool.accJoePerFactorPerShare))
+                .div(ACC_TOKEN_PRECISION)
+                .sub(user.rewardDebt);
+
+            // Increase claimableJoe
+            claimableJoe[pid][_user] = claimableJoe[pid][_user].add(pending);
+
+            // Update users veJoeBalance
+            uint256 oldFactor = user.factor;
+            uint256 newFactor = Math.sqrt(_newVeJoeBalance * user.amount);
+            user.factor = newFactor;
+
+            user.rewardDebt = user
+                .amount
+                .mul(pool.accJoePerShare)
+                .add(newFactor.mul(pool.accJoePerFactorPerShare))
+                .div(ACC_TOKEN_PRECISION);
+
+            // Update the pool total veJoe
+            pool.totalFactor = pool.totalFactor.add(newFactor).sub(oldFactor);
+        }
     }
 }
