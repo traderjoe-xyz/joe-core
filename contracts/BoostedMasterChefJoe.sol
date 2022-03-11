@@ -40,7 +40,7 @@ contract BoostedMasterChefJoe is
     /// @notice Info of each BMCJ user
     /// `amount` LP token amount the user has provided
     /// `rewardDebt` The amount of JOE entitled to the user
-    /// `factor` the users factor, use getgetUserFactorInternal
+    /// `factor` the users factor, use _getUserFactor
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
@@ -364,7 +364,7 @@ contract BoostedMasterChefJoe is
             claimableJoe[pid][_user] = claimableJoe[pid][_user].add(pending);
 
             // Update users veJoeBalance
-            uint256 newFactor = getUserFactorInternal(amount, _newVeJoeBalance);
+            uint256 newFactor = _getUserFactor(amount, _newVeJoeBalance);
             user.factor = newFactor;
             pool.totalFactor = pool.totalFactor.add(newFactor).sub(oldFactor);
 
@@ -473,6 +473,12 @@ contract BoostedMasterChefJoe is
         }
     }
 
+    /// @notice Returns the number of BMCJ pools.
+    /// @return pools The amount of pools in this farm
+    function poolLength() external view returns (uint256 pools) {
+        pools = poolInfo.length;
+    }
+
     /// @notice Update reward variables for all pools. Be careful of gas spending!
     function massUpdatePools() public {
         uint256 len = poolInfo.length;
@@ -528,65 +534,79 @@ contract BoostedMasterChefJoe is
         }
     }
 
-    /// @notice Returns the number of BMCJ pools.
-    /// @return pools The amount of pools in this farm
-    function poolLength() external view returns (uint256 pools) {
-        pools = poolInfo.length;
-    }
-
     /// @notice Harvests JOE from `MASTER_CHEF_V2` MCJV2 and pool `MASTER_PID` to this BMCJ contract
     function harvestFromMasterChef() public {
         MASTER_CHEF_V2.deposit(MASTER_PID, 0);
     }
 
     /// @notice Return an user's factor
-    function getUserFactorInternal(uint256 amount, uint256 veJoeBalance)
-        internal
+    /// @param amount The user's amount of liquidity
+    /// @param veJoeBalance The user's veJoe balance
+    /// @return uint256 The user's factor
+    function _getUserFactor(uint256 amount, uint256 veJoeBalance)
+        private
         pure
         returns (uint256)
     {
         return Math.sqrt(amount * veJoeBalance);
     }
 
+    /// @notice Updates user and pool infos
+    /// @param _user The user that needs to be updated
+    /// @param _pool The pool that needs to be updated
+    /// @param _amount The amount that was deposited or withdrawn
+    /// @param _isDeposit If the action of the user is a deposit
     function _updateUserAndPool(
-        UserInfo storage user,
-        PoolInfo storage pool,
-        uint256 amount,
-        bool isDeposit
+        UserInfo storage _user,
+        PoolInfo storage _pool,
+        uint256 _amount,
+        bool _isDeposit
     ) private {
-        uint256 oldAmount = user.amount;
-        uint256 newAmount = isDeposit
-            ? oldAmount.add(amount)
-            : oldAmount.sub(amount);
-        user.amount = newAmount;
-        pool.totalLpSupply = isDeposit
-            ? pool.totalLpSupply.add(amount)
-            : pool.totalLpSupply.sub(amount);
+        uint256 oldAmount = _user.amount;
+        uint256 newAmount = _isDeposit
+            ? oldAmount.add(_amount)
+            : oldAmount.sub(_amount);
 
-        uint256 oldFactor = user.factor;
-        uint256 newFactor = getUserFactorInternal(
+        if (_amount != 0) {
+            _user.amount = newAmount;
+            _pool.totalLpSupply = _isDeposit
+                ? _pool.totalLpSupply.add(_amount)
+                : _pool.totalLpSupply.sub(_amount);
+        }
+
+        uint256 oldFactor = _user.factor;
+        uint256 newFactor = _getUserFactor(
             newAmount,
             VEJOE.balanceOf(msg.sender)
         );
-        user.factor = newFactor;
-        pool.totalFactor = pool.totalFactor.add(newFactor).sub(oldFactor);
 
-        user.rewardDebt = newAmount
-            .mul(pool.accJoePerShare)
-            .add(newFactor.mul(pool.accJoePerFactorPerShare))
+        if (oldFactor != newFactor) {
+            _user.factor = newFactor;
+            _pool.totalFactor = _pool.totalFactor.add(newFactor).sub(oldFactor);
+        }
+
+        _user.rewardDebt = newAmount
+            .mul(_pool.accJoePerShare)
+            .add(newFactor.mul(_pool.accJoePerFactorPerShare))
             .div(ACC_TOKEN_PRECISION);
     }
 
+    /// @notice Harvests user's pending JOE
+    /// @dev WARNING this function doesn't update user's rewardDebt,
+    /// it still needs to be updated in order for this contract to work properlly
+    /// @param _user The user that will harvest its rewards
+    /// @param _pool The pool where the user staked and want to harvest its JOE
+    /// @param _pid The pid of that pool
     function _harvestJoe(
-        UserInfo storage user,
-        PoolInfo storage pool,
+        UserInfo storage _user,
+        PoolInfo storage _pool,
         uint256 _pid
     ) private {
-        uint256 pending = (user.amount.mul(pool.accJoePerShare))
-            .add(user.factor.mul(pool.accJoePerFactorPerShare))
+        uint256 pending = (_user.amount.mul(_pool.accJoePerShare))
+            .add(_user.factor.mul(_pool.accJoePerFactorPerShare))
             .div(ACC_TOKEN_PRECISION)
             .add(claimableJoe[_pid][msg.sender])
-            .sub(user.rewardDebt);
+            .sub(_user.rewardDebt);
         claimableJoe[_pid][msg.sender] = 0;
         if (pending != 0) {
             JOE.safeTransfer(msg.sender, pending);
