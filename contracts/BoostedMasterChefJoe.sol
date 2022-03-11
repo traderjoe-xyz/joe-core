@@ -241,7 +241,7 @@ contract BoostedMasterChefJoe is
         IRewarder _rewarder,
         bool _overwrite
     ) external onlyOwner {
-        PoolInfo memory pool = poolInfo[_pid];
+        PoolInfo storage pool = poolInfo[_pid];
         totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
         pool.veJoeShareBp = _veJoeShareBp;
