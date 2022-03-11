@@ -43,4 +43,8 @@ contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
             boostedMasterChef.updateBoost(_account, _newBalance);
         }
     }
+
+    function renounceOwnership() public override onlyOwner {
+        revert("VeJoeToken: Cannot renounce, can only transfer ownership");
+    }
 }
