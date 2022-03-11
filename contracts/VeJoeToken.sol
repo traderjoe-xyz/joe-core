@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./VeERC20.sol";
 
 interface IBoostedMasterChefJoe {
-    function updateBoost(address, uint256) external;
+    function updateFactor(address, uint256) external;
 }
 
 /// @title Vote Escrow Joe Token - veJOE
@@ -44,7 +44,7 @@ contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
 
     function _afterTokenOperation(address _account, uint256 _newBalance) internal override {
         if (address(boostedMasterChef) != address(0)) {
-            boostedMasterChef.updateBoost(_account, _newBalance);
+            boostedMasterChef.updateFactor(_account, _newBalance);
         }
     }
 
