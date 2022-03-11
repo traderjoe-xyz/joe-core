@@ -164,7 +164,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected new _maxCapPct to be non-zero and <= 10000000"
         );
         maxCapPct = _maxCapPct;
-        emit UpdateMaxCapPct(msg.sender, _maxCapPct);
+        emit UpdateMaxCapPct(_msgSender(), _maxCapPct);
     }
 
     /// @notice Set veJoePerSharePerSec
@@ -176,7 +176,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         );
         updateRewardVars();
         veJoePerSharePerSec = _veJoePerSharePerSec;
-        emit UpdateVeJoePerSharePerSec(msg.sender, _veJoePerSharePerSec);
+        emit UpdateVeJoePerSharePerSec(_msgSender(), _veJoePerSharePerSec);
     }
 
     /// @notice Set speedUpThreshold
@@ -187,7 +187,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
             "VeJoeStaking: expected _speedUpThreshold to be > 0 and <= 100"
         );
         speedUpThreshold = _speedUpThreshold;
-        emit UpdateSpeedUpThreshold(msg.sender, _speedUpThreshold);
+        emit UpdateSpeedUpThreshold(_msgSender(), _speedUpThreshold);
     }
 
     /// @notice Deposits JOE to start staking for veJOE. Note that any pending veJOE
@@ -198,9 +198,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
         updateRewardVars();
 
-        UserInfo storage userInfo = userInfos[msg.sender];
+        UserInfo storage userInfo = userInfos[_msgSender()];
 
-        if (_getUserHasNonZeroBalance(msg.sender)) {
+        if (_getUserHasNonZeroBalance(_msgSender())) {
             // Transfer to the user their pending veJOE before updating their UserInfo
             _claim();
 
@@ -225,9 +225,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         userInfo.balance = userInfo.balance.add(_amount);
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
 
-        joe.safeTransferFrom(msg.sender, address(this), _amount);
+        joe.safeTransferFrom(_msgSender(), address(this), _amount);
 
-        emit Deposit(msg.sender, _amount);
+        emit Deposit(_msgSender(), _amount);
     }
 
     /// @notice Withdraw staked JOE. Note that unstaking any amount of JOE means you will
@@ -236,7 +236,7 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "VeJoeStaking: expected withdraw amount to be greater than zero");
 
-        UserInfo storage userInfo = userInfos[msg.sender];
+        UserInfo storage userInfo = userInfos[_msgSender()];
 
         require(
             userInfo.balance >= _amount,
@@ -251,18 +251,18 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         userInfo.speedUpEndTimestamp = 0;
 
         // Burn the user's current veJOE balance
-        uint256 userVeJoeBalance = veJoe.balanceOf(msg.sender);
-        veJoe.burnFrom(msg.sender, userVeJoeBalance);
+        uint256 userVeJoeBalance = veJoe.balanceOf(_msgSender());
+        veJoe.burnFrom(_msgSender(), userVeJoeBalance);
 
         // Send user their requested amount of staked JOE
-        joe.safeTransfer(msg.sender, _amount);
+        joe.safeTransfer(_msgSender(), _amount);
 
-        emit Withdraw(msg.sender, _amount, userVeJoeBalance);
+        emit Withdraw(_msgSender(), _amount, userVeJoeBalance);
     }
 
     /// @notice Claim any pending veJOE
     function claim() external {
-        require(_getUserHasNonZeroBalance(msg.sender), "VeJoeStaking: cannot claim veJOE when no JOE is staked");
+        require(_getUserHasNonZeroBalance(_msgSender()), "VeJoeStaking: cannot claim veJOE when no JOE is staked");
         updateRewardVars();
         _claim();
     }
@@ -351,9 +351,9 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @dev Helper to claim any pending veJOE
     function _claim() private {
-        uint256 veJoeToClaim = getPendingVeJoe(msg.sender);
+        uint256 veJoeToClaim = getPendingVeJoe(_msgSender());
 
-        UserInfo storage userInfo = userInfos[msg.sender];
+        UserInfo storage userInfo = userInfos[_msgSender()];
 
         userInfo.rewardDebt = accVeJoePerShare.mul(userInfo.balance).div(ACC_VEJOE_PER_SHARE_PRECISION);
 
@@ -365,8 +365,8 @@ contract VeJoeStaking is Initializable, OwnableUpgradeable {
         if (veJoeToClaim > 0) {
             userInfo.lastClaimTimestamp = block.timestamp;
 
-            veJoe.mint(msg.sender, veJoeToClaim);
-            emit Claim(msg.sender, veJoeToClaim);
+            veJoe.mint(_msgSender(), veJoeToClaim);
+            emit Claim(_msgSender(), veJoeToClaim);
         }
     }
 }
