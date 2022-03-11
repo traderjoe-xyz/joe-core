@@ -7,7 +7,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     veJoePerSharePerSec = 3170979198376,
     speedUpVeJoePerSharePerSec = 3170979198376,
     speedUpThreshold = 5,
-    speedUpDuration = 15,
+    speedUpDuration = 15 * 60 * 60 * 24,
     maxCapPct = 10000;
 
   const chainId = await getChainId();
