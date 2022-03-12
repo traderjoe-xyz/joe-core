@@ -17,6 +17,8 @@ contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
     /// @notice the BoostedMasterChefJoe contract
     IBoostedMasterChefJoe public boostedMasterChef;
 
+    event UpdateBoostedMasterChefJoe(address indexed user, address boostedMasterChef);
+
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (VeJoeStaking)
     /// @param _to The address that will receive the mint
     /// @param _amount The amount to be minted
@@ -36,6 +38,8 @@ contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
     function setBoostedMasterChefJoe(address _boostedMasterChef) external onlyOwner {
         // We allow 0 address here if we want to disable the callback operations
         boostedMasterChef = IBoostedMasterChefJoe(_boostedMasterChef);
+
+        emit UpdateBoostedMasterChefJoe(_msgSender(), _boostedMasterChef);
     }
 
     function _afterTokenOperation(address _account, uint256 _newBalance) internal override {
