@@ -29,11 +29,7 @@ import "./traderjoe/libraries/Math.sol";
 /// liquidity multiplied by a boost factor. The boost factor is calculated by the
 /// amount of veJOE held by the user over the total veJOE amount held by all pool
 /// participants. Total liquidity is the sum of all boosted liquidity.
-contract BoostedMasterChefJoe is
-    Initializable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable
-{
+contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using BoringJoeERC20 for IERC20;
     using SafeMathUpgradeable for uint256;
 
@@ -126,11 +122,7 @@ contract BoostedMasterChefJoe is
         uint256 accJoePerFactorPerShare
     );
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(
-        address indexed user,
-        uint256 indexed pid,
-        uint256 amount
-    );
+    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event Init(uint256 amount);
 
     /// @param _MASTER_CHEF_V2 The MCJV2 contract address
@@ -182,14 +174,8 @@ contract BoostedMasterChefJoe is
         IERC20 _lpToken,
         IRewarder _rewarder
     ) external onlyOwner {
-        require(
-            !checkPoolDuplicate[_lpToken],
-            "BoostedMasterChefJoe: LP already added"
-        );
-        require(
-            _veJoeShareBp <= 10_000,
-            "BoostedMasterChefJoe: veJoeShareBp needs to be lower than 10000"
-        );
+        require(!checkPoolDuplicate[_lpToken], "BoostedMasterChefJoe: LP already added");
+        require(_veJoeShareBp <= 10_000, "BoostedMasterChefJoe: veJoeShareBp needs to be lower than 10000");
         require(poolInfo.length <= 50, "BoostedMasterChefJoe: Too many pools");
         checkPoolDuplicate[_lpToken] = true;
         // Sanity check to ensure _lpToken is an ERC20 token
@@ -216,13 +202,7 @@ contract BoostedMasterChefJoe is
                 totalLpSupply: 0
             })
         );
-        emit Add(
-            poolInfo.length - 1,
-            _allocPoint,
-            _veJoeShareBp,
-            _lpToken,
-            _rewarder
-        );
+        emit Add(poolInfo.length - 1, _allocPoint, _veJoeShareBp, _lpToken, _rewarder);
     }
 
     /// @notice Update the given pool's JOE allocation point and `IRewarder` contract. Can only be called by the owner.
@@ -239,10 +219,7 @@ contract BoostedMasterChefJoe is
         IRewarder _rewarder,
         bool _overwrite
     ) external onlyOwner {
-        require(
-            _veJoeShareBp <= 10_000,
-            "BoostedMasterChefJoe: veJoeShareBp needs to be lower than 10000"
-        );
+        require(_veJoeShareBp <= 10_000, "BoostedMasterChefJoe: veJoeShareBp needs to be lower than 10000");
         PoolInfo storage pool = poolInfo[_pid];
         totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
@@ -258,13 +235,7 @@ contract BoostedMasterChefJoe is
         massUpdatePools();
 
         poolInfo[_pid] = pool;
-        emit Set(
-            _pid,
-            _allocPoint,
-            _veJoeShareBp,
-            _overwrite ? _rewarder : pool.rewarder,
-            _overwrite
-        );
+        emit Set(_pid, _allocPoint, _veJoeShareBp, _overwrite ? _rewarder : pool.rewarder, _overwrite);
     }
 
     /// @notice Deposit LP tokens to BMCJ for JOE allocation
@@ -283,9 +254,7 @@ contract BoostedMasterChefJoe is
 
         uint256 balanceBefore = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(
-            balanceBefore
-        );
+        uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(balanceBefore);
 
         _updateUserAndPool(user, pool, receivedAmount, true);
 
@@ -304,10 +273,7 @@ contract BoostedMasterChefJoe is
         updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        require(
-            user.amount >= _amount,
-            "BoostedMasterChefJoe: withdraw not good"
-        );
+        require(user.amount >= _amount, "BoostedMasterChefJoe: withdraw not good");
 
         if (user.amount != 0) {
             _harvestJoe(user, pool, _pid);
@@ -330,10 +296,7 @@ contract BoostedMasterChefJoe is
     /// @param _user The users address we are updating
     /// @param _newVeJoeBalance The new balance of the users veJoe
     function updateFactor(address _user, uint256 _newVeJoeBalance) external {
-        require(
-            msg.sender == address(VEJOE),
-            "BoostedMasterChefJoe: Caller not veJOE"
-        );
+        require(msg.sender == address(VEJOE), "BoostedMasterChefJoe: Caller not veJOE");
         uint256 len = poolInfo.length;
         uint256 _ACC_TOKEN_PRECISION = ACC_TOKEN_PRECISION;
 
@@ -368,10 +331,9 @@ contract BoostedMasterChefJoe is
             user.factor = newFactor;
             pool.totalFactor = pool.totalFactor.add(newFactor).sub(oldFactor);
 
-            user.rewardDebt = amount
-                .mul(accJoePerShare)
-                .add(newFactor.mul(accJoePerFactorPerShare))
-                .div(_ACC_TOKEN_PRECISION);
+            user.rewardDebt = amount.mul(accJoePerShare).add(newFactor.mul(accJoePerFactorPerShare)).div(
+                _ACC_TOKEN_PRECISION
+            );
 
             // Update the pool total veJoe
         }
@@ -404,14 +366,11 @@ contract BoostedMasterChefJoe is
     /// @return amount The amount of JOE emitted per second
     function joePerSec() public view returns (uint256 amount) {
         uint256 total = 1000;
-        uint256 lpPercent = total
-            .sub(MASTER_CHEF_V2.devPercent())
-            .sub(MASTER_CHEF_V2.treasuryPercent())
-            .sub(MASTER_CHEF_V2.investorPercent());
+        uint256 lpPercent = total.sub(MASTER_CHEF_V2.devPercent()).sub(MASTER_CHEF_V2.treasuryPercent()).sub(
+            MASTER_CHEF_V2.investorPercent()
+        );
         uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
-        amount = lpShare
-            .mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint)
-            .div(MASTER_CHEF_V2.totalAllocPoint());
+        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
     }
 
     /// @notice View function to see pending JOE on frontend
@@ -436,26 +395,14 @@ contract BoostedMasterChefJoe is
         uint256 accJoePerShare = pool.accJoePerShare;
         uint256 accJoePerFactorPerShare = pool.accJoePerFactorPerShare;
 
-        if (
-            block.timestamp > pool.lastRewardTimestamp &&
-            pool.totalLpSupply != 0 &&
-            pool.allocPoint != 0
-        ) {
+        if (block.timestamp > pool.lastRewardTimestamp && pool.totalLpSupply != 0 && pool.allocPoint != 0) {
             uint256 secondsElapsed = block.timestamp - pool.lastRewardTimestamp;
-            uint256 joeReward = secondsElapsed
-                .mul(joePerSec())
-                .mul(pool.allocPoint)
-                .div(totalAllocPoint);
+            uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
             accJoePerShare = accJoePerShare.add(
-                joeReward
-                    .mul(ACC_TOKEN_PRECISION)
-                    .mul(10_000 - pool.veJoeShareBp)
-                    .div(pool.totalLpSupply.mul(10_000))
+                joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - pool.veJoeShareBp).div(pool.totalLpSupply.mul(10_000))
             );
             accJoePerFactorPerShare = accJoePerFactorPerShare.add(
-                joeReward.mul(ACC_TOKEN_PRECISION).mul(pool.veJoeShareBp).div(
-                    pool.totalFactor.mul(10_000)
-                )
+                joeReward.mul(ACC_TOKEN_PRECISION).mul(pool.veJoeShareBp).div(pool.totalFactor.mul(10_000))
             );
         }
 
@@ -501,26 +448,15 @@ contract BoostedMasterChefJoe is
                 uint256 veJoeShareBp = pool.veJoeShareBp;
                 uint256 totalFactor = pool.totalFactor;
 
-                uint256 joeReward = secondsElapsed
-                    .mul(joePerSec())
-                    .mul(allocPoint)
-                    .div(totalAllocPoint);
+                uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(allocPoint).div(totalAllocPoint);
                 pool.accJoePerShare = pool.accJoePerShare.add(
-                    joeReward
-                        .mul(ACC_TOKEN_PRECISION)
-                        .mul(10_000 - veJoeShareBp)
-                        .div(lpSupply.mul(10_000))
+                    joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - veJoeShareBp).div(lpSupply.mul(10_000))
                 );
                 // If veJoeShareBp is 0, then we don't need to update it
                 if (veJoeShareBp != 0 && totalFactor != 0) {
-                    pool.accJoePerFactorPerShare = pool
-                        .accJoePerFactorPerShare
-                        .add(
-                            joeReward
-                                .mul(ACC_TOKEN_PRECISION)
-                                .mul(veJoeShareBp)
-                                .div(totalFactor.mul(10_000))
-                        );
+                    pool.accJoePerFactorPerShare = pool.accJoePerFactorPerShare.add(
+                        joeReward.mul(ACC_TOKEN_PRECISION).mul(veJoeShareBp).div(totalFactor.mul(10_000))
+                    );
                 }
             }
             pool.lastRewardTimestamp = uint64(block.timestamp);
@@ -543,11 +479,7 @@ contract BoostedMasterChefJoe is
     /// @param amount The user's amount of liquidity
     /// @param veJoeBalance The user's veJoe balance
     /// @return uint256 The user's factor
-    function _getUserFactor(uint256 amount, uint256 veJoeBalance)
-        private
-        pure
-        returns (uint256)
-    {
+    function _getUserFactor(uint256 amount, uint256 veJoeBalance) private pure returns (uint256) {
         return Math.sqrt(amount * veJoeBalance);
     }
 
@@ -563,32 +495,24 @@ contract BoostedMasterChefJoe is
         bool _isDeposit
     ) private {
         uint256 oldAmount = _user.amount;
-        uint256 newAmount = _isDeposit
-            ? oldAmount.add(_amount)
-            : oldAmount.sub(_amount);
+        uint256 newAmount = _isDeposit ? oldAmount.add(_amount) : oldAmount.sub(_amount);
 
         if (_amount != 0) {
             _user.amount = newAmount;
-            _pool.totalLpSupply = _isDeposit
-                ? _pool.totalLpSupply.add(_amount)
-                : _pool.totalLpSupply.sub(_amount);
+            _pool.totalLpSupply = _isDeposit ? _pool.totalLpSupply.add(_amount) : _pool.totalLpSupply.sub(_amount);
         }
 
         uint256 oldFactor = _user.factor;
-        uint256 newFactor = _getUserFactor(
-            newAmount,
-            VEJOE.balanceOf(msg.sender)
-        );
+        uint256 newFactor = _getUserFactor(newAmount, VEJOE.balanceOf(msg.sender));
 
         if (oldFactor != newFactor) {
             _user.factor = newFactor;
             _pool.totalFactor = _pool.totalFactor.add(newFactor).sub(oldFactor);
         }
 
-        _user.rewardDebt = newAmount
-            .mul(_pool.accJoePerShare)
-            .add(newFactor.mul(_pool.accJoePerFactorPerShare))
-            .div(ACC_TOKEN_PRECISION);
+        _user.rewardDebt = newAmount.mul(_pool.accJoePerShare).add(newFactor.mul(_pool.accJoePerFactorPerShare)).div(
+            ACC_TOKEN_PRECISION
+        );
     }
 
     /// @notice Harvests user's pending JOE
