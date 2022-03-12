@@ -39,7 +39,7 @@ contract VeJoeToken is VeERC20("VeJoeToken", "veJOE"), Ownable {
         // We allow 0 address here if we want to disable the callback operations
         boostedMasterChef = IBoostedMasterChefJoe(_boostedMasterChef);
 
-        emit UpdateBoostedMasterChefJoe(msg.sender, _boostedMasterChef);
+        emit UpdateBoostedMasterChefJoe(_msgSender(), _boostedMasterChef);
     }
 
     function _afterTokenOperation(address _account, uint256 _newBalance) internal override {
