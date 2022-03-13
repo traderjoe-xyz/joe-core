@@ -57,7 +57,9 @@ describe("BoostedMasterChefJoe", function () {
     await this.veJoe.connect(this.dev).setBoostedMasterChefJoe(this.bmc.address)
 
     await this.dummyToken.connect(this.dev).approve(this.bmc.address, 1)
-    expect(await this.bmc.connect(this.dev).init(this.dummyToken.address)).to.emit(this.bmc, "Init").withArgs(1)
+    expect(await this.bmc.connect(this.dev).init(this.dummyToken.address))
+      .to.emit(this.bmc, "Init")
+      .withArgs(1)
 
     this.lp = await this.ERC20Mock.deploy("LPToken", "LP", 10000000000)
     await this.lp.deployed()
