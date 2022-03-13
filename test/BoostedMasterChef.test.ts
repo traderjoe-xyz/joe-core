@@ -57,7 +57,7 @@ describe("BoostedMasterChefJoe", function () {
     await this.veJoe.connect(this.dev).setBoostedMasterChefJoe(this.bmc.address)
 
     await this.dummyToken.connect(this.dev).approve(this.bmc.address, 1)
-    expect(this.bmc.connect(this.dev).init(this.dummyToken.address)).to.emit(this.bmc, "Init").withArgs(1)
+    expect(await this.bmc.connect(this.dev).init(this.dummyToken.address)).to.emit(this.bmc, "Init").withArgs(1)
 
     this.lp = await this.ERC20Mock.deploy("LPToken", "LP", 10000000000)
     await this.lp.deployed()
@@ -65,7 +65,7 @@ describe("BoostedMasterChefJoe", function () {
     await this.lp.transfer(this.bob.address, 1000)
     await this.lp.transfer(this.carol.address, 1000)
 
-    this.bmc.connect(this.dev).add(100, 5000, this.lp.address, ADDRESS_ZERO)
+    await this.bmc.connect(this.dev).add(100, 5000, this.lp.address, ADDRESS_ZERO)
   })
 
   it("should revert if init called twice", async function () {
@@ -179,7 +179,8 @@ describe("BoostedMasterChefJoe", function () {
     // bob should have 2.5x the pending tokens as alice.
     const alicePending = await this.bmc.pendingTokens(0, this.alice.address)
     const bobPending = await this.bmc.pendingTokens(0, this.bob.address)
-    await expect(alicePending[0] * 2.5).to.be.closeTo(bobPending[0], 10)
+    // Bob receives the same amount of JOE from alice, and all the veJoe side
+    await expect(alicePending[0].add(alicePending[0] * 2)).to.be.closeTo(bobPending[0], 10)
 
     // Re-enable automining.
     await network.provider.send("evm_setAutomine", [true])
@@ -189,8 +190,8 @@ describe("BoostedMasterChefJoe", function () {
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
     await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
 
-    await this.bmc.connect(this.bob).deposit(0, 1000)
     await network.provider.send("evm_setAutomine", [false])
+    await this.bmc.connect(this.bob).deposit(0, 1000)
     // Make sure contract has JOE to emit
     await this.bmc.connect(this.dev).harvestFromMasterChef()
     await increase(duration.hours(1))
