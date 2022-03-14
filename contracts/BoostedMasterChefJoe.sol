@@ -401,9 +401,11 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
             accJoePerShare = accJoePerShare.add(
                 joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - pool.veJoeShareBp).div(pool.totalLpSupply.mul(10_000))
             );
-            accJoePerFactorPerShare = accJoePerFactorPerShare.add(
-                joeReward.mul(ACC_TOKEN_PRECISION).mul(pool.veJoeShareBp).div(pool.totalFactor.mul(10_000))
-            );
+            if (pool.veJoeShareBp != 0 && pool.totalFactor != 0) {
+                accJoePerFactorPerShare = accJoePerFactorPerShare.add(
+                    joeReward.mul(ACC_TOKEN_PRECISION).mul(pool.veJoeShareBp).div(pool.totalFactor.mul(10_000))
+                );
+            }
         }
 
         pendingJoe = (user.amount.mul(accJoePerShare))
