@@ -1,5 +1,5 @@
 {
-  "address": "0x1b79B5334a4ee79f65152BF09a099268F362AA90",
+  "address": "0xDf185554C4619fBd2BAFC6287ebd6e77F06A1272",
   "abi": [
     {
       "anonymous": false,
@@ -116,18 +116,36 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "pid",
+          "type": "uint256"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "amount",
+          "name": "allocPoint",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "veJoeShareBp",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "lpToken",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IRewarder",
+          "name": "rewarder",
+          "type": "address"
         }
       ],
-      "name": "Claim",
+      "name": "Add",
       "type": "event"
     },
     {
@@ -140,6 +158,12 @@
           "type": "address"
         },
         {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "pid",
+          "type": "uint256"
+        },
+        {
           "indexed": false,
           "internalType": "uint256",
           "name": "amount",
@@ -147,6 +171,69 @@
         }
       ],
       "name": "Deposit",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "pid",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "EmergencyWithdraw",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "pid",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "Harvest",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "Init",
       "type": "event"
     },
     {
@@ -173,23 +260,47 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "pid",
+          "type": "uint256"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "maxCapPct",
+          "name": "allocPoint",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "veJoeShareBp",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IRewarder",
+          "name": "rewarder",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "overwrite",
+          "type": "bool"
         }
       ],
-      "name": "UpdateMaxCapPct",
+      "name": "Set",
       "type": "event"
     },
     {
       "anonymous": false,
       "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "pid",
+          "type": "uint256"
+        },
         {
           "indexed": false,
           "internalType": "uint256",
@@ -199,11 +310,23 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "accVeJoePerShare",
+          "name": "lpSupply",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "accJoePerShare",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "accJoePerFactorPerShare",
           "type": "uint256"
         }
       ],
-      "name": "UpdateRewardVars",
+      "name": "UpdatePool",
       "type": "event"
     },
     {
@@ -216,53 +339,15 @@
           "type": "address"
         },
         {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "speedUpThreshold",
-          "type": "uint256"
-        }
-      ],
-      "name": "UpdateSpeedUpThreshold",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
           "internalType": "uint256",
-          "name": "veJoePerSharePerSec",
-          "type": "uint256"
-        }
-      ],
-      "name": "UpdateVeJoePerSharePerSec",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "withdrawAmount",
+          "name": "pid",
           "type": "uint256"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "burnAmount",
+          "name": "amount",
           "type": "uint256"
         }
       ],
@@ -271,7 +356,33 @@
     },
     {
       "inputs": [],
-      "name": "ACC_VEJOE_PER_SHARE_PRECISION",
+      "name": "JOE",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MASTER_CHEF_V2",
+      "outputs": [
+        {
+          "internalType": "contract IMasterChefJoe",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MASTER_PID",
       "outputs": [
         {
           "internalType": "uint256",
@@ -284,39 +395,76 @@
     },
     {
       "inputs": [],
-      "name": "VEJOE_PER_SHARE_PER_SEC_PRECISION",
+      "name": "VEJOE",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "contract IERC20",
           "name": "",
-          "type": "uint256"
+          "type": "address"
         }
       ],
       "stateMutability": "view",
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "accVeJoePerShare",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "internalType": "uint96",
+          "name": "_allocPoint",
+          "type": "uint96"
+        },
+        {
+          "internalType": "uint32",
+          "name": "_veJoeShareBp",
+          "type": "uint32"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_lpToken",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IRewarder",
+          "name": "_rewarder",
+          "type": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "claim",
+      "name": "add",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "claimableJoe",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_pid",
+          "type": "uint256"
+        },
         {
           "internalType": "uint256",
           "name": "_amount",
@@ -331,57 +479,56 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_user",
-          "type": "address"
-        }
-      ],
-      "name": "getPendingVeJoe",
-      "outputs": [
-        {
           "internalType": "uint256",
-          "name": "",
+          "name": "_pid",
           "type": "uint256"
         }
       ],
-      "stateMutability": "view",
+      "name": "emergencyWithdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "harvestFromMasterChef",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [
         {
-          "internalType": "contract IERC20Upgradeable",
+          "internalType": "contract IERC20",
+          "name": "_dummyToken",
+          "type": "address"
+        }
+      ],
+      "name": "init",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IMasterChefJoe",
+          "name": "_MASTER_CHEF_V2",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
           "name": "_joe",
           "type": "address"
         },
         {
-          "internalType": "contract VeJoeToken",
+          "internalType": "contract IERC20",
           "name": "_veJoe",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "_veJoePerSharePerSec",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_speedUpVeJoePerSharePerSec",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_speedUpThreshold",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_speedUpDuration",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_maxCapPct",
+          "name": "_MASTER_PID",
           "type": "uint256"
         }
       ],
@@ -392,24 +539,11 @@
     },
     {
       "inputs": [],
-      "name": "joe",
-      "outputs": [
-        {
-          "internalType": "contract IERC20Upgradeable",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "lastRewardTimestamp",
+      "name": "joePerSec",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "amount",
           "type": "uint256"
         }
       ],
@@ -418,15 +552,9 @@
     },
     {
       "inputs": [],
-      "name": "maxCapPct",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "massUpdatePools",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -443,6 +571,117 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_pid",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_user",
+          "type": "address"
+        }
+      ],
+      "name": "pendingTokens",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "pendingJoe",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "bonusTokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "bonusTokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pendingBonusToken",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "poolInfo",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "lpToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint96",
+          "name": "allocPoint",
+          "type": "uint96"
+        },
+        {
+          "internalType": "uint256",
+          "name": "accJoePerShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "accJoePerFactorPerShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint64",
+          "name": "lastRewardTimestamp",
+          "type": "uint64"
+        },
+        {
+          "internalType": "contract IRewarder",
+          "name": "rewarder",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "veJoeShareBp",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalFactor",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalLpSupply",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "poolLength",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "pools",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "renounceOwnership",
       "outputs": [],
@@ -453,70 +692,38 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_maxCapPct",
+          "name": "_pid",
           "type": "uint256"
-        }
-      ],
-      "name": "setMaxCapPct",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
+        },
         {
-          "internalType": "uint256",
-          "name": "_speedUpThreshold",
-          "type": "uint256"
-        }
-      ],
-      "name": "setSpeedUpThreshold",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
+          "internalType": "uint96",
+          "name": "_allocPoint",
+          "type": "uint96"
+        },
         {
-          "internalType": "uint256",
-          "name": "_veJoePerSharePerSec",
-          "type": "uint256"
+          "internalType": "uint32",
+          "name": "_veJoeShareBp",
+          "type": "uint32"
+        },
+        {
+          "internalType": "contract IRewarder",
+          "name": "_rewarder",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "_overwrite",
+          "type": "bool"
         }
       ],
-      "name": "setVeJoePerSharePerSec",
+      "name": "set",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [],
-      "name": "speedUpDuration",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "speedUpThreshold",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "speedUpVeJoePerSharePerSec",
+      "name": "totalAllocPoint",
       "outputs": [
         {
           "internalType": "uint256",
@@ -541,51 +748,54 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "updateRewardVars",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_newVeJoeBalance",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateFactor",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "upperLimitMaxCapPct",
-      "outputs": [
+      "inputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "_pid",
           "type": "uint256"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "upperLimitVeJoePerSharePerSec",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "updatePool",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
         {
           "internalType": "address",
           "name": "",
           "type": "address"
         }
       ],
-      "name": "userInfos",
+      "name": "userInfo",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "balance",
+          "name": "amount",
           "type": "uint256"
         },
         {
@@ -595,38 +805,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "lastClaimTimestamp",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "speedUpEndTimestamp",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "veJoe",
-      "outputs": [
-        {
-          "internalType": "contract VeJoeToken",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "veJoePerSharePerSec",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
+          "name": "factor",
           "type": "uint256"
         }
       ],
@@ -635,6 +814,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_pid",
+          "type": "uint256"
+        },
         {
           "internalType": "uint256",
           "name": "_amount",
@@ -668,41 +852,41 @@
       "type": "constructor"
     }
   ],
-  "transactionHash": "0x19a80f0067db9c9c789ab128c7a737e56dd52a8d935fc9cfebc16f6001a71a31",
+  "transactionHash": "0x0e1964ec6706c2894bf5c4e070ba5ff796f439db3203ceee55d11f8cfe6b7284",
   "receipt": {
     "to": null,
     "from": "0x1d9D82344E76769EB727521822D1EacB834A9024",
-    "contractAddress": "0x1b79B5334a4ee79f65152BF09a099268F362AA90",
-    "transactionIndex": 2,
-    "gasUsed": "863018",
-    "logsBloom": "0x00000000000000000000000000000000000000000000000000800080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000001000000000000000000000000000000000000020000000000000000000800000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000400004000000000000000000000000000000000000000000000001000020000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0x4fabd7367955562515e3323b86604e645d38b31448efcf3bef3ffec442fc55e4",
-    "transactionHash": "0x19a80f0067db9c9c789ab128c7a737e56dd52a8d935fc9cfebc16f6001a71a31",
+    "contractAddress": "0xDf185554C4619fBd2BAFC6287ebd6e77F06A1272",
+    "transactionIndex": 1,
+    "gasUsed": "705830",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000002000000000000001000000000000000000000000000000000000020000000000000000000800000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000400000000000000000000000000000000000000000000000000001200020000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x633a2cb6f314b74e99d9c6636bfcc98af3dc7ae5fa7092a5467168f8793e8ce9",
+    "transactionHash": "0x0e1964ec6706c2894bf5c4e070ba5ff796f439db3203ceee55d11f8cfe6b7284",
     "logs": [
       {
-        "transactionIndex": 2,
-        "blockNumber": 10330079,
-        "transactionHash": "0x19a80f0067db9c9c789ab128c7a737e56dd52a8d935fc9cfebc16f6001a71a31",
-        "address": "0x1b79B5334a4ee79f65152BF09a099268F362AA90",
+        "transactionIndex": 1,
+        "blockNumber": 10330136,
+        "transactionHash": "0x0e1964ec6706c2894bf5c4e070ba5ff796f439db3203ceee55d11f8cfe6b7284",
+        "address": "0xDf185554C4619fBd2BAFC6287ebd6e77F06A1272",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000001d9d82344e76769eb727521822d1eacb834a9024"
         ],
         "data": "0x",
-        "logIndex": 1,
-        "blockHash": "0x4fabd7367955562515e3323b86604e645d38b31448efcf3bef3ffec442fc55e4"
+        "logIndex": 0,
+        "blockHash": "0x633a2cb6f314b74e99d9c6636bfcc98af3dc7ae5fa7092a5467168f8793e8ce9"
       }
     ],
-    "blockNumber": 10330079,
-    "cumulativeGasUsed": "930728",
+    "blockNumber": 10330136,
+    "cumulativeGasUsed": "731825",
     "status": 1,
     "byzantium": true
   },
   "args": [
-    "0x9E03D9eDD9C2bE85Cd109dA9ec13EaFC1Dc83041",
+    "0xB9f252583E1DAFdB90873CE08404b78038498EfB",
     "0xDab100A087EfadF715D933a8B680BFB6382bb32D",
-    "0xedbf4ac2000000000000000000000000ce347e069b68c53a9ed5e7da5952529caf8accd40000000000000000000000004ef5e68890edfd9a3486969b4e742f8531f8e463000000000000000000000000000000000000000000000000000002e24d16b5a8000000000000000000000000000000000000000000000000000002e24d16b5a80000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000013c6800000000000000000000000000000000000000000000000000000000000002710"
+    "0xcf756fdf0000000000000000000000001f51b7697a1919cf301845c93d4843fd620ad7cc000000000000000000000000ce347e069b68c53a9ed5e7da5952529caf8accd40000000000000000000000004ef5e68890edfd9a3486969b4e742f8531f8e4630000000000000000000000000000000000000000000000000000000000000008"
   ],
   "numDeployments": 1,
   "solcInputHash": "1635d55d57a0a2552952c0d22586ed23",
@@ -712,16 +896,13 @@
   "execute": {
     "methodName": "initialize",
     "args": [
+      "0x1F51b7697A1919cF301845c93D4843FD620ad7Cc",
       "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4",
       "0x4EF5E68890EDfd9A3486969b4E742f8531f8e463",
-      3170979198376,
-      3170979198376,
-      5,
-      1296000,
-      10000
+      8
     ]
   },
-  "implementation": "0x9E03D9eDD9C2bE85Cd109dA9ec13EaFC1Dc83041",
+  "implementation": "0xB9f252583E1DAFdB90873CE08404b78038498EfB",
   "devdoc": {
     "details": "This contract implements a proxy that is upgradeable by an admin.  To avoid https://medium.com/nomic-labs-blog/malicious-backdoors-in-ethereum-proxies-62629adf3357[proxy selector clashing], which can potentially be used in an attack, this contract uses the https://blog.openzeppelin.com/the-transparent-proxy-pattern/[transparent proxy pattern]. This pattern implies two things that go hand in hand:  1. If any account other than the admin calls the proxy, the call will be forwarded to the implementation, even if that call matches one of the admin functions exposed by the proxy itself. 2. If the admin calls the proxy, it can access the admin functions, but its calls will never be forwarded to the implementation. If the admin tries to call a function on the implementation it will fail with an error that says \"admin cannot fallback to proxy target\".  These properties mean that the admin account can only be used for admin actions like upgrading the proxy or changing the admin, so it's best if it's a dedicated account that is not used for anything else. This will avoid headaches due to sudden errors when trying to call a function from the proxy implementation.  Our recommendation is for the dedicated account to be an instance of the {ProxyAdmin} contract. If set up this way, you should think of the `ProxyAdmin` instance as the real administrative inerface of your proxy.",
     "events": {
