@@ -37,7 +37,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     log: true,
   });
   if (bmcj.newlyDeployed) {
-    const dummyToken = await ethers.getContractAt("ERC20Mock", dummyTokenAddress);
+    const dummyToken = await ethers.getContractAt(
+      "ERC20Mock",
+      dummyTokenAddress
+    );
     const boostedMasterChefJoe = await ethers.getContractAt(
       "BoostedMasterChefJoe",
       bmcj.address
