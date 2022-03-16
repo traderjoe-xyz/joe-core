@@ -220,6 +220,8 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         bool _overwrite
     ) external onlyOwner {
         require(_veJoeShareBp <= 10_000, "BoostedMasterChefJoe: veJoeShareBp needs to be lower than 10000");
+        massUpdatePools();
+
         PoolInfo storage pool = poolInfo[_pid];
         totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
         pool.allocPoint = _allocPoint;
@@ -231,8 +233,6 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
             }
             pool.rewarder = _rewarder;
         }
-
-        massUpdatePools();
 
         poolInfo[_pid] = pool;
         emit Set(_pid, _allocPoint, _veJoeShareBp, _overwrite ? _rewarder : pool.rewarder, _overwrite);
