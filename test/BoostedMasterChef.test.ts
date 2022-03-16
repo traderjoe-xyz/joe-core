@@ -340,6 +340,31 @@ describe("BoostedMasterChefJoe", function () {
     expect(pending1[0] > pending0[0]).to.be.true
   })
 
+  it("bug ackee script 1", async function () {
+    const lp2 = await this.ERC20Mock.deploy("LPToken", "LP", 10000000000)
+    await lp2.deployed()
+    await lp2.transfer(this.bob.address, 1000)
+
+    await this.bmc.connect(this.dev).add(100, 0, lp2.address, ADDRESS_ZERO)
+
+    await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
+    await lp2.connect(this.bob).approve(this.bmc.address, 1000)
+
+    await this.bmc.connect(this.alice).deposit(0, 1000)
+    await this.bmc.connect(this.bob).deposit(1, 1000)
+
+    await increase(duration.hours(24))
+    await advanceBlock()
+
+    await this.bmc.updatePool(1)
+    await this.bmc.set(0, 900, 0, ADDRESS_ZERO, false)
+
+    await this.bmc.connect(this.alice).deposit(0, 0)
+    await this.bmc.connect(this.bob).deposit(1, 0)
+    await this.bmc.connect(this.alice).withdraw(0, 0)
+    await this.bmc.connect(this.bob).withdraw(1, 0)
+  })
+
   it("it should allow deposits if contract has balance", async function () {
     await this.lp.transfer(this.bmc.address, 100)
     await this.bmc.updatePool(0)
