@@ -18,7 +18,6 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
       "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4"
     );
     proxyOwner = deployer.address;
-
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
     joeAddress = ethers.utils.getAddress(
