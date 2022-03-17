@@ -408,7 +408,7 @@ contract FarmLensV2 {
             uint256 chefBalanceScaled = _scaleTo(pool.totalLpSupply, uint256(18).sub(decimals));
             uint256 veJoeShareBp = pool.veJoeShareBp;
             uint256 usdPerSec = joePerSec.mul(joePrice) / 1e18;
-            uint256 userBalanceUSD = userInfo.amount.mul(reserveUSD).div(totalLpSupply);
+            uint256 userBalanceUSD = userInfo.amount.mul(reserveUSD).div(chefBalanceScaled);
 
             uint256 baseAPR;
             if (totalLpSupply != 0) {
