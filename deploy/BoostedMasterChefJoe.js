@@ -22,8 +22,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     // avalanche mainnet or hardhat network addresses
     joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
     masterChefV2Address = "0xd6a4F121CA35509aF06A0Be99093d08462f53052";
-    /// XXX Pid needs to be pre-created.
-    PID = 0;
+    PID = 69;
     proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
   }
 
