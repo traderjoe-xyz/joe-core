@@ -19,10 +19,7 @@ interface IMasterChef {
 
     function poolLength() external view returns (uint256);
 
-    function poolInfo(uint256 pid)
-        external
-        view
-        returns (IMasterChef.PoolInfo memory);
+    function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
 
     function totalAllocPoint() external view returns (uint256);
 
@@ -48,10 +45,7 @@ interface IBoostedMasterchef {
         uint256 totalLpSupply;
     }
 
-    function userInfo(uint256 _pid, address user)
-        external
-        view
-        returns (UserInfo memory);
+    function userInfo(uint256 _pid, address user) external view returns (UserInfo memory);
 
     function poolLength() external view returns (uint256);
 
@@ -156,11 +150,7 @@ contract FarmLensV2 {
     /// @notice Returns the derived price of token, it needs to be paired with wavax
     /// @param token The address of the token
     /// @return uint256 the token derived price, scaled to 18 decimals
-    function getDerivedAvaxPriceOfToken(address token)
-        external
-        view
-        returns (uint256)
-    {
+    function getDerivedAvaxPriceOfToken(address token) external view returns (uint256) {
         return _getDerivedAvaxPriceOfToken(token);
     }
 
@@ -175,14 +165,12 @@ contract FarmLensV2 {
     /// @param chef The address of the MasterChef
     /// @param whitelistedPids Array of all ids of pools that are whitelisted and valid to have their farm data returned
     /// @return FarmInfo The information of all the whitelisted farms of MCV2 or MCV3
-    function getMCFarmInfos(
-        IMasterChef chef,
-        uint256[] calldata whitelistedPids
-    ) external view returns (FarmInfo[] memory) {
-        require(
-            chef == chefv2 || chef == chefv3,
-            "FarmLensV2: only for MCV2 and MCV3"
-        );
+    function getMCFarmInfos(IMasterChef chef, uint256[] calldata whitelistedPids)
+        external
+        view
+        returns (FarmInfo[] memory)
+    {
+        require(chef == chefv2 || chef == chefv3, "FarmLensV2: only for MCV2 and MCV3");
 
         uint256 avaxPrice = _getAvaxPrice();
         return _getMCFarmInfos(chef, avaxPrice, whitelistedPids);
@@ -201,9 +189,7 @@ contract FarmLensV2 {
         require(chef == bmcj, "FarmLensV2: Only for BMCJ");
 
         uint256 avaxPrice = _getAvaxPrice();
-        uint256 joePrice = _getDerivedAvaxPriceOfToken(joe).mul(avaxPrice).div(
-            1e18
-        );
+        uint256 joePrice = _getDerivedAvaxPriceOfToken(joe).mul(avaxPrice).div(1e18);
         return _getBMCJFarmInfos(avaxPrice, joePrice, user, whitelistedPids);
     }
 
@@ -236,22 +222,9 @@ contract FarmLensV2 {
         allFarmData.totalAllocBMCJ = bmcj.totalAllocPoint();
         allFarmData.joePerSecBMCJ = bmcj.joePerSec();
 
-        allFarmData.farmInfosV2 = _getMCFarmInfos(
-            chefv2,
-            avaxPrice,
-            whitelistedPidsV2
-        );
-        allFarmData.farmInfosV3 = _getMCFarmInfos(
-            chefv3,
-            avaxPrice,
-            whitelistedPidsV3
-        );
-        allFarmData.farmInfosBMCJ = _getBMCJFarmInfos(
-            joePrice,
-            avaxPrice,
-            user,
-            whitelistedPidsBMCJ
-        );
+        allFarmData.farmInfosV2 = _getMCFarmInfos(chefv2, avaxPrice, whitelistedPidsV2);
+        allFarmData.farmInfosV3 = _getMCFarmInfos(chefv3, avaxPrice, whitelistedPidsV3);
+        allFarmData.farmInfosBMCJ = _getBMCJFarmInfos(joePrice, avaxPrice, user, whitelistedPidsBMCJ);
 
         return allFarmData;
     }
@@ -262,45 +235,31 @@ contract FarmLensV2 {
         // Hardcoding result of `IjoePair(wavaxUsdte).token0() != wavax`
         // to save gas, same for wavaxUsdce and wavaxUsdc
         return
-            _getDerivedTokenPriceOfPair(wavaxUsdte, false)
-                .add(_getDerivedTokenPriceOfPair(wavaxUsdce, true))
-                .add(_getDerivedTokenPriceOfPair(wavaxUsdc, false)) / 3;
+            _getDerivedTokenPriceOfPair(wavaxUsdte, false).add(_getDerivedTokenPriceOfPair(wavaxUsdce, true)).add(
+                _getDerivedTokenPriceOfPair(wavaxUsdc, false)
+            ) / 3;
     }
 
     /// @notice Returns the derived price of token in the other token
     /// @param pair The address of the pair
     /// @param derivedtoken0 If price should be derived from token0 if true, or token1 if false
     /// @return uint256 the derived price, scaled to 18 decimals
-    function _getDerivedTokenPriceOfPair(IJoePair pair, bool derivedtoken0)
-        private
-        view
-        returns (uint256)
-    {
+    function _getDerivedTokenPriceOfPair(IJoePair pair, bool derivedtoken0) private view returns (uint256) {
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         uint256 decimals0 = IERC20(pair.token0()).safeDecimals();
         uint256 decimals1 = IERC20(pair.token1()).safeDecimals();
 
         if (derivedtoken0) {
-            return
-                _scaleTo(reserve0, decimals1.add(18).sub(decimals0)).div(
-                    reserve1
-                );
+            return _scaleTo(reserve0, decimals1.add(18).sub(decimals0)).div(reserve1);
         } else {
-            return
-                _scaleTo(reserve1, decimals0.add(18).sub(decimals1)).div(
-                    reserve0
-                );
+            return _scaleTo(reserve1, decimals0.add(18).sub(decimals1)).div(reserve0);
         }
     }
 
     /// @notice Returns the derived price of token, it needs to be paired with wavax
     /// @param token The address of the token
     /// @return uint256 the token derived price, scaled to 18 decimals
-    function _getDerivedAvaxPriceOfToken(address token)
-        private
-        view
-        returns (uint256)
-    {
+    function _getDerivedAvaxPriceOfToken(address token) private view returns (uint256) {
         IJoePair pair = IJoePair(joeFactory.getPair(token, wavax));
         if (address(pair) == address(0)) {
             return 0;
@@ -313,11 +272,7 @@ contract FarmLensV2 {
     /// @param amount The amount
     /// @param decimals The decimals to scale `amount`
     /// @return uint256 The amount scaled to decimals
-    function _scaleTo(uint256 amount, uint256 decimals)
-        private
-        pure
-        returns (uint256)
-    {
+    function _scaleTo(uint256 amount, uint256 decimals) private pure returns (uint256) {
         if (decimals == 0) return amount;
         return amount.mul(10**decimals);
     }
@@ -349,24 +304,15 @@ contract FarmLensV2 {
             token0DerivedAvaxPrice = _getDerivedTokenPriceOfPair(pair, false);
             token1DerivedAvaxPrice = 1e18;
         } else {
-            token0DerivedAvaxPrice = _getDerivedAvaxPriceOfToken(
-                address(token0)
-            );
-            token1DerivedAvaxPrice = _getDerivedAvaxPriceOfToken(
-                address(token1)
-            );
+            token0DerivedAvaxPrice = _getDerivedAvaxPriceOfToken(address(token0));
+            token1DerivedAvaxPrice = _getDerivedAvaxPriceOfToken(address(token1));
             // If one token isn't paired with wavax, then we hope that the second one is.
             // E.g, TOKEN/USDC, token might not be paired with wavax, but USDC is.
             // If both aren't paired with wavax, return 0
-            if (token0DerivedAvaxPrice == 0)
-                return reserve1.mul(token1DerivedAvaxPrice).mul(2) / 1e18;
-            if (token1DerivedAvaxPrice == 0)
-                return reserve0.mul(token0DerivedAvaxPrice).mul(2) / 1e18;
+            if (token0DerivedAvaxPrice == 0) return reserve1.mul(token1DerivedAvaxPrice).mul(2) / 1e18;
+            if (token1DerivedAvaxPrice == 0) return reserve0.mul(token0DerivedAvaxPrice).mul(2) / 1e18;
         }
-        return
-            reserve0.mul(token0DerivedAvaxPrice).add(
-                reserve1.mul(token1DerivedAvaxPrice)
-            ) / 1e18;
+        return reserve0.mul(token0DerivedAvaxPrice).add(reserve1.mul(token1DerivedAvaxPrice)) / 1e18;
     }
 
     /// @notice Private function to return the farm pairs data for a given MasterChef (V2 or V3)
@@ -393,19 +339,9 @@ contract FarmLensV2 {
             uint256 decimals = lpToken.decimals();
             IERC20 token0 = IERC20(lpToken.token0());
             IERC20 token1 = IERC20(lpToken.token1());
-            uint256 reserveUSD = _getDerivedAvaxLiquidityOfPair(
-                lpToken,
-                token0,
-                token1
-            ) * avaxPrice;
-            uint256 totalSupplyScaled = _scaleTo(
-                lpToken.totalSupply(),
-                18 - decimals
-            );
-            uint256 chefBalanceScaled = _scaleTo(
-                lpToken.balanceOf(address(chef)),
-                18 - decimals
-            );
+            uint256 reserveUSD = _getDerivedAvaxLiquidityOfPair(lpToken, token0, token1) * avaxPrice;
+            uint256 totalSupplyScaled = _scaleTo(lpToken.totalSupply(), 18 - decimals);
+            uint256 chefBalanceScaled = _scaleTo(lpToken.balanceOf(address(chef)), 18 - decimals);
 
             FarmInfos[i] = FarmInfo({
                 id: pid,
@@ -460,44 +396,25 @@ contract FarmLensV2 {
             if (user != address(0)) {
                 userInfo = chef.userInfo(pid, user);
             } else {
-                userInfo = IBoostedMasterchef.UserInfo({
-                    amount: totalLpSupply,
-                    rewardDebt: 0,
-                    factor: totalFactor
-                });
+                userInfo = IBoostedMasterchef.UserInfo({amount: totalLpSupply, rewardDebt: 0, factor: totalFactor});
             }
 
             IJoePair lpToken = IJoePair(address(pool.lpToken));
             uint256 decimals = lpToken.decimals();
             IERC20 token0 = IERC20(lpToken.token0());
             IERC20 token1 = IERC20(lpToken.token1());
-            uint256 reserveUSD = _getDerivedAvaxLiquidityOfPair(
-                lpToken,
-                token0,
-                token1
-            ).mul(avaxPrice);
-            uint256 totalSupplyScaled = _scaleTo(
-                lpToken.totalSupply(),
-                uint256(18).sub(decimals)
-            );
-            uint256 chefBalanceScaled = _scaleTo(
-                pool.totalLpSupply,
-                uint256(18).sub(decimals)
-            );
+            uint256 reserveUSD = _getDerivedAvaxLiquidityOfPair(lpToken, token0, token1).mul(avaxPrice);
+            uint256 totalSupplyScaled = _scaleTo(lpToken.totalSupply(), uint256(18).sub(decimals));
+            uint256 chefBalanceScaled = _scaleTo(pool.totalLpSupply, uint256(18).sub(decimals));
             uint256 veJoeShareBp = pool.veJoeShareBp;
             uint256 usdPerSec = joePerSec.mul(joePrice) / 1e18;
-            uint256 userBalanceUSD = userInfo.amount.mul(reserveUSD).div(
-                totalLpSupply
-            );
+            uint256 userBalanceUSD = userInfo.amount.mul(reserveUSD).div(totalLpSupply);
 
             uint256 baseAPR;
             if (totalLpSupply != 0) {
-                baseAPR = usdPerSec
-                    .mul(1e18)
-                    .mul(10_000 - veJoeShareBp)
-                    .mul(pool.allocPoint)
-                    .mul(365 days)
-                    .div(totalAlloc.mul(userBalanceUSD).mul(10_000));
+                baseAPR = usdPerSec.mul(1e18).mul(10_000 - veJoeShareBp).mul(pool.allocPoint).mul(365 days).div(
+                    totalAlloc.mul(userBalanceUSD).mul(10_000)
+                );
             }
 
             uint256 boostedAPR;
@@ -513,8 +430,7 @@ contract FarmLensV2 {
                     .div(totalAlloc.mul(userBalanceUSD).mul(10_000));
             }
 
-            uint256 boostFactor = veJoeShareBp.div(10_000 - veJoeShareBp) +
-                10_000;
+            uint256 boostFactor = veJoeShareBp.div(10_000 - veJoeShareBp) + 10_000;
 
             FarmInfos[i] = FarmInfoBMCJ({
                 id: pid,
