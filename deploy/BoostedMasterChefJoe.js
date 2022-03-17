@@ -18,7 +18,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     masterChefV2Address = "0x1F51b7697A1919cF301845c93D4843FD620ad7Cc";
     PID = 8;
     proxyOwner = deployer.address;
-
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
     joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
@@ -43,7 +42,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
         },
       },
       log: true,
-    })
+    });
   });
   if (bmcj.newlyDeployed) {
     const dummyToken = await ethers.getContractAt(
