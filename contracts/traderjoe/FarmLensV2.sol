@@ -266,6 +266,9 @@ contract FarmLensV2 {
     /// @param token The address of the token
     /// @return uint256 the token derived price, scaled to 18 decimals
     function _getDerivedAvaxPriceOfToken(address token) private view returns (uint256) {
+        if (token == wavax) {
+            return 1e18;
+        }
         IJoePair pair = IJoePair(joeFactory.getPair(token, wavax));
         if (address(pair) == address(0)) {
             return 0;
@@ -409,8 +412,6 @@ contract FarmLensV2 {
         uint256 whitelistLength = whitelistedPids.length;
         FarmInfoBMCJ[] memory farmInfos = new FarmInfoBMCJ[](whitelistLength);
 
-        if (globalInfo.totalAlloc == 0) return farmInfos;
-
         for (uint256 i; i < whitelistLength; i++) {
             uint256 pid = whitelistedPids[i];
             IBoostedMasterchef.PoolInfo memory pool = IBoostedMasterchef(globalInfo.chef).poolInfo(pid);
@@ -475,8 +476,12 @@ contract FarmLensV2 {
 
         // LP are always 18 decimals
 
-        if (pool.totalLpSupply != 0) {
+        if (pool.totalLpSupply != 0 && totalAlloc != 0) {
             uint256 userBalanceUSD = userInfo.amount.mul(reserveUSD).div(pool.totalLpSupply);
+
+            if (userBalanceUSD == 0) {
+                return farmInfo;
+            }
 
             // 1e14 instead of 1e18 because we would have divided by 10_000 right after that
             farmInfo.baseAPR = usdPerSec.mul(365 days * 1e14).mul(10_000 - pool.veJoeShareBp).mul(pool.allocPoint).div(
