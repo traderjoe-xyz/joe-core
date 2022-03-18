@@ -6,14 +6,14 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const chainId = await getChainId();
 
   let joeAddress,
-  wavaxAddress,
-  wavaxUsdteAddress,
-  wavaxUsdceAddress,
-  wavaxUsdcAddress,
-  joeFactoryAddress,
-  chefAddressV2,
-  chefAddressV3,
-  boostedMasterChefAddress;
+    wavaxAddress,
+    wavaxUsdteAddress,
+    wavaxUsdceAddress,
+    wavaxUsdcAddress,
+    joeFactoryAddress,
+    chefAddressV2,
+    chefAddressV3,
+    boostedMasterChefAddress;
 
   if (chainId == "43114" || chainId == "31337") {
     joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
