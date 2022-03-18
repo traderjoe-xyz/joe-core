@@ -14,7 +14,7 @@ library SafeERC20 {
         return success && data.length > 0 ? abi.decode(data, (string)) : "???";
     }
 
-    function safeDecimals(IERC20 token) public view returns (uint8) {
+    function safeDecimals(IERC20 token) internal view returns (uint8) {
         (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
