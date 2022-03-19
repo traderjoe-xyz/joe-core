@@ -471,11 +471,11 @@ contract FarmLensV2 {
             farmInfo.reserveUsd = reserveUSD;
             farmInfo.totalSupplyScaled = lpToken.totalSupply();
             farmInfo.chefBalanceScaled = pool.totalLpSupply;
-            if (pool.veJoeShareBp == 10_000){
+            if (pool.veJoeShareBp == 10_000) {
                 farmInfo.boostFactor = ~uint256(0);
             } else {
                 // can't over or underflow, so normal math is fine
-                farmInfo.boostFactor = pool.veJoeShareBp * 10_000 / (10_000 - pool.veJoeShareBp) + 10_000;
+                farmInfo.boostFactor = (pool.veJoeShareBp * 10_000) / (10_000 - pool.veJoeShareBp) + 10_000;
             }
         }
 
