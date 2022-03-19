@@ -47,14 +47,14 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// `allocPoint` The amount of allocation points assigned to the pool
     /// Also known as the amount of JOE to distribute per block
     struct PoolInfo {
-        // Address are stored in 160 bytes, so we store allocPoint in 96 bytes to
+        // Address are stored in 160 bits, so we store allocPoint in 96 bits to
         // optimize storage (160 + 96 = 256)
         IERC20 lpToken;
         uint96 allocPoint;
         uint256 accJoePerShare;
         uint256 accJoePerFactorPerShare;
-        // Address are stored in 160 bytes, so we store lastRewardTimestamp in 64 bytes and
-        // veJoeShareBp in 32 bytes to optimize storage (160 + 64 + 32 = 256)
+        // Address are stored in 160 bits, so we store lastRewardTimestamp in 64 bits and
+        // veJoeShareBp in 32 bits to optimize storage (160 + 64 + 32 = 256)
         uint64 lastRewardTimestamp;
         IRewarder rewarder;
         // Share of the reward to distribute to veJoe holders
