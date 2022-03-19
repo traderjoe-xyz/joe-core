@@ -223,7 +223,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         massUpdatePools();
 
         PoolInfo storage pool = poolInfo[_pid];
-        totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
+        totalAllocPoint = totalAllocPoint.add(_allocPoint).sub(pool.allocPoint);
         pool.allocPoint = _allocPoint;
         pool.veJoeShareBp = _veJoeShareBp;
         if (_overwrite) {
