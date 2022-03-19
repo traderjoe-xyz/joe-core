@@ -154,9 +154,9 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
             _dummyToken.balanceOf(address(MASTER_CHEF_V2)) == 0,
             "BoostedMasterChefJoe: Already has a balance of dummy token"
         );
-        uint256 balance = _dummyToken.balanceOf(msg.sender);
+        uint256 balance = _dummyToken.balanceOf(_msgSender());
         require(balance != 0, "BoostedMasterChefJoe: Balance must exceed 0");
-        _dummyToken.safeTransferFrom(msg.sender, address(this), balance);
+        _dummyToken.safeTransferFrom(_msgSender(), address(this), balance);
         _dummyToken.approve(address(MASTER_CHEF_V2), balance);
         MASTER_CHEF_V2.deposit(MASTER_PID, balance);
         emit Init(balance);
@@ -234,7 +234,6 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
             pool.rewarder = _rewarder;
         }
 
-        poolInfo[_pid] = pool;
         emit Set(_pid, _allocPoint, _veJoeShareBp, _overwrite ? _rewarder : pool.rewarder, _overwrite);
     }
 
@@ -245,7 +244,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         harvestFromMasterChef();
         updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        UserInfo storage user = userInfo[_pid][_msgSender()];
 
         // Pay a user any pending rewards
         if (user.amount != 0) {
@@ -253,16 +252,16 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         }
 
         uint256 balanceBefore = pool.lpToken.balanceOf(address(this));
-        pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
+        pool.lpToken.safeTransferFrom(_msgSender(), address(this), _amount);
         uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(balanceBefore);
 
         _updateUserAndPool(user, pool, receivedAmount, true);
 
         IRewarder _rewarder = pool.rewarder;
         if (address(_rewarder) != address(0)) {
-            _rewarder.onJoeReward(msg.sender, user.amount);
+            _rewarder.onJoeReward(_msgSender(), user.amount);
         }
-        emit Deposit(msg.sender, _pid, receivedAmount);
+        emit Deposit(_msgSender(), _pid, receivedAmount);
     }
 
     /// @notice Withdraw LP tokens from BMCJ
@@ -272,7 +271,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         harvestFromMasterChef();
         updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        UserInfo storage user = userInfo[_pid][_msgSender()];
         require(user.amount >= _amount, "BoostedMasterChefJoe: withdraw not good");
 
         if (user.amount != 0) {
@@ -281,13 +280,13 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
 
         _updateUserAndPool(user, pool, _amount, false);
 
-        pool.lpToken.safeTransfer(msg.sender, _amount);
+        pool.lpToken.safeTransfer(_msgSender(), _amount);
 
         IRewarder _rewarder = pool.rewarder;
         if (address(_rewarder) != address(0)) {
-            _rewarder.onJoeReward(msg.sender, user.amount);
+            _rewarder.onJoeReward(_msgSender(), user.amount);
         }
-        emit Withdraw(msg.sender, _pid, _amount);
+        emit Withdraw(_msgSender(), _pid, _amount);
     }
 
     /// @notice Updates factor after after a veJoe token operation.
@@ -296,7 +295,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @param _user The users address we are updating
     /// @param _newVeJoeBalance The new balance of the users veJoe
     function updateFactor(address _user, uint256 _newVeJoeBalance) external {
-        require(msg.sender == address(VEJOE), "BoostedMasterChefJoe: Caller not veJOE");
+        require(_msgSender() == address(VEJOE), "BoostedMasterChefJoe: Caller not veJOE");
         uint256 len = poolInfo.length;
         uint256 _ACC_TOKEN_PRECISION = ACC_TOKEN_PRECISION;
 
@@ -343,7 +342,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @param _pid The index of the pool. See `poolInfo`
     function emergencyWithdraw(uint256 _pid) external nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        UserInfo storage user = userInfo[_pid][_msgSender()];
 
         pool.totalFactor = pool.totalFactor.sub(user.factor);
         pool.totalLpSupply = pool.totalLpSupply.sub(user.amount);
@@ -354,12 +353,12 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
 
         IRewarder _rewarder = pool.rewarder;
         if (address(_rewarder) != address(0)) {
-            _rewarder.onJoeReward(msg.sender, 0);
+            _rewarder.onJoeReward(_msgSender(), 0);
         }
 
         // Note: transfer can fail or succeed if `amount` is zero
-        pool.lpToken.safeTransfer(msg.sender, amount);
-        emit EmergencyWithdraw(msg.sender, _pid, amount);
+        pool.lpToken.safeTransfer(_msgSender(), amount);
+        emit EmergencyWithdraw(_msgSender(), _pid, amount);
     }
 
     /// @notice Calculates and returns the `amount` of JOE per second
@@ -505,7 +504,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         }
 
         uint256 oldFactor = _user.factor;
-        uint256 newFactor = _getUserFactor(newAmount, VEJOE.balanceOf(msg.sender));
+        uint256 newFactor = _getUserFactor(newAmount, VEJOE.balanceOf(_msgSender()));
 
         if (oldFactor != newFactor) {
             _user.factor = newFactor;
@@ -531,12 +530,12 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
         uint256 pending = (_user.amount.mul(_pool.accJoePerShare))
             .add(_user.factor.mul(_pool.accJoePerFactorPerShare))
             .div(ACC_TOKEN_PRECISION)
-            .add(claimableJoe[_pid][msg.sender])
+            .add(claimableJoe[_pid][_msgSender()])
             .sub(_user.rewardDebt);
-        claimableJoe[_pid][msg.sender] = 0;
+        claimableJoe[_pid][_msgSender()] = 0;
         if (pending != 0) {
-            JOE.safeTransfer(msg.sender, pending);
-            emit Harvest(msg.sender, _pid, pending);
+            JOE.safeTransfer(_msgSender(), pending);
+            emit Harvest(_msgSender(), _pid, pending);
         }
     }
 }
