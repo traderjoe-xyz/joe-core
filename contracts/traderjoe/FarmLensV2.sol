@@ -471,7 +471,12 @@ contract FarmLensV2 {
             farmInfo.reserveUsd = reserveUSD;
             farmInfo.totalSupplyScaled = lpToken.totalSupply();
             farmInfo.chefBalanceScaled = pool.totalLpSupply;
-            farmInfo.boostFactor = uint256(pool.veJoeShareBp).div(10_000 - pool.veJoeShareBp).add(10_000);
+            if (pool.veJoeShareBp == 10_000) {
+                farmInfo.boostFactor = ~uint256(0);
+            } else {
+                // can't over or underflow, so normal math is fine
+                farmInfo.boostFactor = (pool.veJoeShareBp * 10_000) / (10_000 - pool.veJoeShareBp) + 10_000;
+            }
         }
 
         // LP are always 18 decimals
