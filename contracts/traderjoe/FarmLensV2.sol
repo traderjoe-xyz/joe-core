@@ -373,7 +373,7 @@ contract FarmLensV2 {
         uint256 decimals = lpToken.decimals();
         uint256 totalSupplyScaled = _scaleTo(lpToken.totalSupply(), 18 - decimals);
         uint256 chefBalanceScaled = _scaleTo(lpToken.balanceOf(address(chef)), 18 - decimals);
-        uint256 reserveUSD = _getDerivedAvaxLiquidityOfPair(lpToken) * avaxPrice;
+        uint256 reserveUSD = _getDerivedAvaxLiquidityOfPair(lpToken).mul(avaxPrice) / 1e18;
         IERC20 token0 = IERC20(lpToken.token0());
         IERC20 token1 = IERC20(lpToken.token1());
 
@@ -458,7 +458,7 @@ contract FarmLensV2 {
         uint256 reserveUSD;
         {
             IJoePair lpToken = IJoePair(address(pool.lpToken));
-            reserveUSD = _getDerivedAvaxLiquidityOfPair(lpToken).mul(avaxPrice);
+            reserveUSD = _getDerivedAvaxLiquidityOfPair(lpToken).mul(avaxPrice) / 1e18;
             IERC20 token0 = IERC20(lpToken.token0());
             IERC20 token1 = IERC20(lpToken.token1());
 
