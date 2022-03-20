@@ -16,7 +16,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     // rinkeby contract addresses
     joeAddress = "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4";
     masterChefV2Address = "0x1F51b7697A1919cF301845c93D4843FD620ad7Cc";
-    PID = 8;
+    PID = 10;
     proxyOwner = deployer.address;
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
@@ -43,18 +43,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       log: true,
     });
   });
-  if (bmcj.newlyDeployed) {
-    const dummyToken = await ethers.getContractAt(
-      "ERC20Mock",
-      dummyTokenAddress
-    );
-    const boostedMasterChefJoe = await ethers.getContractAt(
-      "BoostedMasterChefJoe",
-      bmcj.address
-    );
-    await dummyToken.approve(boostedMasterChefJoe.address, 1);
-    await boostedMasterChefJoe.init(dummyToken.address);
-  }
 };
 
 module.exports.tags = ["BoostedMasterChefJoe"];
