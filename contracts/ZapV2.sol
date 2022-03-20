@@ -38,12 +38,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 amountTo
     );
 
-    event ZapInAvax(
-        address indexed sender,
-        uint256 amountAvax,
-        address indexed pairTo,
-        uint256 amountTo
-    );
+    event ZapInAvax(address indexed sender, uint256 amountAvax, address indexed pairTo, uint256 amountTo);
 
     event ZapOutToken(
         address indexed sender,
@@ -53,12 +48,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 amountTo
     );
 
-    event ZapOutAvax(
-        address indexed sender,
-        IJoePair indexed pairFrom,
-        uint256 amountFrom,
-        uint256 amountAvax
-    );
+    event ZapOutAvax(address indexed sender, IJoePair indexed pairFrom, uint256 amountFrom, uint256 amountAvax);
 
     /* ========== INITIALIZER ========== */
 
@@ -106,9 +96,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // Transfer tax tokens safeguard
         uint256 previousBalance = token.balanceOf(address(this));
         token.safeTransferFrom(_msgSender(), address(this), amountFrom);
-        uint256 amountReceived = token.balanceOf(address(this)).sub(
-            previousBalance
-        );
+        uint256 amountReceived = token.balanceOf(address(this)).sub(previousBalance);
 
         uint256 amountTo = _zapInToken(
             token,
@@ -136,10 +124,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address[] calldata pathToPairToken1
     ) external payable nonReentrant {
         require(msg.value > 0, "ZapV2: Insufficient amount");
-        require(
-            pathToPairToken0[0] == address(wavax),
-            "ZapV2: Path needs to start with wavax"
-        );
+        require(pathToPairToken0[0] == address(wavax), "ZapV2: Path needs to start with wavax");
         address pair = factory.getPair(
             pathToPairToken0[pathToPairToken0.length - 1],
             pathToPairToken1[pathToPairToken1.length - 1]
@@ -175,14 +160,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IJoePair pairFrom = IJoePair(factory.getPair(path0[0], path1[0]));
         require(pairFrom != IJoePair(0), "ZapV2: Invalid start path");
 
-        uint256 amount = _zapOutToken(
-            pairFrom,
-            amountFrom,
-            amountToMin,
-            path0,
-            path1,
-            _msgSender()
-        );
+        uint256 amount = _zapOutToken(pairFrom, amountFrom, amountToMin, path0, path1, _msgSender());
 
         emit ZapOutToken(_msgSender(), pairFrom, amountFrom, path0[0], amount);
     }
@@ -199,21 +177,11 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address[] calldata path0,
         address[] calldata path1
     ) external nonReentrant {
-        require(
-            path0[path0.length - 1] == address(wavax),
-            "ZapV2: Path needs to end with wavax"
-        );
+        require(path0[path0.length - 1] == address(wavax), "ZapV2: Path needs to end with wavax");
         IJoePair pairFrom = IJoePair(factory.getPair(path0[0], path1[0]));
         require(pairFrom != IJoePair(0), "ZapV2: Invalid start path");
 
-        uint256 amountAvax = _zapOutToken(
-            pairFrom,
-            amountFrom,
-            amountToMin,
-            path0,
-            path1,
-            address(this)
-        );
+        uint256 amountAvax = _zapOutToken(pairFrom, amountFrom, amountToMin, path0, path1, address(this));
 
         wavax.withdraw(amountAvax);
         safeTransferAvax(_msgSender(), amountAvax);
@@ -258,39 +226,16 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address[] calldata pathToPairToken0,
         address[] calldata pathToPairToken1
     ) private returns (uint256 liquidity) {
-        require(
-            pathToPairToken0[0] == pathToPairToken1[0],
-            "ZapV2: Invalid start path"
-        );
+        require(pathToPairToken0[0] == pathToPairToken1[0], "ZapV2: Invalid start path");
         _approveTokenIfNeeded(token, amountFrom);
 
         uint256 sellAmount = amountFrom / 2;
-        uint256 amount0 = _swapExactTokensForTokens(
-            sellAmount,
-            0,
-            pathToPairToken0,
-            address(this)
-        );
-        uint256 amount1 = _swapExactTokensForTokens(
-            amountFrom - sellAmount,
-            0,
-            pathToPairToken1,
-            address(this)
-        );
+        uint256 amount0 = _swapExactTokensForTokens(sellAmount, 0, pathToPairToken0, address(this));
+        uint256 amount1 = _swapExactTokensForTokens(amountFrom - sellAmount, 0, pathToPairToken1, address(this));
 
-        require(
-            amount0 >= amount0Min && amount1 >= amount1Min,
-            "ZapV2: insufficient swapped amounts"
-        );
+        require(amount0 >= amount0Min && amount1 >= amount1Min, "ZapV2: insufficient swapped amounts");
 
-        liquidity = _addLiquidity(
-            amount0,
-            amount1,
-            amount0Min,
-            amount1Min,
-            pathToPairToken0,
-            pathToPairToken1
-        );
+        liquidity = _addLiquidity(amount0, amount1, amount0Min, amount1Min, pathToPairToken0, pathToPairToken1);
     }
 
     /// @notice Unwrap Pair and swap the 2 tokens to path(0/1)[-1]
@@ -311,25 +256,17 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address to
     ) private returns (uint256 amountTo) {
         require(amountFrom > 0, "ZapV2: Insufficient amount");
-        require(
-            path0[path0.length - 1] == path1[path1.length - 1],
-            "ZapV2: invalid end path"
-        );
+        require(path0[path0.length - 1] == path1[path1.length - 1], "ZapV2: invalid end path");
         pair.transferFrom(_msgSender(), address(this), amountFrom);
 
-        (uint256 balance0, uint256 balance1) = _removeLiquidity(
-            pair,
-            amountFrom
-        );
+        (uint256 balance0, uint256 balance1) = _removeLiquidity(pair, amountFrom);
 
         if (path0[0] > path1[0]) {
             (path0, path1) = (path1, path0);
         }
 
         amountTo = _swapExactTokensForTokens(balance0, 0, path0, to);
-        amountTo = amountTo.add(
-            _swapExactTokensForTokens(balance1, 0, path1, to)
-        );
+        amountTo = amountTo.add(_swapExactTokensForTokens(balance1, 0, path1, to));
 
         require(amountTo >= amountToMin, "ZapV2: insufficient swapped amounts");
     }
@@ -337,9 +274,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Approves the token if needed
     /// @param token The address of the token
     /// @param amount The amount of token to send
-    function _approveTokenIfNeeded(IERC20Upgradeable token, uint256 amount)
-        private
-    {
+    function _approveTokenIfNeeded(IERC20Upgradeable token, uint256 amount) private {
         if (token.allowance(address(this), address(router)) < amount) {
             token.safeApprove(address(router), ~uint256(0));
         }
@@ -423,10 +358,7 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @param pair The address of the pair
     /// @return token0Balance The actual amount of token0 received
     /// @return token1Balance The actual amount of token received
-    function _removeLiquidity(IJoePair pair, uint256 amount)
-        private
-        returns (uint256, uint256)
-    {
+    function _removeLiquidity(IJoePair pair, uint256 amount) private returns (uint256, uint256) {
         _approveTokenIfNeeded(IERC20Upgradeable(address(pair)), amount);
 
         IERC20Upgradeable token0 = IERC20Upgradeable(pair.token0());
@@ -434,20 +366,9 @@ contract ZapV2 is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         uint256 balance0Before = token0.balanceOf(address(this));
         uint256 balance1Before = token1.balanceOf(address(this));
-        router.removeLiquidity(
-            address(token0),
-            address(token1),
-            amount,
-            0,
-            0,
-            address(this),
-            block.timestamp
-        );
+        router.removeLiquidity(address(token0), address(token1), amount, 0, 0, address(this), block.timestamp);
 
-        return (
-            token0.balanceOf(address(this)) - balance0Before,
-            token1.balanceOf(address(this)) - balance1Before
-        );
+        return (token0.balanceOf(address(this)) - balance0Before, token1.balanceOf(address(this)) - balance1Before);
     }
 
     /// @notice Transfer amount AVAX to address to
