@@ -34,7 +34,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     joeFactoryAddress = "0x86f83be9770894d8e46301b12E88e14AdC6cdb5F";
     chefAddressV2 = "0x1F51b7697A1919cF301845c93D4843FD620ad7Cc";
     chefAddressV3 = "0xEedf119022F1Bb5F63676BbE855c82151B7198AF";
-    boostedMasterChefAddress = "0xDf185554C4619fBd2BAFC6287ebd6e77F06A1272";
+    boostedMasterChefAddress = "0x460d978831afd5Af99738E060C3ad8a76e592beA";
   }
 
   const contract = await deploy("FarmLensV2", {
