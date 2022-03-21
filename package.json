@@ -1,6 +1,6 @@
 {
   "name": "@traderjoe-xyz/core",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "license": "MIT",
   "types": "./types/index.ts",
   "description": "Core contracts for the Trader Joe protocol",
