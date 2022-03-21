@@ -176,7 +176,7 @@ contract FarmLensV2 {
     /// @param token The address of the token
     /// @return uint256 the Usd price of token, scaled to 18 decimals
     function getTokenPrice(address token) external view returns (uint256) {
-        return _getDerivedAvaxPriceOfToken(token) * _getAvaxPrice();
+        return _getDerivedAvaxPriceOfToken(token).mul(_getAvaxPrice()) / 1e18;
     }
 
     /// @notice Returns the farm pairs data for MCV2 and MCV3
@@ -494,20 +494,31 @@ contract FarmLensV2 {
         }
 
         if (pool.totalLpSupply != 0 && farmInfo.totalSupplyScaled != 0 && totalAlloc != 0 && farmInfo.reserveUsd != 0) {
+            
             uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / totalAlloc;
 
-            farmInfo.baseAPR =
-                poolUsdPerYear.mul(PRECISION * (BP_PRECISION - pool.veJoeShareBp)) /
-                (farmInfo.reserveUsd.mul(BP_PRECISION));
+            uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / 
+                farmInfo.totalSupplyScaled;
+
+            if (poolReserveUsd == 0) return farmInfo;
+
+            farmInfo.baseAPR = poolUsdPerYear
+                .mul(PRECISION)
+                .mul(BP_PRECISION - pool.veJoeShareBp)
+                .div(poolReserveUsd)
+                .div(BP_PRECISION);
 
             if (pool.totalFactor != 0) {
-                uint256 sharePoolUsd = poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor);
-                farmInfo.boostedAPR = sharePoolUsd
+                uint256 userUsdPerYear = poolUsdPerYear
+                    .mul(pool.veJoeShareBp)
+                    .mul(user.factor)
+                    .div(pool.totalFactor)
                     .mul(user.amount)
-                    .div(farmInfo.totalSupplyScaled)
+                    .div(pool.totalLpSupply);
+                farmInfo.boostedAPR = userUsdPerYear
                     .mul(PRECISION)
                     .div(BP_PRECISION)
-                    .div(farmInfo.reserveUsd);
+                    .div(poolReserveUsd);
             }
         }
     }
