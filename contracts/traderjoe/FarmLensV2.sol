@@ -230,7 +230,7 @@ contract FarmLensV2 {
 
         allFarmData.farmInfosV2 = _getMCFarmInfos(chefv2, avaxPrice, whitelistedPidsV2);
         allFarmData.farmInfosV3 = _getMCFarmInfos(chefv3, avaxPrice, whitelistedPidsV3);
-        allFarmData.farmInfosBMCJ = _getBMCJFarmInfos(joePrice, avaxPrice, user, whitelistedPidsBMCJ);
+        allFarmData.farmInfosBMCJ = _getBMCJFarmInfos(avaxPrice, joePrice, user, whitelistedPidsBMCJ);
 
         return allFarmData;
     }
