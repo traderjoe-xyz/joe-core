@@ -66,13 +66,6 @@ contract FarmLensV2 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    /// @dev 365 * 86400, hard coding it for gas optimisation
-    uint256 private constant SEC_PER_YEAR = 31536000;
-
-    uint256 private constant BP_PRECISION = 10_000;
-
-    uint256 private constant PRECISION = 1e18;
-
     struct FarmInfo {
         uint256 id;
         uint256 allocPoint;
@@ -128,6 +121,11 @@ contract FarmLensV2 {
         uint256 joePerSec;
     }
 
+    /// @dev 365 * 86400, hard coding it for gas optimisation
+    uint256 private constant SEC_PER_YEAR = 31536000;
+    uint256 private constant BP_PRECISION = 10_000;
+    uint256 private constant PRECISION = 1e18;
+
     address public immutable joe; // 0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd;
     address public immutable wavax; // 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
     IJoePair public immutable wavaxUsdte; // 0xeD8CBD9F0cE3C6986b22002F03c6475CEb7a6256
@@ -137,6 +135,9 @@ contract FarmLensV2 {
     IMasterChef public immutable chefv2; // 0xd6a4F121CA35509aF06A0Be99093d08462f53052
     IMasterChef public immutable chefv3; // 0x188bED1968b795d5c9022F6a0bb5931Ac4c18F00
     IBoostedMasterchef public immutable bmcj; // Not deployed yet
+    bool private immutable isWavaxToken1InWavaxUsdte;
+    bool private immutable isWavaxToken1InWavaxUsdce;
+    bool private immutable isWavaxToken1InWavaxUsdc;
 
     constructor(
         address _joe,
@@ -158,6 +159,10 @@ contract FarmLensV2 {
         chefv2 = _chefv2;
         chefv3 = _chefv3;
         bmcj = _bmcj;
+
+        isWavaxToken1InWavaxUsdte = _wavaxUsdte.token1() == _wavax;
+        isWavaxToken1InWavaxUsdce = _wavaxUsdce.token1() == _wavax;
+        isWavaxToken1InWavaxUsdc = _wavaxUsdc.token1() == _wavax;
     }
 
     /// @notice Returns the price of avax in Usd
@@ -272,12 +277,20 @@ contract FarmLensV2 {
     /// @notice Returns the price of avax in Usd internally
     /// @return uint256 the avax price, scaled to 18 decimals
     function _getAvaxPrice() private view returns (uint256) {
-        // Hardcoding result of `IjoePair(wavaxUsdte).token0() != wavax`
-        // to save gas, same for wavaxUsdce and wavaxUsdc
         return
-            _getDerivedTokenPriceOfPair(wavaxUsdte, false)
-                .add(_getDerivedTokenPriceOfPair(wavaxUsdce, true))
-                .add(_getDerivedTokenPriceOfPair(wavaxUsdc, false)) / 3;
+            _getDerivedTokenPriceOfPair(wavaxUsdte, isWavaxToken1InWavaxUsdte)
+                .add(
+                    _getDerivedTokenPriceOfPair(
+                        wavaxUsdce,
+                        isWavaxToken1InWavaxUsdce
+                    )
+                )
+                .add(
+                    _getDerivedTokenPriceOfPair(
+                        wavaxUsdc,
+                        isWavaxToken1InWavaxUsdc
+                    )
+                ) / 3;
     }
 
     /// @notice Returns the derived price of token in the other token
