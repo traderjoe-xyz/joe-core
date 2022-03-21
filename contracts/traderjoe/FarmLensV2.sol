@@ -501,10 +501,7 @@ contract FarmLensV2 {
                 (farmInfo.reserveUsd.mul(BP_PRECISION));
 
             if (pool.totalFactor != 0) {
-                uint256 sharePoolUsd = poolUsdPerYear
-                    .mul(pool.veJoeShareBp)
-                    .mul(user.factor)
-                    .div(pool.totalFactor);
+                uint256 sharePoolUsd = poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor);
                 farmInfo.boostedAPR = sharePoolUsd
                     .mul(user.amount)
                     .div(farmInfo.totalSupplyScaled)
