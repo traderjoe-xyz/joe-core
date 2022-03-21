@@ -494,11 +494,9 @@ contract FarmLensV2 {
         }
 
         if (pool.totalLpSupply != 0 && farmInfo.totalSupplyScaled != 0 && totalAlloc != 0 && farmInfo.reserveUsd != 0) {
-            
             uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / totalAlloc;
 
-            uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / 
-                farmInfo.totalSupplyScaled;
+            uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / farmInfo.totalSupplyScaled;
 
             if (poolReserveUsd == 0) return farmInfo;
 
@@ -515,10 +513,7 @@ contract FarmLensV2 {
                     .div(pool.totalFactor)
                     .mul(user.amount)
                     .div(pool.totalLpSupply);
-                farmInfo.boostedAPR = userUsdPerYear
-                    .mul(PRECISION)
-                    .div(BP_PRECISION)
-                    .div(poolReserveUsd);
+                farmInfo.boostedAPR = userUsdPerYear.mul(PRECISION).div(BP_PRECISION).div(poolReserveUsd);
             }
         }
     }
