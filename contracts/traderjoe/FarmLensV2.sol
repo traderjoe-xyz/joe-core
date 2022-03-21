@@ -500,10 +500,17 @@ contract FarmLensV2 {
                 poolUsdPerYear.mul(PRECISION * (BP_PRECISION - pool.veJoeShareBp)) /
                 (farmInfo.reserveUsd.mul(BP_PRECISION));
 
-            uint256 boostUsdPerYear = poolUsdPerYear.mul(pool.veJoeShareBp) / BP_PRECISION;
-            uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd).div(farmInfo.totalSupplyScaled);
-            if (pool.totalFactor != 0 && userLpUsd != 0) {
-                farmInfo.boostedAPR = (boostUsdPerYear * user.factor * PRECISION) / pool.totalFactor.mul(userLpUsd);
+            if (pool.totalFactor != 0) {
+                uint256 sharePoolUsd = poolUsdPerYear
+                    .mul(pool.veJoeShareBp)
+                    .mul(user.factor)
+                    .div(pool.totalFactor);
+                farmInfo.boostedAPR = sharePoolUsd
+                    .mul(user.amount)
+                    .div(farmInfo.totalSupplyScaled)
+                    .mul(PRECISION)
+                    .div(BP_PRECISION)
+                    .div(farmInfo.reserveUsd);
             }
         }
     }
