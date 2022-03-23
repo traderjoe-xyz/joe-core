@@ -493,7 +493,13 @@ contract FarmLensV2 {
             }
         }
 
-        if (pool.totalLpSupply != 0 && farmInfo.totalSupplyScaled != 0 && totalAlloc != 0 && farmInfo.reserveUsd != 0 && user.amount != 0) {
+        if (
+            pool.totalLpSupply != 0 &&
+            farmInfo.totalSupplyScaled != 0 &&
+            totalAlloc != 0 &&
+            farmInfo.reserveUsd != 0 &&
+            user.amount != 0
+        ) {
             uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / totalAlloc;
 
             uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / farmInfo.totalSupplyScaled;
@@ -502,20 +508,16 @@ contract FarmLensV2 {
 
             if (poolReserveUsd == 0) return farmInfo;
 
-            farmInfo.baseAPR = poolUsdPerYear
-                .mul(BP_PRECISION - pool.veJoeShareBp)
-                .mul(PRECISION)
-                / poolReserveUsd
-                / BP_PRECISION;
+            farmInfo.baseAPR =
+                poolUsdPerYear.mul(BP_PRECISION - pool.veJoeShareBp).mul(PRECISION) /
+                poolReserveUsd /
+                BP_PRECISION;
 
             if (pool.totalFactor != 0) {
-                farmInfo.boostedAPR = poolUsdPerYear
-                    .mul(pool.veJoeShareBp)
-                    .mul(user.factor)
-                    .div(pool.totalFactor)
-                    .mul(PRECISION)
-                    / userLpUsd
-                    / BP_PRECISION;
+                farmInfo.boostedAPR =
+                    poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor).mul(PRECISION) /
+                    userLpUsd /
+                    BP_PRECISION;
             }
         }
     }
