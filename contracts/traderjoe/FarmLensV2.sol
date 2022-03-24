@@ -46,8 +46,16 @@ interface IBoostedMasterchef {
     }
 
     function userInfo(uint256 _pid, address user) external view returns (UserInfo memory);
-    
-    function pendingTokens(uint256 _pid, address user) external view returns (uint256, address, string memory, uint256);
+
+    function pendingTokens(uint256 _pid, address user)
+        external
+        view
+        returns (
+            uint256,
+            address,
+            string memory,
+            uint256
+        );
 
     function poolLength() external view returns (uint256);
 
@@ -491,7 +499,12 @@ contract FarmLensV2 {
             }
         }
 
-        if (pool.totalLpSupply != 0 && farmInfo.totalSupplyScaled != 0 && farmInfo.chefTotalAlloc != 0 && farmInfo.reserveUsd != 0) {
+        if (
+            pool.totalLpSupply != 0 &&
+            farmInfo.totalSupplyScaled != 0 &&
+            farmInfo.chefTotalAlloc != 0 &&
+            farmInfo.reserveUsd != 0
+        ) {
             uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / farmInfo.chefTotalAlloc;
 
             uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / farmInfo.totalSupplyScaled;
@@ -511,7 +524,7 @@ contract FarmLensV2 {
                     userLpUsd /
                     BP_PRECISION;
             } else {
-                farmInfo.boostedAPR = 
+                farmInfo.boostedAPR =
                     poolUsdPerYear.mul(pool.veJoeShareBp).mul(PRECISION) /
                     poolReserveUsd /
                     BP_PRECISION;
