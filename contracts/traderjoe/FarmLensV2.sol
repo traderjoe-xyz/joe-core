@@ -497,14 +497,11 @@ contract FarmLensV2 {
             pool.totalLpSupply != 0 &&
             farmInfo.totalSupplyScaled != 0 &&
             totalAlloc != 0 &&
-            farmInfo.reserveUsd != 0 &&
-            user.amount != 0
+            farmInfo.reserveUsd != 0
         ) {
             uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / totalAlloc;
 
             uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / farmInfo.totalSupplyScaled;
-
-            uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd) / pool.totalLpSupply;
 
             if (poolReserveUsd == 0) return farmInfo;
 
@@ -513,7 +510,9 @@ contract FarmLensV2 {
                 poolReserveUsd /
                 BP_PRECISION;
 
-            if (pool.totalFactor != 0) {
+            if (pool.totalFactor != 0 && user.amount != 0) {
+                uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd) / pool.totalLpSupply;
+
                 farmInfo.boostedAPR =
                     poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor).mul(PRECISION) /
                     userLpUsd /
