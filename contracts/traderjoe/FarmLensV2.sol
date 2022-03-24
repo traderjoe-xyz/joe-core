@@ -46,6 +46,8 @@ interface IBoostedMasterchef {
     }
 
     function userInfo(uint256 _pid, address user) external view returns (UserInfo memory);
+    
+    function pendingTokens(uint256 _pid, address user) external view returns (uint256, address, string memory, uint256);
 
     function poolLength() external view returns (uint256);
 
@@ -90,6 +92,8 @@ contract FarmLensV2 {
         uint256 chefBalanceScaled;
         uint256 chefTotalAlloc;
         uint256 chefJoePerSec;
+        uint256 userLp;
+        uint256 userPendingJoe;
         uint256 baseAPR;
         uint256 boostedAPR;
         uint256 boostFactor;
@@ -426,27 +430,20 @@ contract FarmLensV2 {
             uint256 pid = whitelistedPids[i];
             IBoostedMasterchef.PoolInfo memory pool = IBoostedMasterchef(globalInfo.chef).poolInfo(pid);
             IBoostedMasterchef.UserInfo memory userInfo;
-            if (user != address(0)) {
-                userInfo = IBoostedMasterchef(globalInfo.chef).userInfo(pid, user);
-            } else {
-                userInfo = IBoostedMasterchef.UserInfo({
-                    amount: pool.totalLpSupply,
-                    rewardDebt: 0,
-                    factor: pool.totalFactor
-                });
-            }
+            userInfo = IBoostedMasterchef(globalInfo.chef).userInfo(pid, user);
 
-            farmInfos[i] = _getBMCJFarmInfo(
-                avaxPrice,
-                globalInfo.joePerSec.mul(joePrice) / PRECISION,
-                globalInfo.totalAlloc,
-                pool,
-                userInfo
-            );
             farmInfos[i].id = pid;
             farmInfos[i].chefAddress = globalInfo.chef;
             farmInfos[i].chefTotalAlloc = globalInfo.totalAlloc;
             farmInfos[i].chefJoePerSec = globalInfo.joePerSec;
+            _getBMCJFarmInfo(
+                avaxPrice,
+                globalInfo.joePerSec.mul(joePrice) / PRECISION,
+                user,
+                farmInfos[i],
+                pool,
+                userInfo
+            );
         }
 
         return farmInfos;
@@ -455,20 +452,19 @@ contract FarmLensV2 {
     /// @notice Helper function to return the farm info of a given pool of BMCJ
     /// @param avaxPrice The avax price as a parameter to save gas
     /// @param UsdPerSec The Usd per sec emitted to BMCJ
-    /// @param pool The pool
-    /// @param user The userInfo
-    /// @return farmInfo The information of all the whitelisted farms of MCV2 or MCV3
+    /// @param userAddress The address of the user
+    /// @param farmInfo The farmInfo of that pool
+    /// @param user The user information
     function _getBMCJFarmInfo(
         uint256 avaxPrice,
         uint256 UsdPerSec,
-        uint256 totalAlloc,
+        address userAddress,
+        FarmInfoBMCJ memory farmInfo,
         IBoostedMasterchef.PoolInfo memory pool,
         IBoostedMasterchef.UserInfo memory user
-    ) private view returns (FarmInfoBMCJ memory farmInfo) {
-        uint256 reserveUsd;
+    ) private view {
         {
             IJoePair lpToken = IJoePair(address(pool.lpToken));
-            reserveUsd = _getDerivedAvaxLiquidityOfPair(lpToken).mul(avaxPrice) / PRECISION;
             IERC20 token0 = IERC20(lpToken.token0());
             IERC20 token1 = IERC20(lpToken.token1());
 
@@ -478,10 +474,12 @@ contract FarmLensV2 {
             farmInfo.token1Address = address(token1);
             farmInfo.token0Symbol = token0.safeSymbol();
             farmInfo.token1Symbol = token1.safeSymbol();
-            farmInfo.reserveUsd = reserveUsd;
+            farmInfo.reserveUsd = _getDerivedAvaxLiquidityOfPair(lpToken).mul(avaxPrice) / PRECISION;
             // LP is in 18 decimals, so it's already scaled for JLP
             farmInfo.totalSupplyScaled = lpToken.totalSupply();
             farmInfo.chefBalanceScaled = pool.totalLpSupply;
+            farmInfo.userLp = user.amount;
+            (farmInfo.userPendingJoe, , , ) = bmcj.pendingTokens(farmInfo.id, userAddress);
             if (pool.veJoeShareBp == BP_PRECISION) {
                 farmInfo.boostFactor = ~uint256(0);
             } else {
@@ -493,12 +491,12 @@ contract FarmLensV2 {
             }
         }
 
-        if (pool.totalLpSupply != 0 && farmInfo.totalSupplyScaled != 0 && totalAlloc != 0 && farmInfo.reserveUsd != 0) {
-            uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / totalAlloc;
+        if (pool.totalLpSupply != 0 && farmInfo.totalSupplyScaled != 0 && farmInfo.chefTotalAlloc != 0 && farmInfo.reserveUsd != 0) {
+            uint256 poolUsdPerYear = UsdPerSec.mul(pool.allocPoint).mul(SEC_PER_YEAR) / farmInfo.chefTotalAlloc;
 
             uint256 poolReserveUsd = farmInfo.reserveUsd.mul(farmInfo.chefBalanceScaled) / farmInfo.totalSupplyScaled;
 
-            if (poolReserveUsd == 0) return farmInfo;
+            if (poolReserveUsd == 0) return;
 
             farmInfo.baseAPR =
                 poolUsdPerYear.mul(BP_PRECISION - pool.veJoeShareBp).mul(PRECISION) /
@@ -511,6 +509,11 @@ contract FarmLensV2 {
                 farmInfo.boostedAPR =
                     poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor).mul(PRECISION) /
                     userLpUsd /
+                    BP_PRECISION;
+            } else {
+                farmInfo.boostedAPR = 
+                    poolUsdPerYear.mul(pool.veJoeShareBp).mul(PRECISION) /
+                    poolReserveUsd /
                     BP_PRECISION;
             }
         }
