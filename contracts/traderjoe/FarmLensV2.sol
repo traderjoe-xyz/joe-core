@@ -104,7 +104,6 @@ contract FarmLensV2 {
         uint256 averageBoostedApr;
         uint256 veJoeShareBp;
         uint256 joePriceUsd;
-
         uint256 userLp;
         uint256 userPendingJoe;
         uint256 userBoostedApr;
