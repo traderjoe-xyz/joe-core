@@ -100,11 +100,14 @@ contract FarmLensV2 {
         uint256 chefBalanceScaled;
         uint256 chefTotalAlloc;
         uint256 chefJoePerSec;
+        uint256 baseAPR;
+        uint256 averageBoostedAPR;
+        uint256 veJoeShareBp;
+
         uint256 userLp;
         uint256 userPendingJoe;
-        uint256 baseAPR;
-        uint256 boostedAPR;
-        uint256 boostFactor;
+        uint256 userBoostedAPR;
+        uint256 userFactorShare;
     }
 
     struct AllFarmData {
@@ -487,16 +490,8 @@ contract FarmLensV2 {
             farmInfo.totalSupplyScaled = lpToken.totalSupply();
             farmInfo.chefBalanceScaled = pool.totalLpSupply;
             farmInfo.userLp = user.amount;
+            farmInfo.veJoeShareBp = pool.veJoeShareBp;
             (farmInfo.userPendingJoe, , , ) = bmcj.pendingTokens(farmInfo.id, userAddress);
-            if (pool.veJoeShareBp == BP_PRECISION) {
-                farmInfo.boostFactor = ~uint256(0);
-            } else {
-                // can't over or underflow, so normal math is fine
-                farmInfo.boostFactor =
-                    (pool.veJoeShareBp * BP_PRECISION) /
-                    (BP_PRECISION - pool.veJoeShareBp) +
-                    BP_PRECISION;
-            }
         }
 
         if (
@@ -516,18 +511,22 @@ contract FarmLensV2 {
                 poolReserveUsd /
                 BP_PRECISION;
 
-            if (pool.totalFactor != 0 && user.amount != 0) {
-                uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd) / pool.totalLpSupply;
-
-                farmInfo.boostedAPR =
-                    poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor).mul(PRECISION) /
-                    userLpUsd /
-                    BP_PRECISION;
-            } else {
-                farmInfo.boostedAPR =
+            if (pool.totalFactor != 0) {
+                farmInfo.averageBoostedAPR =
                     poolUsdPerYear.mul(pool.veJoeShareBp).mul(PRECISION) /
                     poolReserveUsd /
                     BP_PRECISION;
+
+                if (user.amount != 0 && user.factor != 0) {
+                    uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd) / pool.totalLpSupply;
+
+                    farmInfo.userBoostedAPR =
+                        poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor).mul(PRECISION) /
+                        userLpUsd /
+                        BP_PRECISION;
+
+                    farmInfo.userFactorShare = user.factor.mul(PRECISION) / pool.totalFactor;
+                }
             }
         }
     }
