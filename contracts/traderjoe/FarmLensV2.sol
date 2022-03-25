@@ -100,13 +100,14 @@ contract FarmLensV2 {
         uint256 chefBalanceScaled;
         uint256 chefTotalAlloc;
         uint256 chefJoePerSec;
-        uint256 baseAPR;
-        uint256 averageBoostedAPR;
+        uint256 baseApr;
+        uint256 averageBoostedApr;
         uint256 veJoeShareBp;
+        uint256 joePriceUsd;
 
         uint256 userLp;
         uint256 userPendingJoe;
-        uint256 userBoostedAPR;
+        uint256 userBoostedApr;
         uint256 userFactorShare;
     }
 
@@ -447,6 +448,7 @@ contract FarmLensV2 {
             farmInfos[i].chefAddress = globalInfo.chef;
             farmInfos[i].chefTotalAlloc = globalInfo.totalAlloc;
             farmInfos[i].chefJoePerSec = globalInfo.joePerSec;
+            farmInfos[i].joePriceUsd = joePrice;
             _getBMCJFarmInfo(
                 avaxPrice,
                 globalInfo.joePerSec.mul(joePrice) / PRECISION,
@@ -506,13 +508,13 @@ contract FarmLensV2 {
 
             if (poolReserveUsd == 0) return;
 
-            farmInfo.baseAPR =
+            farmInfo.baseApr =
                 poolUsdPerYear.mul(BP_PRECISION - pool.veJoeShareBp).mul(PRECISION) /
                 poolReserveUsd /
                 BP_PRECISION;
 
             if (pool.totalFactor != 0) {
-                farmInfo.averageBoostedAPR =
+                farmInfo.averageBoostedApr =
                     poolUsdPerYear.mul(pool.veJoeShareBp).mul(PRECISION) /
                     poolReserveUsd /
                     BP_PRECISION;
@@ -520,7 +522,7 @@ contract FarmLensV2 {
                 if (user.amount != 0 && user.factor != 0) {
                     uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd) / pool.totalLpSupply;
 
-                    farmInfo.userBoostedAPR =
+                    farmInfo.userBoostedApr =
                         poolUsdPerYear.mul(pool.veJoeShareBp).mul(user.factor).div(pool.totalFactor).mul(PRECISION) /
                         userLpUsd /
                         BP_PRECISION;
