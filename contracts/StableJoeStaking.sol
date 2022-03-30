@@ -297,6 +297,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             IERC20Upgradeable _token = rewardTokens[i];
             user.rewardDebt[_token] = 0;
         }
+        internalJoeBalance = internalJoeBalance.sub(_amount);
         joe.safeTransfer(_msgSender(), _amount);
         emit EmergencyWithdraw(_msgSender(), _amount);
     }
