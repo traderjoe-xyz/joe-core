@@ -1,5 +1,5 @@
 module.exports = async function ({ getNamedAccounts, deployments }) {
-  const { deploy } = deployments;
+  const { deploy, catchUnknownSigner } = deployments;
   const { deployer } = await getNamedAccounts();
 
   let rewardToken, joeAddress, feeCollector, depositFeePercent;
@@ -21,19 +21,21 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     depositFeePercent = 0;
   }
 
-  const stableJoeStaking = await deploy("StableJoeStaking", {
-    from: deployer,
-    proxy: {
-      proxyContract: "OpenZeppelinTransparentProxy",
-      execute: {
-        init: {
-          methodName: "initialize",
-          args: [rewardToken, joeAddress, feeCollector, depositFeePercent],
+  await catchUnknownSigner(
+    deploy("StableJoeStaking", {
+      from: deployer,
+      proxy: {
+        proxyContract: "OpenZeppelinTransparentProxy",
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [rewardToken, joeAddress, feeCollector, depositFeePercent],
+          },
         },
       },
-    },
-    log: true,
-  });
+      log: true,
+    })
+  );
 };
 
 module.exports.tags = ["StableJoeStaking"];
