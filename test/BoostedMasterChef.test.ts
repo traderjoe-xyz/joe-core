@@ -346,27 +346,24 @@ describe("BoostedMasterChefJoe", function () {
   })
 
   it.only("it should never decrease pending tokens", async function () {
-
     await this.veJoe.connect(this.dev).mint(this.bob.address, 100)
     await this.lp.connect(this.bob).approve(this.bmc.address, 1000)
     await this.bmc.connect(this.bob).deposit(0, 1000)
 
     await increase(duration.hours(24))
     await advanceBlock()
-    const pending0 = await this.bmc.pendingTokens(0, this.bob.address);
+    const pending0 = await this.bmc.pendingTokens(0, this.bob.address)
 
     await this.veJoe.connect(this.dev).mint(this.alice.address, 100)
     await this.lp.connect(this.alice).approve(this.bmc.address, 1000)
     await this.bmc.connect(this.alice).deposit(0, 1000)
 
-    const pending1 = await this.bmc.pendingTokens(0, this.bob.address);
+    const pending1 = await this.bmc.pendingTokens(0, this.bob.address)
     console.log(pending0[0])
     console.log(pending1[0])
 
-    expect(pending1[0] > pending0[0]).to.be.true;
-
+    expect(pending1[0] > pending0[0]).to.be.true
   })
-
 
   after(async function () {
     await network.provider.request({
