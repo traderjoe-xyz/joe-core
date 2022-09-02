@@ -2,7 +2,12 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const { deploy, catchUnknownSigner } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  let rewardToken, joeAddress, feeCollector, depositFeePercent, proxyOwner;
+  let rewardToken,
+    joeAddress,
+    feeCollector,
+    depositFeePercent,
+    smolJoes,
+    proxyOwner;
 
   const chainId = await getChainId();
   if (chainId == 4) {
@@ -12,6 +17,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     rewardToken = "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10";
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
+    smolJoes = "0x0000000000000000000000000000000000000000"; // placeholder for now
     proxyOwner = deployer.address;
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
@@ -20,6 +26,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     rewardToken = "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E";
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
+    smolJoes = "0xC70DF87e1d98f6A531c8E324C9BCEC6FC82B5E8d";
     proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
   }
 
@@ -32,7 +39,13 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         execute: {
           init: {
             methodName: "initialize",
-            args: [rewardToken, joeAddress, feeCollector, depositFeePercent],
+            args: [
+              rewardToken,
+              joeAddress,
+              feeCollector,
+              depositFeePercent,
+              smolJoes,
+            ],
           },
         },
       },
