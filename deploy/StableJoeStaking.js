@@ -17,7 +17,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     rewardToken = "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10";
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
-    smolJoes = "0x0000000000000000000000000000000000000000"; // placeholder for now
+    smolJoes = "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4"; // use an ERC20 as placeholder for now
     proxyOwner = deployer.address;
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
@@ -30,8 +30,8 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
   }
 
-  await catchUnknownSigner(
-    deploy("StableJoeStaking", {
+  await catchUnknownSigner(async () => {
+    const sJoe = await deploy("StableJoeStaking", {
       from: deployer,
       proxy: {
         owner: proxyOwner,
@@ -50,8 +50,19 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         },
       },
       log: true,
-    })
-  );
+    });
+    if (sJoe.newlyDeployed) {
+      console.log("Initializing implementation for safe measure...");
+      const impl = await ethers.getContract("StableJoeStaking_Implementation");
+      await impl.initialize(
+        rewardToken,
+        joeAddress,
+        feeCollector,
+        depositFeePercent,
+        smolJoes
+      );
+    }
+  });
 };
 
 module.exports.tags = ["StableJoeStaking"];
