@@ -18,7 +18,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
     smolJoes = "0xce347E069B68C53A9ED5e7DA5952529cAF8ACCd4"; // use an ERC20 as placeholder for now
-    proxyOwner = deployer.address;
+    proxyOwner = deployer;
   } else if (chainId == 43114 || chainId == 31337) {
     // avalanche mainnet or hardhat network addresses
     joeAddress = "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd";
@@ -27,8 +27,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
     smolJoes = "0xC70DF87e1d98f6A531c8E324C9BCEC6FC82B5E8d";
-    proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
+    // proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
+    proxyOwner = deployer;
   }
+  console.log("proxyOwner is", proxyOwner);
 
   await catchUnknownSigner(async () => {
     const sJoe = await deploy("StableJoeStaking", {
@@ -39,13 +41,11 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         execute: {
           init: {
             methodName: "initialize",
-            args: [
-              rewardToken,
-              joeAddress,
-              feeCollector,
-              depositFeePercent,
-              smolJoes,
-            ],
+            args: [rewardToken, joeAddress, feeCollector, depositFeePercent],
+          },
+          onUpgrade: {
+            methodName: "initializeSmolJoes",
+            args: [smolJoes],
           },
         },
       },
@@ -58,8 +58,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         rewardToken,
         joeAddress,
         feeCollector,
-        depositFeePercent,
-        smolJoes
+        depositFeePercent
       );
     }
   });

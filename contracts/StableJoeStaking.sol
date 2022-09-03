@@ -92,7 +92,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     event RewardTokenRemoved(address token);
 
     /// @notice Emitted when Smol Joes address is changed
-    event SmolJoesChanged(IERC721Upgradeable newSmolJoes, IERC721Upgradeable oldSmolJoes);
+    event SmolJoesInitialized(IERC721Upgradeable newSmolJoes, IERC721Upgradeable oldSmolJoes);
 
     /**
      * @notice Initialize a new StableJoeStaking contract
@@ -102,24 +102,20 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _joe The address of the JOE token
      * @param _feeCollector The address where deposit fees will be sent
      * @param _depositFeePercent The deposit fee percent, scalled to 1e18, e.g. 3% is 3e16
-     * @param _smolJoes The address of ERC721 Smol Joes NFT
      */
     function initialize(
         IERC20Upgradeable _rewardToken,
         IERC20Upgradeable _joe,
         address _feeCollector,
-        uint256 _depositFeePercent,
-        IERC721Upgradeable _smolJoes
+        uint256 _depositFeePercent
     ) external initializer {
         __Ownable_init();
         require(address(_rewardToken) != address(0), "StableJoeStaking: reward token can't be address(0)");
         require(address(_joe) != address(0), "StableJoeStaking: joe can't be address(0)");
-        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
         require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address(0)");
         require(_depositFeePercent <= 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
 
         joe = _joe;
-        smolJoes = _smolJoes;
         depositFeePercent = _depositFeePercent;
         feeCollector = _feeCollector;
 
@@ -240,14 +236,14 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Set the Smol Joes address
-     * @param _newSmolJoes The new Smol Joes contract address
+     * @notice Initialize the Smol Joes address
+     * @param _smolJoes The Smol Joes contract address
      */
-    function setSmolJoes(IERC721Upgradeable _newSmolJoes) external onlyOwner {
-        require(address(_newSmolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
-        IERC721Upgradeable oldSmolJoes = smolJoes;
-        smolJoes = _newSmolJoes;
-        emit SmolJoesChanged(_newSmolJoes, oldSmolJoes);
+    function initializeSmolJoes(IERC721Upgradeable _smolJoes) external onlyOwner {
+        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
+        require(address(smolJoes) == address(0), "StableJoeStaking: smol joes already initialized");
+        smolJoes = _smolJoes;
+        emit SmolJoesInitialized(_smolJoes, smolJoes);
     }
 
     /**
