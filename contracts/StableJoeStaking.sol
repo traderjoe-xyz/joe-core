@@ -91,6 +91,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Emitted when owner removes a token from the reward tokens list
     event RewardTokenRemoved(address token);
 
+    /// @notice Emitted when Smol Joes address is changed
+    event SmolJoesChanged(IERC721Upgradeable newSmolJoes, IERC721Upgradeable oldSmolJoes);
+
     /**
      * @notice Initialize a new StableJoeStaking contract
      * @dev This contract needs to receive an ERC20 `_rewardToken` in order to distribute them
@@ -165,8 +168,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         }
 
         internalJoeBalance = internalJoeBalance.add(_amountMinusFee);
-        joe.safeTransferFrom(_msgSender(), feeCollector, _fee);
-        joe.safeTransferFrom(_msgSender(), address(this), _amountMinusFee);
+        if (_fee > 0) joe.safeTransferFrom(_msgSender(), feeCollector, _fee);
+        if (_amountMinusFee > 0) joe.safeTransferFrom(_msgSender(), address(this), _amountMinusFee);
         emit Deposit(_msgSender(), _amountMinusFee, _fee);
     }
 
@@ -234,6 +237,17 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         uint256 oldFee = depositFeePercent;
         depositFeePercent = _depositFeePercent;
         emit DepositFeeChanged(_depositFeePercent, oldFee);
+    }
+
+    /**
+     * @notice Set the Smol Joes address
+     * @param _newSmolJoes The new Smol Joes contract address
+     */
+    function setSmolJoes(IERC721Upgradeable _newSmolJoes) external onlyOwner {
+        require(address(_newSmolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
+        IERC721Upgradeable oldSmolJoes = smolJoes;
+        smolJoes = _newSmolJoes;
+        emit SmolJoesChanged(_newSmolJoes, oldSmolJoes);
     }
 
     /**
