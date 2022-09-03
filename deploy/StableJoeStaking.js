@@ -27,10 +27,8 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     feeCollector = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
     depositFeePercent = 0;
     smolJoes = "0xC70DF87e1d98f6A531c8E324C9BCEC6FC82B5E8d";
-    // proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
-    proxyOwner = deployer;
+    proxyOwner = "0x2fbB61a10B96254900C03F1644E9e1d2f5E76DD2";
   }
-  console.log("proxyOwner is", proxyOwner);
 
   await catchUnknownSigner(async () => {
     const sJoe = await deploy("StableJoeStaking", {
@@ -40,10 +38,6 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         proxyContract: "OpenZeppelinTransparentProxy",
         execute: {
           init: {
-            methodName: "initialize",
-            args: [rewardToken, joeAddress, feeCollector, depositFeePercent],
-          },
-          onUpgrade: {
             methodName: "initializeSmolJoes",
             args: [smolJoes],
           },
