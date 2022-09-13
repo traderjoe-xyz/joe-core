@@ -38,8 +38,14 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         proxyContract: "OpenZeppelinTransparentProxy",
         execute: {
           init: {
-            methodName: "initializeSmolJoes",
-            args: [smolJoes],
+            methodName: "initialize",
+            args: [
+              rewardToken,
+              joeAddress,
+              feeCollector,
+              depositFeePercent,
+              smolJoes,
+            ],
           },
         },
       },
@@ -47,13 +53,19 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     });
     if (sJoe.newlyDeployed) {
       console.log("Initializing implementation for safe measure...");
-      const impl = await ethers.getContract("StableJoeStaking_Implementation");
-      await impl.initialize(
+      const sJoeImpl = await ethers.getContract(
+        "StableJoeStaking_Implementation"
+      );
+      await sJoeImpl.initialize(
         rewardToken,
         joeAddress,
         feeCollector,
-        depositFeePercent
+        depositFeePercent,
+        smolJoes
       );
+      console.log("Setting Smol Joes...");
+      const sJoeProxy = await ethers.getContract("StableJoeStaking");
+      await sJoeProxy.setSmolJoes(smolJoes);
     }
   });
 };

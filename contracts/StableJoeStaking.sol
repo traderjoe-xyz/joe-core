@@ -107,15 +107,18 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         IERC20Upgradeable _rewardToken,
         IERC20Upgradeable _joe,
         address _feeCollector,
-        uint256 _depositFeePercent
+        uint256 _depositFeePercent,
+        IERC721Upgradeable _smolJoes
     ) external initializer {
         __Ownable_init();
         require(address(_rewardToken) != address(0), "StableJoeStaking: reward token can't be address(0)");
         require(address(_joe) != address(0), "StableJoeStaking: joe can't be address(0)");
+        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
         require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address(0)");
         require(_depositFeePercent <= 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
 
         joe = _joe;
+        smolJoes = _smolJoes;
         depositFeePercent = _depositFeePercent;
         feeCollector = _feeCollector;
 
@@ -134,7 +137,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
         uint256 _fee;
         // Only EOAs holding Smol Joes are exempt from paying the deposit fee
-        if (smolJoes.balanceOf(_msgSender()) == 0 || _msgSender() != tx.origin) {
+        if ((address(smolJoes) != 0 && smolJoes.balanceOf(_msgSender()) == 0) || _msgSender() != tx.origin) {
             _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
         }
         uint256 _amountMinusFee = _amount.sub(_fee);
@@ -237,11 +240,12 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     /**
      * @notice Initialize the Smol Joes address
+     * @dev This function was added to be able to set Smol Joes during an upgrade
+     * as the contract was already initialized
      * @param _smolJoes The Smol Joes contract address
      */
-    function initializeSmolJoes(IERC721Upgradeable _smolJoes) external onlyOwner {
-        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
-        require(address(smolJoes) == address(0), "StableJoeStaking: smol joes already initialized");
+    function setSmolJoes(IERC721Upgradeable _smolJoes) external onlyOwner {
+        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)3");
         smolJoes = _smolJoes;
         emit SmolJoesInitialized(_smolJoes, smolJoes);
     }
