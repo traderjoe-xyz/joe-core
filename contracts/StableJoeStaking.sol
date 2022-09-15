@@ -68,7 +68,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     mapping(address => UserInfo) private userInfo;
 
     /// @dev Smol Joes contract address
-    IERC721Upgradeable smolJoes;
+    IERC721Upgradeable public smolJoes;
 
     /// @notice Emitted when a user deposits JOE
     event Deposit(address indexed user, uint256 amount, uint256 fee);
