@@ -137,7 +137,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
         uint256 _fee;
         // Only EOAs holding Smol Joes are exempt from paying the deposit fee
-        if ((address(smolJoes) != 0 && smolJoes.balanceOf(_msgSender()) == 0) || _msgSender() != tx.origin) {
+        if (address(smolJoes) != 0 && (smolJoes.balanceOf(_msgSender()) == 0 || _msgSender() != tx.origin)) {
             _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
         }
         uint256 _amountMinusFee = _amount.sub(_fee);
@@ -245,7 +245,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _smolJoes The Smol Joes contract address
      */
     function setSmolJoes(IERC721Upgradeable _smolJoes) external onlyOwner {
-        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)3");
+        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
         smolJoes = _smolJoes;
         emit SmolJoesInitialized(_smolJoes, smolJoes);
     }
