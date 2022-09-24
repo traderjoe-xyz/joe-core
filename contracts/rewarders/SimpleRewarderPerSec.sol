@@ -141,7 +141,9 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     }
 
     /// @notice payable function needed to receive AVAX
-    receive() external payable {}
+    receive() external payable {
+        require(isNative, "Non native rewarder");
+    }
 
     /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
