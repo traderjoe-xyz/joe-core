@@ -158,25 +158,33 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         if (userAmount > 0 || pending > 0) {
             pending = (userAmount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(pending);
 
-            if (isNative) {
-                uint256 balance = address(this).balance;
-                if (pending > balance) {
-                    (bool success, ) = _user.call.value(balance)("");
-                    require(success, "Transfer failed");
-                    user.unpaidRewards = pending - balance;
+            if (pending > 0) {
+                if (isNative) {
+                    uint256 balance = address(this).balance;
+
+                    if (balance > 0) {
+                        if (pending > balance) {
+                            (bool success, ) = _user.call.value(balance)("");
+                            require(success, "Transfer failed");
+                            user.unpaidRewards = pending - balance;
+                        } else {
+                            (bool success, ) = _user.call.value(pending)("");
+                            require(success, "Transfer failed");
+                            user.unpaidRewards = 0;
+                        }
+                    }
                 } else {
-                    (bool success, ) = _user.call.value(pending)("");
-                    require(success, "Transfer failed");
-                    user.unpaidRewards = 0;
-                }
-            } else {
-                uint256 balance = rewardToken.balanceOf(address(this));
-                if (pending > balance) {
-                    rewardToken.safeTransfer(_user, balance);
-                    user.unpaidRewards = pending - balance;
-                } else {
-                    rewardToken.safeTransfer(_user, pending);
-                    user.unpaidRewards = 0;
+                    uint256 balance = rewardToken.balanceOf(address(this));
+
+                    if (balance > 0) {
+                        if (pending > balance) {
+                            rewardToken.safeTransfer(_user, balance);
+                            user.unpaidRewards = pending - balance;
+                        } else {
+                            rewardToken.safeTransfer(_user, pending);
+                            user.unpaidRewards = 0;
+                        }
+                    }
                 }
             }
         }
