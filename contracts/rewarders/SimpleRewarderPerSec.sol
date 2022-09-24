@@ -148,13 +148,15 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     /// @param _lpAmount Number of LP tokens the user has
     function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ nonReentrant {
         updatePool();
-        PoolInfo memory pool = poolInfo;
+
+        uint256 accTokenPerShare = poolInfo.accTokenPerShare;
         UserInfo storage user = userInfo[_user];
 
         uint256 pending = user.unpaidRewards;
+        uint256 userAmount = user.amount;
 
-        if (user.amount > 0 || pending > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(pending);
+        if (userAmount > 0 || pending > 0) {
+            pending = (userAmount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(pending);
 
             if (isNative) {
                 uint256 balance = address(this).balance;
@@ -180,7 +182,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         }
 
         user.amount = _lpAmount;
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+        user.rewardDebt = _lpAmount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION;
         emit OnReward(_user, pending - user.unpaidRewards);
     }
 
