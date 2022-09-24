@@ -150,11 +150,11 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
-        uint256 pending;
-        if (user.amount > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
-                user.unpaidRewards
-            );
+
+        uint256 pending = user.unpaidRewards;
+
+        if (user.amount > 0 || pending > 0) {
+            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(pending);
 
             if (isNative) {
                 uint256 balance = address(this).balance;
