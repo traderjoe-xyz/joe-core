@@ -156,6 +156,25 @@ contract TokenVesting is Ownable {
     }
 
     /**
+     * @notice Allows owner to emergency revoke and refund entire balance,
+     * including the vested amount. To be used when beneficiary cannot claim
+     * anymore, e.g. when he/she has lots its private key.
+     * @param token ERC20 which is being vested
+     */
+    function emergencyRevoke(IERC20 token) public onlyOwner {
+        require(_revocable, "TokenVesting: cannot revoke");
+        require(!_revoked[address(token)], "TokenVesting: token already revoked");
+
+        uint256 balance = token.balanceOf(address(this));
+
+        _revoked[address(token)] = true;
+
+        token.safeTransfer(owner(), balance);
+
+        emit TokenVestingRevoked(address(token));
+    }
+
+    /**
      * @dev Calculates the amount that has already vested but hasn't been released yet.
      * @param token ERC20 token which is being vested
      */

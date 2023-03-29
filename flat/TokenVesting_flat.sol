@@ -1,6 +1,7 @@
-// File: @openzeppelin/contracts/utils/Context.sol
+// SPDX-License-Identifier: MIXED
 
-// SPDX-License-Identifier: MIT
+// File @openzeppelin/contracts/utils/Context.sol@v3.4.2
+// License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -25,8 +26,8 @@ abstract contract Context {
     }
 }
 
-// File: @openzeppelin/contracts/access/Ownable.sol
-
+// File @openzeppelin/contracts/access/Ownable.sol@v3.4.2
+// License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -94,8 +95,8 @@ abstract contract Ownable is Context {
     }
 }
 
-// File: contracts/interfaces/IERC20.sol
-
+// File contracts/interfaces/IERC20.sol
+// License-Identifier: MIT
 pragma solidity 0.6.12;
 
 interface IERC20 {
@@ -122,10 +123,9 @@ interface IERC20 {
     ) external;
 }
 
-// File: contracts/libraries/SafeERC20.sol
-
+// File contracts/libraries/SafeERC20.sol
+// License-Identifier: MIT
 pragma solidity 0.6.12;
-
 
 library SafeERC20 {
     function safeSymbol(IERC20 token) internal view returns (string memory) {
@@ -138,7 +138,7 @@ library SafeERC20 {
         return success && data.length > 0 ? abi.decode(data, (string)) : "???";
     }
 
-    function safeDecimals(IERC20 token) public view returns (uint8) {
+    function safeDecimals(IERC20 token) internal view returns (uint8) {
         (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
@@ -164,8 +164,8 @@ library SafeERC20 {
     }
 }
 
-// File: contracts/libraries/SafeMath.sol
-
+// File contracts/libraries/SafeMath.sol
+// License-Identifier: MIT
 pragma solidity 0.6.12;
 
 // a library for performing overflow-safe math, updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math)
@@ -203,11 +203,10 @@ library SafeMath128 {
     }
 }
 
-// File: contracts/TokenVesting.sol
-
+// File contracts/TokenVesting.sol
+// License-Identifier: MIT
 
 pragma solidity ^0.6.0;
-
 
 
 
@@ -356,6 +355,19 @@ contract TokenVesting is Ownable {
         _revoked[address(token)] = true;
 
         token.safeTransfer(owner(), refund);
+
+        emit TokenVestingRevoked(address(token));
+    }
+
+    function emergencyRevoke(IERC20 token) public onlyOwner {
+        require(_revocable, "TokenVesting: cannot revoke");
+        require(!_revoked[address(token)], "TokenVesting: token already revoked");
+
+        uint256 balance = token.balanceOf(address(this));
+
+        _revoked[address(token)] = true;
+
+        token.safeTransfer(owner(), balance);
 
         emit TokenVestingRevoked(address(token));
     }
