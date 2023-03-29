@@ -141,46 +141,58 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     }
 
     /// @notice payable function needed to receive AVAX
-    receive() external payable {}
+    receive() external payable {
+        require(isNative, "Non native rewarder");
+    }
 
     /// @notice Function called by MasterChefJoe whenever staker claims JOE harvest. Allows staker to also receive a 2nd reward token.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
     function onJoeReward(address _user, uint256 _lpAmount) external override onlyMCJ nonReentrant {
         updatePool();
-        PoolInfo memory pool = poolInfo;
-        UserInfo storage user = userInfo[_user];
-        uint256 pending;
-        if (user.amount > 0) {
-            pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
-                user.unpaidRewards
-            );
 
-            if (isNative) {
-                uint256 balance = address(this).balance;
-                if (pending > balance) {
-                    (bool success, ) = _user.call.value(balance)("");
-                    require(success, "Transfer failed");
-                    user.unpaidRewards = pending - balance;
+        uint256 accTokenPerShare = poolInfo.accTokenPerShare;
+        UserInfo storage user = userInfo[_user];
+
+        uint256 pending = user.unpaidRewards;
+        uint256 userAmount = user.amount;
+
+        if (userAmount > 0 || pending > 0) {
+            pending = (userAmount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(pending);
+
+            if (pending > 0) {
+                if (isNative) {
+                    uint256 balance = address(this).balance;
+
+                    if (balance > 0) {
+                        if (pending > balance) {
+                            (bool success, ) = _user.call.value(balance)("");
+                            require(success, "Transfer failed");
+                            user.unpaidRewards = pending - balance;
+                        } else {
+                            (bool success, ) = _user.call.value(pending)("");
+                            require(success, "Transfer failed");
+                            user.unpaidRewards = 0;
+                        }
+                    }
                 } else {
-                    (bool success, ) = _user.call.value(pending)("");
-                    require(success, "Transfer failed");
-                    user.unpaidRewards = 0;
-                }
-            } else {
-                uint256 balance = rewardToken.balanceOf(address(this));
-                if (pending > balance) {
-                    rewardToken.safeTransfer(_user, balance);
-                    user.unpaidRewards = pending - balance;
-                } else {
-                    rewardToken.safeTransfer(_user, pending);
-                    user.unpaidRewards = 0;
+                    uint256 balance = rewardToken.balanceOf(address(this));
+
+                    if (balance > 0) {
+                        if (pending > balance) {
+                            rewardToken.safeTransfer(_user, balance);
+                            user.unpaidRewards = pending - balance;
+                        } else {
+                            rewardToken.safeTransfer(_user, pending);
+                            user.unpaidRewards = 0;
+                        }
+                    }
                 }
             }
         }
 
         user.amount = _lpAmount;
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
+        user.rewardDebt = _lpAmount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION;
         emit OnReward(_user, pending - user.unpaidRewards);
     }
 
