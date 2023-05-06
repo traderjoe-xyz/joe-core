@@ -87,6 +87,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Emitted when owner removes a token from the reward tokens list
     event RewardTokenRemoved(address token);
 
+    /// @notice Emitted when owner sweeps a token
+    event TokenSwept(address token, address to, uint256 amount);
+
     /**
      * @notice Initialize a new StableJoeStaking contract
      * @dev This contract needs to receive an ERC20 `_rewardToken` in order to distribute them
@@ -326,6 +329,20 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             _accruedReward.mul(ACC_REWARD_PER_SHARE_PRECISION).div(_totalJoe)
         );
         lastRewardBalance[_token] = _rewardBalance;
+    }
+
+    /**
+     * @notice Sweep token to the `_to` address
+     * @param _token The address of the token to sweep
+     * @param _to The address that will receive `_token` balance
+     */
+    function sweep(IERC20Upgradeable _token, address _to) external onlyOwner {
+        require(!isRewardToken[_token] && address(_token) != address(joe), "StableJoeStaking: token can't be swept");
+
+        uint256 _balance = _token.balanceOf(address(this));
+        _token.safeTransfer(_to, _balance);
+
+        emit TokenSwept(address(_token), _to, _balance);
     }
 
     /**
