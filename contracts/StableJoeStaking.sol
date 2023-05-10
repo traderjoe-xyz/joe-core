@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
 /**
@@ -67,9 +66,6 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /// @dev Info of each user that stakes JOE
     mapping(address => UserInfo) private userInfo;
 
-    /// @dev Smol Joes contract address
-    IERC721Upgradeable smolJoes;
-
     /// @notice Emitted when a user deposits JOE
     event Deposit(address indexed user, uint256 amount, uint256 fee);
 
@@ -104,18 +100,15 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         IERC20Upgradeable _rewardToken,
         IERC20Upgradeable _joe,
         address _feeCollector,
-        uint256 _depositFeePercent,
-        IERC721Upgradeable _smolJoes
+        uint256 _depositFeePercent
     ) external initializer {
         __Ownable_init();
         require(address(_rewardToken) != address(0), "StableJoeStaking: reward token can't be address(0)");
         require(address(_joe) != address(0), "StableJoeStaking: joe can't be address(0)");
-        require(address(_smolJoes) != address(0), "StableJoeStaking: smol joes can't be address(0)");
         require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address(0)");
         require(_depositFeePercent <= 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
 
         joe = _joe;
-        smolJoes = _smolJoes;
         depositFeePercent = _depositFeePercent;
         feeCollector = _feeCollector;
 
@@ -132,11 +125,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     function deposit(uint256 _amount) external {
         UserInfo storage user = userInfo[_msgSender()];
 
-        uint256 _fee;
-        // Only EOAs holding Smol Joes are exempt from paying the deposit fee
-        if (smolJoes.balanceOf(_msgSender()) == 0 || _msgSender() != tx.origin) {
-            _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
-        }
+        uint256 _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
         uint256 _amountMinusFee = _amount.sub(_fee);
 
         uint256 _previousAmount = user.amount;

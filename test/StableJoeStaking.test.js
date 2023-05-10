@@ -9,18 +9,13 @@ describe("Stable Joe Staking", function () {
     this.StableJoeStakingCF = await ethers.getContractFactory(
       "StableJoeStaking"
     );
-    this.StableJoeVaultCF = await ethers.getContractFactory(
-      "StableJoeVaultMock"
-    );
     this.JoeTokenCF = await ethers.getContractFactory("JoeToken");
-    this.SmolJoesCF = await ethers.getContractFactory("ERC721Mock");
 
     this.signers = await ethers.getSigners();
     this.dev = this.signers[0];
     this.alice = this.signers[1];
     this.bob = this.signers[2];
     this.carol = this.signers[3];
-    this.dylan = this.signers[4];
     this.joeMaker = this.signers[4];
     this.penaltyCollector = this.signers[5];
   });
@@ -28,18 +23,14 @@ describe("Stable Joe Staking", function () {
   beforeEach(async function () {
     this.rewardToken = await this.JoeTokenCF.deploy();
     this.joe = await this.JoeTokenCF.deploy();
-    this.smolJoes = await this.SmolJoesCF.deploy("Smol Joes", "SMOL JOES");
 
     await this.joe.mint(this.alice.address, ethers.utils.parseEther("1000"));
     await this.joe.mint(this.bob.address, ethers.utils.parseEther("1000"));
     await this.joe.mint(this.carol.address, ethers.utils.parseEther("1000"));
-    await this.joe.mint(this.dylan.address, ethers.utils.parseEther("1000"));
     await this.rewardToken.mint(
       this.joeMaker.address,
       ethers.utils.parseEther("1000000")
     ); // 1_000_000 tokens
-
-    await this.smolJoes.mint(this.dylan.address);
 
     this.stableJoeStaking = await hre.upgrades.deployProxy(
       this.StableJoeStakingCF,
@@ -48,13 +39,7 @@ describe("Stable Joe Staking", function () {
         this.joe.address,
         this.penaltyCollector.address,
         ethers.utils.parseEther("0.03"),
-        this.smolJoes.address,
       ]
-    );
-
-    this.stableJoeVault = await this.StableJoeVaultCF.deploy(
-      this.joe.address,
-      this.stableJoeStaking.address
     );
 
     await this.joe
@@ -75,16 +60,6 @@ describe("Stable Joe Staking", function () {
         this.stableJoeStaking.address,
         ethers.utils.parseEther("100000")
       );
-    await this.joe
-      .connect(this.dylan)
-      .approve(
-        this.stableJoeStaking.address,
-        ethers.utils.parseEther("100000")
-      );
-
-    await this.joe
-      .connect(this.dylan)
-      .approve(this.stableJoeVault.address, ethers.utils.parseEther("100000"));
   });
 
   describe("should allow deposits and withdraws", function () {
@@ -695,29 +670,6 @@ describe("Stable Joe Staking", function () {
       ).to.be.equal(
         ethers.utils.parseEther("3").add(ethers.utils.parseEther("49"))
       );
-    });
-
-    it("should allow EOAs with Smol Joes to be exempt from paying deposit fee", async function () {
-      await this.stableJoeStaking
-        .connect(this.dylan)
-        .deposit(ethers.utils.parseEther("100"));
-      expect(
-        await this.joe.balanceOf(this.stableJoeStaking.address)
-      ).to.be.equal(ethers.utils.parseEther("100"));
-
-      // Transfer Smol Joe to vault contract and deposit via vault
-      await this.smolJoes
-        .connect(this.dylan)
-        .transferFrom(this.dylan.address, this.stableJoeVault.address, 0);
-      await this.stableJoeVault
-        .connect(this.dylan)
-        .deposit(ethers.utils.parseEther("100"));
-      expect(
-        await this.joe.balanceOf(this.stableJoeStaking.address)
-      ).to.be.equal(ethers.utils.parseEther("197"));
-      expect(
-        await this.joe.balanceOf(this.penaltyCollector.address)
-      ).to.be.equal(ethers.utils.parseEther("3"));
     });
 
     it("should allow emergency withdraw", async function () {
