@@ -158,8 +158,6 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _amount The amount of JOE to deposit
      */
     function deposit(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "StableJoeStaking: can't deposit 0");
-
         UserInfo storage user = userInfo[_msgSender()];
 
         uint256 _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
@@ -294,8 +292,6 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _amount The amount of JOE to withdraw
      */
     function withdraw(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "StableJoeStaking: can't withdraw 0");
-
         UserInfo storage user = userInfo[_msgSender()];
         uint256 _previousAmount = user.amount;
         require(_amount <= _previousAmount, "StableJoeStaking: withdraw amount exceeds balance");
