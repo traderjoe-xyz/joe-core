@@ -149,15 +149,17 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
                     .div(ACC_REWARD_PER_SHARE_PRECISION)
                     .sub(_previousRewardDebt);
                 if (_pending != 0) {
-                    safeTokenTransfer(_token, _msgSender(), _pending);
+                    _safeTokenTransfer(_token, _msgSender(), _pending);
                     emit ClaimReward(_msgSender(), address(_token), _pending);
                 }
             }
         }
 
         internalJoeBalance = internalJoeBalance.add(_amountMinusFee);
-        joe.safeTransferFrom(_msgSender(), feeCollector, _fee);
-        joe.safeTransferFrom(_msgSender(), address(this), _amountMinusFee);
+
+        if (_fee > 0) joe.safeTransferFrom(_msgSender(), feeCollector, _fee);
+        if (_amountMinusFee > 0) joe.safeTransferFrom(_msgSender(), address(this), _amountMinusFee);
+
         emit Deposit(_msgSender(), _amountMinusFee, _fee);
     }
 
@@ -276,7 +278,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
                 user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(ACC_REWARD_PER_SHARE_PRECISION);
 
                 if (_pending != 0) {
-                    safeTokenTransfer(_token, _msgSender(), _pending);
+                    _safeTokenTransfer(_token, _msgSender(), _pending);
                     emit ClaimReward(_msgSender(), address(_token), _pending);
                 }
             }
@@ -352,7 +354,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _to The address that will receive `_amount` `rewardToken`
      * @param _amount The amount to send to `_to`
      */
-    function safeTokenTransfer(
+    function _safeTokenTransfer(
         IERC20Upgradeable _token,
         address _to,
         uint256 _amount
