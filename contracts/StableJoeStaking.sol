@@ -15,7 +15,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
  * harvests. Users deposit JOE and receive a share of what has been sent by MoneyMaker based on their participation of
  * the total deposited JOE. It is similar to a MasterChef, but we allow for claiming of different reward tokens
  * (in case at some point we wish to change the stablecoin rewarded).
- * Every time `updateReward(token)` is called, We distribute the balance of that tokens as rewards to users that are
+ * Every time `_updateReward(token)` is called, We distribute the balance of that tokens as rewards to users that are
  * currently staking inside this contract, and they can claim it using `withdraw(0)`
  */
 contract StableJoeStaking is Initializable, OwnableUpgradeable {
@@ -172,7 +172,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         uint256 _len = rewardTokens.length;
         for (uint256 i; i < _len; i++) {
             IERC20Upgradeable _token = rewardTokens[i];
-            updateReward(_token);
+            _updateReward(_token);
 
             uint256 _previousRewardDebt = user.rewardDebt[_token];
             user.rewardDebt[_token] = _newAmount.mul(accRewardPerShare[_token]).div(ACC_REWARD_PER_SHARE_PRECISION);
@@ -306,7 +306,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         if (_previousAmount != 0) {
             for (uint256 i; i < _len; i++) {
                 IERC20Upgradeable _token = rewardTokens[i];
-                updateReward(_token);
+                _updateReward(_token);
 
                 uint256 _pending = _previousAmount
                     .mul(accRewardPerShare[_token])
@@ -348,11 +348,11 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Update reward variables
+     * @dev Update reward variables
+     * Needs to be called before any deposit or withdrawal
      * @param _token The address of the reward token
-     * @dev Needs to be called before any deposit or withdrawal
      */
-    function updateReward(IERC20Upgradeable _token) public {
+    function _updateReward(IERC20Upgradeable _token) internal {
         require(isRewardToken[_token], "StableJoeStaking: wrong reward token");
 
         uint256 _totalJoe = internalJoeBalance;
@@ -391,7 +391,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Safe token transfer function, just in case if rounding error
+     * @dev Safe token transfer function, just in case if rounding error
      * causes pool to not have enough reward tokens
      * @param _token The address of then token to transfer
      * @param _to The address that will receive `_amount` `rewardToken`
