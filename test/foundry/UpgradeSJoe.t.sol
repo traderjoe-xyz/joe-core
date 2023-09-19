@@ -169,9 +169,3 @@ contract TestUpgradeSJoe is Test {
         defaultProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(sjoe))), address(imp));
     }
 }
-
-interface IMoneyMaker {
-    function setTokenToAddress(address _tokenTo) external;
-    function convert(address token0, address token1, uint256 slippage) external;
-    function transferOwnership(address newOwner) external;
-}
