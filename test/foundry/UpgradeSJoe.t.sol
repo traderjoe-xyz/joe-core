@@ -26,25 +26,17 @@ contract TestUpgradeSJoe is Test {
 
         imp = new StableJoeStaking(IERC20Upgradeable(joe));
     }
-    
+
     function test_CantInitialize() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        imp.initialize(
-            IERC20Upgradeable(address(0)),
-            address(0),
-            0
-        );
+        imp.initialize(IERC20Upgradeable(address(0)), address(0), 0);
 
         _upgrade();
 
         vm.expectRevert("Initializable: contract is already initialized");
-        imp.initialize(
-            IERC20Upgradeable(address(0)),
-            address(0),
-            0
-        );
+        imp.initialize(IERC20Upgradeable(address(0)), address(0), 0);
     }
-    
+
     function test_VerifyStorage() public {
         bytes32[] memory slots = new bytes32[](50);
 
@@ -52,11 +44,11 @@ contract TestUpgradeSJoe is Test {
 
         slots[i++] = bytes32(uint256(uint160(address(sjoe.joe()))));
         slots[i++] = bytes32(sjoe.internalJoeBalance());
-        
+
         uint256 l = sjoe.rewardTokensLength();
         slots[i++] = bytes32(l);
 
-        for(uint256 ii = 0; ii < l; ii++) {
+        for (uint256 ii = 0; ii < l; ii++) {
             IERC20Upgradeable token = sjoe.rewardTokens(ii);
 
             slots[i++] = bytes32(uint256(uint160(address(token))));
@@ -74,7 +66,7 @@ contract TestUpgradeSJoe is Test {
 
         slots[i++] = bytes32(sjoe.DEPOSIT_FEE_PERCENT_PRECISION());
         slots[i++] = bytes32(sjoe.ACC_REWARD_PER_SHARE_PRECISION());
-        
+
         _upgrade();
 
         uint256 j;
@@ -83,7 +75,7 @@ contract TestUpgradeSJoe is Test {
         assertEq(slots[j++], bytes32(sjoe.internalJoeBalance()), "test_VerifyStorage::2");
         assertEq(slots[j++], bytes32(sjoe.rewardTokensLength()), "test_VerifyStorage::3");
 
-        for(uint256 jj = 0; jj < l; jj++) {
+        for (uint256 jj = 0; jj < l; jj++) {
             IERC20Upgradeable token = sjoe.rewardTokens(jj);
 
             assertEq(slots[j++], bytes32(uint256(uint160(address(token)))), "test_VerifyStorage::4");
@@ -109,7 +101,7 @@ contract TestUpgradeSJoe is Test {
         sjoe.sweep(IERC20Upgradeable(joe), address(this));
 
         vm.startPrank(owner);
-        
+
         vm.expectRevert("StableJoeStaking: token can't be swept");
         sjoe.sweep(IERC20Upgradeable(joe), address(this));
 

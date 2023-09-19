@@ -75,10 +75,10 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
 
     /// @notice Accumulated `token` rewards per share, scaled to `ACC_REWARD_PER_SHARE_PRECISION`
     mapping(IERC20Upgradeable => uint256) public accRewardPerShare;
-    
+
     // @dev gap to keep the storage ordering, replace `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
     uint256[1] private __gap3;
-    
+
     /// @notice The precision of `accRewardPerShare`
     uint256 public constant ACC_REWARD_PER_SHARE_PRECISION = 1e24;
 
