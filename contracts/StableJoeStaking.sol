@@ -195,9 +195,11 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
             "StableJoeStaking: token can't be added"
         );
         require(rewardTokens.length < 25, "StableJoeStaking: list of token too big");
+        require(accRewardPerShare[_rewardToken] == 0, "StableJoeStaking: reward token can't be re-added");
+
         rewardTokens.push(_rewardToken);
         isRewardToken[_rewardToken] = true;
-        updateReward(_rewardToken);
+
         emit RewardTokenAdded(address(_rewardToken));
     }
 
@@ -207,7 +209,6 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      */
     function removeRewardToken(IERC20Upgradeable _rewardToken) external onlyOwner {
         require(isRewardToken[_rewardToken], "StableJoeStaking: token can't be removed");
-        updateReward(_rewardToken);
         isRewardToken[_rewardToken] = false;
         uint256 _len = rewardTokens.length;
         for (uint256 i; i < _len; i++) {
