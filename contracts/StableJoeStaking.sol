@@ -40,28 +40,45 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
          */
     }
 
-    IERC20Upgradeable public joe;
+    // @dev gap to keep the storage ordering, replace `IERC20Upgradeable public joe;`
+    uint256[1] private __gap0;
+
+    /// @notice The address of the JOE token
+    IERC20Upgradeable public immutable joe;
 
     /// @dev Internal balance of JOE, this gets updated on user deposits / withdrawals
     /// this allows to reward users with JOE
     uint256 public internalJoeBalance;
+
     /// @notice Array of tokens that users can claim
     IERC20Upgradeable[] public rewardTokens;
+
+    /// @notice Mapping to check if a token is a reward token
     mapping(IERC20Upgradeable => bool) public isRewardToken;
+
     /// @notice Last reward balance of `token`
     mapping(IERC20Upgradeable => uint256) public lastRewardBalance;
 
+    // @notice The address where deposit fees will be sent
     address public feeCollector;
-
     /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PERCENT_PRECISION`
-    uint256 public depositFeePercent;
+    uint88 public depositFeePercent;
+
+    // @dev gap to keep the storage ordering, replace `uint256 public depositFeePercent;`
+    // and `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
+    uint256[2] private __gap1;
+
     /// @notice The precision of `depositFeePercent`
-    uint256 public DEPOSIT_FEE_PERCENT_PRECISION;
+    uint256 public constant DEPOSIT_FEE_PERCENT_PRECISION = 1e18;
 
     /// @notice Accumulated `token` rewards per share, scaled to `ACC_REWARD_PER_SHARE_PRECISION`
     mapping(IERC20Upgradeable => uint256) public accRewardPerShare;
+    
+    // @dev gap to keep the storage ordering, replace `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
+    uint256[1] private __gap3;
+    
     /// @notice The precision of `accRewardPerShare`
-    uint256 public ACC_REWARD_PER_SHARE_PRECISION;
+    uint256 public constant ACC_REWARD_PER_SHARE_PRECISION = 1e24;
 
     /// @dev Info of each user that stakes JOE
     mapping(address => UserInfo) private userInfo;
@@ -91,34 +108,37 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     event TokenSwept(address token, address to, uint256 amount);
 
     /**
+     * @notice Construct a new StableJoeStaking contract
+     * @param _joe The address of the JOE token
+     */
+    constructor(IERC20Upgradeable _joe) initializer {
+        require(address(_joe) != address(0), "StableJoeStaking: joe can't be address(0)");
+
+        joe = _joe;
+    }
+
+    /**
      * @notice Initialize a new StableJoeStaking contract
      * @dev This contract needs to receive an ERC20 `_rewardToken` in order to distribute them
-     * (with MoneyMaker in our case)
      * @param _rewardToken The address of the ERC20 reward token
-     * @param _joe The address of the JOE token
      * @param _feeCollector The address where deposit fees will be sent
      * @param _depositFeePercent The deposit fee percent, scalled to 1e18, e.g. 3% is 3e16
      */
     function initialize(
         IERC20Upgradeable _rewardToken,
-        IERC20Upgradeable _joe,
         address _feeCollector,
-        uint256 _depositFeePercent
+        uint88 _depositFeePercent
     ) external initializer {
         __Ownable_init();
         require(address(_rewardToken) != address(0), "StableJoeStaking: reward token can't be address(0)");
-        require(address(_joe) != address(0), "StableJoeStaking: joe can't be address(0)");
         require(_feeCollector != address(0), "StableJoeStaking: fee collector can't be address(0)");
         require(_depositFeePercent <= 5e17, "StableJoeStaking: max deposit fee can't be greater than 50%");
 
-        joe = _joe;
         depositFeePercent = _depositFeePercent;
         feeCollector = _feeCollector;
 
         isRewardToken[_rewardToken] = true;
         rewardTokens.push(_rewardToken);
-        DEPOSIT_FEE_PERCENT_PRECISION = 1e18;
-        ACC_REWARD_PER_SHARE_PRECISION = 1e24;
     }
 
     /**
@@ -225,7 +245,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @notice Set the deposit fee percent
      * @param _depositFeePercent The new deposit fee percent
      */
-    function setDepositFeePercent(uint256 _depositFeePercent) external onlyOwner {
+    function setDepositFeePercent(uint88 _depositFeePercent) external onlyOwner {
         require(_depositFeePercent <= 5e17, "StableJoeStaking: deposit fee can't be greater than 50%");
         uint256 oldFee = depositFeePercent;
         depositFeePercent = _depositFeePercent;
