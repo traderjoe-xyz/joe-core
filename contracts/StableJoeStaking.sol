@@ -63,6 +63,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     address public feeCollector;
     /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PERCENT_PRECISION`
     uint88 public depositFeePercent;
+    /// @notice Reentrancy guard
+    bool public reentrant;
 
     // @dev gap to keep the storage ordering, replace `uint256 public depositFeePercent;`
     // and `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
@@ -108,6 +110,16 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     event TokenSwept(address token, address to, uint256 amount);
 
     /**
+     * @notice Reentrancy guard
+     */
+    modifier nonReentrant() {
+        require(!reentrant, "StableJoeStaking: reentrant call");
+        reentrant = true;
+        _;
+        reentrant = false;
+    }
+
+    /**
      * @notice Construct a new StableJoeStaking contract
      * @param _joe The address of the JOE token
      */
@@ -145,7 +157,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @notice Deposit JOE for reward token allocation
      * @param _amount The amount of JOE to deposit
      */
-    function deposit(uint256 _amount) external {
+    function deposit(uint256 _amount) external nonReentrant {
         require(_amount > 0, "StableJoeStaking: can't deposit 0");
 
         UserInfo storage user = userInfo[_msgSender()];
@@ -281,7 +293,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @notice Withdraw JOE and harvest the rewards
      * @param _amount The amount of JOE to withdraw
      */
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount) external nonReentrant {
         require(_amount > 0, "StableJoeStaking: can't withdraw 0");
 
         UserInfo storage user = userInfo[_msgSender()];
@@ -317,7 +329,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /**
      * @notice Withdraw without caring about rewards. EMERGENCY ONLY
      */
-    function emergencyWithdraw() external {
+    function emergencyWithdraw() external nonReentrant {
         UserInfo storage user = userInfo[_msgSender()];
 
         uint256 _amount = user.amount;
