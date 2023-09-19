@@ -126,6 +126,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _amount The amount of JOE to deposit
      */
     function deposit(uint256 _amount) external {
+        require(_amount > 0, "StableJoeStaking: can't deposit 0");
+
         UserInfo storage user = userInfo[_msgSender()];
 
         uint256 _fee = _amount.mul(depositFeePercent).div(DEPOSIT_FEE_PERCENT_PRECISION);
@@ -259,6 +261,8 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @param _amount The amount of JOE to withdraw
      */
     function withdraw(uint256 _amount) external {
+        require(_amount > 0, "StableJoeStaking: can't withdraw 0");
+
         UserInfo storage user = userInfo[_msgSender()];
         uint256 _previousAmount = user.amount;
         require(_amount <= _previousAmount, "StableJoeStaking: withdraw amount exceeds balance");
@@ -296,6 +300,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         UserInfo storage user = userInfo[_msgSender()];
 
         uint256 _amount = user.amount;
+
+        require(_amount > 0, "StableJoeStaking: can't withdraw 0");
+
         user.amount = 0;
         uint256 _len = rewardTokens.length;
         for (uint256 i; i < _len; i++) {
@@ -342,6 +349,9 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
         require(!isRewardToken[_token] && address(_token) != address(joe), "StableJoeStaking: token can't be swept");
 
         uint256 _balance = _token.balanceOf(address(this));
+
+        require(_balance > 0, "StableJoeStaking: can't sweep 0");
+
         _token.safeTransfer(_to, _balance);
 
         emit TokenSwept(address(_token), _to, _balance);
