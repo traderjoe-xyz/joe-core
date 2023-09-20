@@ -36,10 +36,13 @@ describe("Stable Joe Staking", function () {
       this.StableJoeStakingCF,
       [
         this.rewardToken.address,
-        this.joe.address,
         this.penaltyCollector.address,
         ethers.utils.parseEther("0.03"),
-      ]
+      ],
+      {
+        unsafeAllow: ["constructor", "state-variable-immutable"],
+        constructorArgs: [this.joe.address],
+      }
     );
 
     await this.joe
@@ -196,13 +199,18 @@ describe("Stable Joe Staking", function () {
       ).to.be.equal(ethers.utils.parseEther("1"));
 
       // Making sure that `pendingReward` still return the accurate tokens even after updating pools
-      await this.stableJoeStaking.updateReward(this.rewardToken.address);
+      await this.stableJoeStaking.connect(this.alice).deposit("1");
+
+      expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("1")
+      );
+
       expect(
         await this.stableJoeStaking.pendingReward(
           this.alice.address,
           this.rewardToken.address
         )
-      ).to.be.equal(ethers.utils.parseEther("1"));
+      ).to.be.equal(ethers.utils.parseEther("0"));
 
       await this.rewardToken
         .connect(this.joeMaker)
@@ -215,16 +223,21 @@ describe("Stable Joe Staking", function () {
           this.alice.address,
           this.rewardToken.address
         )
-      ).to.be.equal(ethers.utils.parseEther("2"));
+      ).to.be.equal(ethers.utils.parseEther("1"));
 
       // Making sure that `pendingReward` still return the accurate tokens even after updating pools
-      await this.stableJoeStaking.updateReward(this.rewardToken.address);
+      await this.stableJoeStaking.connect(this.alice).deposit("1");
+
+      expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("2")
+      );
+
       expect(
         await this.stableJoeStaking.pendingReward(
           this.alice.address,
           this.rewardToken.address
         )
-      ).to.be.equal(ethers.utils.parseEther("2"));
+      ).to.be.equal(ethers.utils.parseEther("0"));
     });
 
     it("should allow deposits and withdraws of multiple users and distribute rewards accordingly", async function () {
@@ -241,8 +254,6 @@ describe("Stable Joe Staking", function () {
       await this.rewardToken
         .connect(this.joeMaker)
         .transfer(this.stableJoeStaking.address, ethers.utils.parseEther("6"));
-      await this.stableJoeStaking.updateReward(this.rewardToken.address);
-      await increase(86400);
 
       await this.stableJoeStaking
         .connect(this.alice)
@@ -704,6 +715,53 @@ describe("Stable Joe Staking", function () {
       );
       expect(userInfo[0]).to.be.equal(0);
       expect(userInfo[1]).to.be.equal(0);
+    });
+
+    it("should allow owner to sweep stuck tokens that are not rewards", async function () {
+      await this.stableJoeStaking
+        .connect(this.alice)
+        .deposit(ethers.utils.parseEther("300"));
+      expect(await this.joe.balanceOf(this.alice.address)).to.be.equal(
+        ethers.utils.parseEther("700")
+      );
+      expect(
+        await this.joe.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(ethers.utils.parseEther("291"));
+
+      const stuckToken = await this.JoeTokenCF.deploy();
+      await stuckToken.mint(
+        this.stableJoeStaking.address,
+        ethers.utils.parseEther("100")
+      ); // We send 100 Tokens to sJoe's address
+
+      await this.stableJoeStaking
+        .connect(this.dev)
+        .sweep(stuckToken.address, this.dev.address);
+
+      expect(await stuckToken.balanceOf(this.dev.address)).to.be.equal(
+        ethers.utils.parseEther("100")
+      );
+      expect(
+        await stuckToken.balanceOf(this.stableJoeStaking.address)
+      ).to.be.equal(0);
+
+      // Should fail for joe
+      await expect(
+        this.stableJoeStaking
+          .connect(this.dev)
+          .sweep(this.joe.address, this.dev.address)
+      ).to.be.revertedWith("StableJoeStaking: token can't be swept");
+
+      // Should fail if stuckToken is added as a reward token
+      await this.stableJoeStaking
+        .connect(this.dev)
+        .addRewardToken(stuckToken.address);
+
+      await expect(
+        this.stableJoeStaking
+          .connect(this.dev)
+          .sweep(stuckToken.address, this.dev.address)
+      ).to.be.revertedWith("StableJoeStaking: token can't be swept");
     });
   });
 

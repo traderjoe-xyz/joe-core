@@ -18,3 +18,7 @@ contracts/.deps/
 .idea
 .openzeppelin
 .vscode
+
+out
+broadcast
+forge-cache/*
