@@ -59,24 +59,24 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     /// @notice Last reward balance of `token`
     mapping(IERC20Upgradeable => uint256) public lastRewardBalance;
 
-    // @notice The address where deposit fees will be sent
+    /// @notice The address where deposit fees will be sent
     address public feeCollector;
-    /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PERCENT_PRECISION`
-    uint88 public depositFeePercent;
     /// @notice Reentrancy guard
     bool public reentrant;
 
-    // @dev gap to keep the storage ordering, replace `uint256 public depositFeePercent;`
-    // and `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
-    uint256[2] private __gap1;
+    /// @notice The deposit fee, scaled to `DEPOSIT_FEE_PERCENT_PRECISION`
+    uint256 public depositFeePercent;
+
+    /// @dev gap to keep the storage ordering, replace `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
+    uint256[1] private __gap1;
 
     /// @notice The precision of `depositFeePercent`
     uint256 public constant DEPOSIT_FEE_PERCENT_PRECISION = 1e18;
 
     /// @notice Accumulated `token` rewards per share, scaled to `ACC_REWARD_PER_SHARE_PRECISION`
     mapping(IERC20Upgradeable => uint256) public accRewardPerShare;
-
-    // @dev gap to keep the storage ordering, replace `uint256 public DEPOSIT_FEE_PERCENT_PRECISION;`
+    
+    /// @dev gap to keep the storage ordering, replace `uint256 public ACC_REWARD_PER_SHARE_PRECISION;`
     uint256[1] private __gap3;
 
     /// @notice The precision of `accRewardPerShare`
@@ -139,7 +139,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
     function initialize(
         IERC20Upgradeable _rewardToken,
         address _feeCollector,
-        uint88 _depositFeePercent
+        uint256 _depositFeePercent
     ) external initializer {
         __Ownable_init();
         require(address(_rewardToken) != address(0), "StableJoeStaking: reward token can't be address(0)");
@@ -255,7 +255,7 @@ contract StableJoeStaking is Initializable, OwnableUpgradeable {
      * @notice Set the deposit fee percent
      * @param _depositFeePercent The new deposit fee percent
      */
-    function setDepositFeePercent(uint88 _depositFeePercent) external onlyOwner {
+    function setDepositFeePercent(uint256 _depositFeePercent) external onlyOwner {
         require(_depositFeePercent <= 5e17, "StableJoeStaking: deposit fee can't be greater than 50%");
         uint256 oldFee = depositFeePercent;
         depositFeePercent = _depositFeePercent;
