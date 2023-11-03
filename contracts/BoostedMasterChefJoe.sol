@@ -364,12 +364,15 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
     /// @notice Calculates and returns the `amount` of JOE per second
     /// @return amount The amount of JOE emitted per second
     function joePerSec() public view returns (uint256 amount) {
+        uint256 mcv2TotalAllocPoint = MASTER_CHEF_V2.totalAllocPoint();
+        if (mcv2TotalAllocPoint == 0) return 0;
+
         uint256 total = 1000;
         uint256 lpPercent = total.sub(MASTER_CHEF_V2.devPercent()).sub(MASTER_CHEF_V2.treasuryPercent()).sub(
             MASTER_CHEF_V2.investorPercent()
         );
         uint256 lpShare = MASTER_CHEF_V2.joePerSec().mul(lpPercent).div(total);
-        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(MASTER_CHEF_V2.totalAllocPoint());
+        amount = lpShare.mul(MASTER_CHEF_V2.poolInfo(MASTER_PID).allocPoint).div(mcv2TotalAllocPoint);
     }
 
     /// @notice View function to see pending JOE on frontend
@@ -396,7 +399,12 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
 
         if (block.timestamp > pool.lastRewardTimestamp && pool.totalLpSupply != 0 && pool.allocPoint != 0) {
             uint256 secondsElapsed = block.timestamp - pool.lastRewardTimestamp;
-            uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint);
+
+            uint256 totalAllocPoint_ = totalAllocPoint;
+            uint256 joeReward = totalAllocPoint_ > 0
+                ? secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint_)
+                : 0;
+
             accJoePerShare = accJoePerShare.add(
                 joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - pool.veJoeShareBp).div(pool.totalLpSupply.mul(10_000))
             );
@@ -449,7 +457,11 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
                 uint256 veJoeShareBp = pool.veJoeShareBp;
                 uint256 totalFactor = pool.totalFactor;
 
-                uint256 joeReward = secondsElapsed.mul(joePerSec()).mul(allocPoint).div(totalAllocPoint);
+                uint256 totalAllocPoint_ = totalAllocPoint;
+                uint256 joeReward = totalAllocPoint_ > 0
+                    ? secondsElapsed.mul(joePerSec()).mul(allocPoint).div(totalAllocPoint_)
+                    : 0;
+
                 pool.accJoePerShare = pool.accJoePerShare.add(
                     joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - veJoeShareBp).div(lpSupply.mul(10_000))
                 );
@@ -473,7 +485,7 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
 
     /// @notice Harvests JOE from `MASTER_CHEF_V2` MCJV2 and pool `MASTER_PID` to this BMCJ contract
     function harvestFromMasterChef() public {
-        MASTER_CHEF_V2.deposit(MASTER_PID, 0);
+        // MASTER_CHEF_V2.deposit(MASTER_PID, 0);
     }
 
     /// @notice Return an user's factor
