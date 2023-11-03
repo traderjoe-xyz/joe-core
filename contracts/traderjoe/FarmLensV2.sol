@@ -247,19 +247,29 @@ contract FarmLensV2 {
         allFarmData.joePriceUsd = joePrice;
 
         allFarmData.totalAllocChefV2 = chefv2.totalAllocPoint();
-        allFarmData.joePerSecChefV2 = chefv2.joePerSec();
+        allFarmData.joePerSecChefV2 = _joePerSec(address(chefv2));
 
         allFarmData.totalAllocChefV3 = chefv3.totalAllocPoint();
-        allFarmData.joePerSecChefV3 = chefv3.joePerSec();
+        allFarmData.joePerSecChefV3 = _joePerSec(address(chefv3));
 
         allFarmData.totalAllocBMCJ = bmcj.totalAllocPoint();
-        allFarmData.joePerSecBMCJ = bmcj.joePerSec();
+        allFarmData.joePerSecBMCJ = _joePerSec(address(bmcj));
 
         allFarmData.farmInfosV2 = _getMCFarmInfos(chefv2, avaxPrice, whitelistedPidsV2);
         allFarmData.farmInfosV3 = _getMCFarmInfos(chefv3, avaxPrice, whitelistedPidsV3);
         allFarmData.farmInfosBMCJ = _getBMCJFarmInfos(avaxPrice, joePrice, user, whitelistedPidsBMCJ);
 
         return allFarmData;
+    }
+
+    /// @notice Returns the joePerSec of a given MasterChef
+    /// @param mc The address of the MasterChef
+    function _joePerSec(address mc) internal view returns (uint256) {
+        try IMasterChef(mc).joePerSec() returns (uint256 joePerSec) {
+            return joePerSec;
+        } catch {
+            return 0;
+        }
     }
 
     /// @notice Returns the price of avax in Usd internally
@@ -281,9 +291,9 @@ contract FarmLensV2 {
         uint256 decimals1 = IERC20(pair.token1()).safeDecimals();
 
         if (derivedtoken0) {
-            return _scaleTo(reserve0, decimals1.add(18).sub(decimals0)).div(reserve1);
+            return reserve1 == 0 ? 0 : _scaleTo(reserve0, decimals1.add(18).sub(decimals0)).div(reserve1);
         } else {
-            return _scaleTo(reserve1, decimals0.add(18).sub(decimals1)).div(reserve0);
+            return reserve0 == 0 ? 0 : _scaleTo(reserve1, decimals0.add(18).sub(decimals1)).div(reserve0);
         }
     }
 
@@ -359,7 +369,7 @@ contract FarmLensV2 {
         FarmInfo[] memory farmInfos = new FarmInfo[](whitelistLength);
 
         uint256 chefTotalAlloc = chef.totalAllocPoint();
-        uint256 chefJoePerSec = chef.joePerSec();
+        uint256 chefJoePerSec = _joePerSec(address(chef));
 
         for (uint256 i; i < whitelistLength; i++) {
             uint256 pid = whitelistedPids[i];
@@ -432,7 +442,7 @@ contract FarmLensV2 {
         address user,
         uint256[] calldata whitelistedPids
     ) private view returns (FarmInfoBMCJ[] memory) {
-        GlobalInfo memory globalInfo = GlobalInfo(address(bmcj), bmcj.totalAllocPoint(), bmcj.joePerSec());
+        GlobalInfo memory globalInfo = GlobalInfo(address(bmcj), bmcj.totalAllocPoint(), _joePerSec(address(bmcj)));
 
         uint256 whitelistLength = whitelistedPids.length;
         FarmInfoBMCJ[] memory farmInfos = new FarmInfoBMCJ[](whitelistLength);
@@ -518,7 +528,7 @@ contract FarmLensV2 {
                     poolReserveUsd /
                     BP_PRECISION;
 
-                if (user.amount != 0 && user.factor != 0) {
+                if (user.amount != 0 && user.factor != 0 && pool.totalFactor != 0) {
                     uint256 userLpUsd = user.amount.mul(farmInfo.reserveUsd) / pool.totalLpSupply;
 
                     farmInfo.userBoostedApr =
