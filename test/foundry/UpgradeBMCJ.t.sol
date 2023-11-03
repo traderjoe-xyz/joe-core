@@ -24,7 +24,7 @@ contract TestUpgradeBMCJ is Test {
 
         vm.expectRevert("SafeMath: division by zero");
         proxy.massUpdatePools();
-    
+
         vm.expectRevert("SafeMath: division by zero");
         proxy.joePerSec();
 

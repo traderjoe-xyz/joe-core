@@ -401,8 +401,9 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
             uint256 secondsElapsed = block.timestamp - pool.lastRewardTimestamp;
 
             uint256 totalAllocPoint_ = totalAllocPoint;
-            uint256 joeReward =
-                totalAllocPoint_ > 0 ? secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint_) : 0;
+            uint256 joeReward = totalAllocPoint_ > 0
+                ? secondsElapsed.mul(joePerSec()).mul(pool.allocPoint).div(totalAllocPoint_)
+                : 0;
 
             accJoePerShare = accJoePerShare.add(
                 joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - pool.veJoeShareBp).div(pool.totalLpSupply.mul(10_000))
@@ -457,8 +458,9 @@ contract BoostedMasterChefJoe is Initializable, OwnableUpgradeable, ReentrancyGu
                 uint256 totalFactor = pool.totalFactor;
 
                 uint256 totalAllocPoint_ = totalAllocPoint;
-                uint256 joeReward =
-                    totalAllocPoint_ > 0 ? secondsElapsed.mul(joePerSec()).mul(allocPoint).div(totalAllocPoint_) : 0;
+                uint256 joeReward = totalAllocPoint_ > 0
+                    ? secondsElapsed.mul(joePerSec()).mul(allocPoint).div(totalAllocPoint_)
+                    : 0;
 
                 pool.accJoePerShare = pool.accJoePerShare.add(
                     joeReward.mul(ACC_TOKEN_PRECISION).mul(10_000 - veJoeShareBp).div(lpSupply.mul(10_000))
