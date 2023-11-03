@@ -13,7 +13,7 @@ contract testFarmLensV2 is Test {
         vm.createSelectFork(vm.rpcUrl("avalanche"), 37292546);
     }
 
-    function test_Edge() public {
+    function test_GetAllFarmData() public {
         vm.expectRevert("SafeMath: division by zero");
         lens.getAllFarmData(new uint256[](1), new uint256[](1), new uint256[](1), address(this));
 
