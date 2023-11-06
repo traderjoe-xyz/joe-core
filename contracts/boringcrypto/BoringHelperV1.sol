@@ -879,7 +879,6 @@ contract BoringHelperV1 is Ownable {
         return pools;
     }
 
-
     /// @notice Returns the user's pendingTokens for a specific pool of the MasterChef contract
     /// @param pid The pool id
     /// @param who The user's address
