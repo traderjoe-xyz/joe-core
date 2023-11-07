@@ -858,7 +858,7 @@ contract BoringHelperV1 is Ownable {
         for (uint256 i = 0; i < pids.length; i++) {
             (uint256 amount, ) = chef.userInfo(pids[i], who);
             pools[i].balance = amount;
-            (uint256 pendingJoe, , , ) = chef.pendingTokens(pids[i], who);
+            uint256 pendingJoe = _pendingTokens(pids[i], who);
             pools[i].pending = pendingJoe;
 
             (address lpToken, , , ) = chef.poolInfo(pids[i]);
@@ -877,5 +877,16 @@ contract BoringHelperV1 is Ownable {
             }
         }
         return pools;
+    }
+
+    /// @notice Returns the user's pendingTokens for a specific pool of the MasterChef contract
+    /// @param pid The pool id
+    /// @param who The user's address
+    function _pendingTokens(uint256 pid, address who) internal view returns (uint256) {
+        try chef.pendingTokens(pid, who) returns (uint256 pendingJoe, address, string memory, uint256) {
+            return pendingJoe;
+        } catch {
+            return 0;
+        }
     }
 }
