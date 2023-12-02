@@ -35,6 +35,13 @@ describe.only("TokenVesting", function () {
     expect(await this.joe.balanceOf(this.tokenVesting.address)).to.lt(100)
   })
 
+  it("should allow all tokens to be vested once all time has passed", async function() {
+    await increase(duration.days(14))
+    await this.tokenVesting.release(this.joe.address)
+    expect(await this.joe.balanceOf(this.alice.address)).to.equal(100)
+    expect(await this.joe.balanceOf(this.tokenVesting.address)).to.equal(0)
+  })
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
