@@ -13,6 +13,7 @@ describe.only("TokenVesting", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
+    this.rando = this.signers[1]
 
     this.JoeToken = await ethers.getContractFactory("JoeToken")
     this.TokenVesting = await ethers.getContractFactory("TokenVesting")
@@ -41,6 +42,13 @@ describe.only("TokenVesting", function () {
     expect(await this.joe.balanceOf(this.alice.address)).to.equal(100)
     expect(await this.joe.balanceOf(this.tokenVesting.address)).to.equal(0)
   })
+
+  it("can revoke tokens immediately", async function() {
+    await this.tokenVesting.revoke(this.joe.address);
+    await increase(duration.days(14));
+    await expect(this.tokenVesting.release(this.joe.address)).to.be.revertedWith("TokenVesting: no tokens are due")
+
+  });
 
   after(async function () {
     await network.provider.request({
