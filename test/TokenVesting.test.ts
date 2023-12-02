@@ -61,6 +61,12 @@ describe.only("TokenVesting", function () {
     await expect(this.tokenVesting.release(this.joe.address)).to.be.revertedWith("TokenVesting: no tokens are due")
   })
 
+  it("emergency revoking leaves no tokens vestable", async function () {
+    await increase(duration.days(10))
+    await this.tokenVesting.emergencyRevoke(this.joe.address)
+    await expect(this.tokenVesting.release(this.joe.address)).to.be.revertedWith("TokenVesting: no tokens are due")
+  })
+
   after(async function () {
     await network.provider.request({
       method: "hardhat_reset",
