@@ -36,19 +36,30 @@ describe.only("TokenVesting", function () {
     expect(await this.joe.balanceOf(this.tokenVesting.address)).to.lt(100)
   })
 
-  it("should allow all tokens to be vested once all time has passed", async function() {
+  it("should allow all tokens to be vested once all time has passed", async function () {
     await increase(duration.days(14))
     await this.tokenVesting.release(this.joe.address)
     expect(await this.joe.balanceOf(this.alice.address)).to.equal(100)
     expect(await this.joe.balanceOf(this.tokenVesting.address)).to.equal(0)
   })
 
-  it("can revoke tokens immediately", async function() {
-    await this.tokenVesting.revoke(this.joe.address);
-    await increase(duration.days(14));
+  it("can revoke tokens immediately", async function () {
+    await this.tokenVesting.revoke(this.joe.address)
+    await increase(duration.days(14))
     await expect(this.tokenVesting.release(this.joe.address)).to.be.revertedWith("TokenVesting: no tokens are due")
+  })
 
-  });
+  it("revoking leaves some tokens vestable", async function () {
+    await increase(duration.days(10))
+    await this.tokenVesting.revoke(this.joe.address)
+    await this.tokenVesting.release(this.joe.address)
+
+    expect(await this.joe.balanceOf(this.alice.address)).to.gt(0)
+    expect(await this.joe.balanceOf(this.tokenVesting.address)).to.lt(100)
+
+    await increase(duration.days(7))
+    await expect(this.tokenVesting.release(this.joe.address)).to.be.revertedWith("TokenVesting: no tokens are due")
+  })
 
   after(async function () {
     await network.provider.request({
